@@ -9,7 +9,7 @@ import { useLoading } from "../stores/LoadingContext";
 import Modal from "../components/ui/Modal";
 import { downloadController } from "../controller/download-controller";
 
-export interface fetch_tran_details {
+export interface download_dtl {
     download_ymd: string,
     bug_no: string,
     fileName: string,
@@ -20,14 +20,14 @@ export interface fetch_tran_details {
     s3_state: string
 }
 
-const S3TranLogDetail: React.FC = () => {
+const S3DownloadDetailPage: React.FC = () => {
     const { id } = useParams() || "";
     const { sync_path } = useLocation().state as { sync_path: string };
     const { showLoading, hideLoading } = useLoading();
     const [displayModal, setDisplayModal] = useState(false);
-    const [fetchTranDetails, setFetchTranDetails] = useState<fetch_tran_details[]>([]);
+    const [download_dtl_items, setDownloadItems] = useState<download_dtl[]>([]);
     const [selectDestinationPath, setSelectDestinationPath] = useState<string | null>(null);
-    const [selectedItems, setSelectedItems] = useState<Set<fetch_tran_details>>(new Set());
+    const [selectedItems, setSelectedItems] = useState<Set<download_dtl>>(new Set());
 
     useEffect(() => {
         if (id) {
@@ -35,7 +35,7 @@ const S3TranLogDetail: React.FC = () => {
             downloadController.get_download_dtls(id)
                 .then(result => {
                     if (result.success)
-                        setFetchTranDetails(result.data as fetch_tran_details[]);
+                        setDownloadItems(result.data as download_dtl[]);
                 }).finally(() => hideLoading());
         }
     }, [id]);
@@ -44,7 +44,7 @@ const S3TranLogDetail: React.FC = () => {
     const handleFileCheckboxChange = (fileName: string, checked: boolean) => {
         setSelectedItems(prev => {
             const newSet = new Set(prev);
-            const file = fetchTranDetails.find(f => f.fileName === fileName);
+            const file = download_dtl_items.find(f => f.fileName === fileName);
             if (file) {
                 if (checked) {
                     newSet.add(file);
@@ -158,7 +158,7 @@ const S3TranLogDetail: React.FC = () => {
                         </div>
                     </div>
 
-                    {fetchTranDetails.length == 0 ? (
+                    {download_dtl_items.length == 0 ? (
                         <div className="bg-white rounded-lg shadow">
                             <div className="bg-white rounded-lg shadow">
                                 <div className="p-4 text-center text-gray-500">
@@ -174,7 +174,7 @@ const S3TranLogDetail: React.FC = () => {
                                     { key: 'name', label: 'Tên tập tin' },
                                     { key: 'local', label: '' },
                                 ]}
-                                data={fetchTranDetails
+                                data={download_dtl_items
                                     .map(bug_info => ({
                                         name: bug_info.fileName,
                                         action: bug_info.sync_path,
@@ -221,7 +221,7 @@ const S3TranLogDetail: React.FC = () => {
                     <div className="separator p-4">
                         <h2 className="text-lg font-semibold text-gray-900 mb-2">Danh sách file đã chọn:</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                            {Array.from(selectedItems).slice(0, 6).map((file: fetch_tran_details, index: number) => (
+                            {Array.from(selectedItems).slice(0, 6).map((file: download_dtl, index: number) => (
                                 <div key={index} className="text-sm text-gray-600 bg-gray-100 px-3 py-2 rounded truncate">
                                     {file.fileName}
                                 </div>
@@ -275,4 +275,4 @@ const S3TranLogDetail: React.FC = () => {
     );
 };
 
-export default S3TranLogDetail;
+export default S3DownloadDetailPage;

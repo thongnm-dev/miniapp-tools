@@ -42,6 +42,10 @@ const BugManagePage: React.FC = () => {
 
     const [bug_list, setBug_list] = useState<[]>([]);
 
+
+    const register = async () => {
+        
+    }
     const customCellRender = {
 
     }

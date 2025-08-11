@@ -9,7 +9,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import WorkDirectoryPage from './pages/WorkDirectoryPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/DashboardPage';
-import S3TranLogDetail from './pages/S3TranLogDetailPage';
+import S3DownloadDetailPage from './pages/S3DownloadDetailPage';
 import S3DownloadPage from './pages/S3DownloadPage';
 import WelcomePage from './pages/WelcomePage';
 import BugManagePage from './pages/BugManagePage';
@@ -72,10 +72,10 @@ function App() {
                                 </MainLayout>
                             </ProtectedRoute>
                         } />
-                        <Route path="/s3-tran-log/:id" element={
+                        <Route path="/s3download/:id" element={
                             <ProtectedRoute>
                                 <MainLayout>
-                                    <S3TranLogDetail />
+                                    <S3DownloadDetailPage />
                                 </MainLayout>
                             </ProtectedRoute>
                         } />

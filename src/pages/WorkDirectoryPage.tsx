@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fsController } from '../controller/fs-controller';
 import Button from '../components/ui/Button';
-import { FolderIcon, EyeIcon, DocumentDuplicateIcon, ArrowPathIcon, FolderOpenIcon } from '@heroicons/react/24/outline';
+import { FolderIcon, EyeIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import DataTable from '../components/ui/DataTable';
 import { showNotification } from '../components/notification';
 import { FileItem } from '../types/FileItem';
@@ -35,7 +35,7 @@ const WorkDirectoryPage: React.FC = () => {
                 }
             };
 
-            reload(workdir);
+            // reload(workdir);
 
             const stateToSave = {
                 workdir
@@ -95,14 +95,6 @@ const WorkDirectoryPage: React.FC = () => {
         });
     };
 
-    // handle copy files
-    const handleCopyFiles = () => {
-        if (selectedFiles.size === 0) {
-            showNotification('Please select at least one file to copy', 'error');
-            return;
-        }
-    };
-
     // handle refresh files
     const handleRefreshFiles = async () => {
         try {
@@ -119,59 +111,29 @@ const WorkDirectoryPage: React.FC = () => {
 
     };
 
-    // handle show in explorer
-    const handleShowInExplorer = async () => {
-        await showInExplorer(workdir);
-    };
-
     return (
         <div className="space-y-2">
             {/* Directory Selection */}
             <div className="bg-white rounded-lg shadow p-3 space-y-2">
                 <div className="flex items-center justify-between gap-1">
                     <div className="relative flex-1">
+                        <div className="absolute inset-y-0 left-0 flex items-center px-1.5">
+                            <button disabled={!workdir} onClick={handleRefreshFiles} 
+                                    className='text-green-600'>
+                                <ArrowPathIcon className='w-7 h-7' />
+                            </button>
+                        </div>
                         <div className="absolute inset-y-0 right-0 pl-3 flex items-center">
                             <button className='p-3' onClick={selectDirectory}>
                                 <FolderIcon className='h-5 w-5' />
                             </button>
                         </div>
-                        <span className="block w-full pl-5 pr-3 py-2 border bg-gray-50 rounded-lg focus:outline-none">
+                        <span className="block w-full pl-10 pr-3 py-2 border bg-gray-50 rounded-lg focus:outline-none">
                             {workdir || 'No directory selected'}
                         </span>
                     </div>
                 </div>
             </div>
-
-            {/* Files */}
-            <div className="bg-white rounded-lg shadow">
-                <div className="p-2 border-b border-gray-200 flex items-center justify-end gap-2">
-                    <Button
-                        disabled={!workdir}
-                        onClick={handleRefreshFiles}
-                        className="flex items-center space-x-2"
-                    >
-                        <ArrowPathIcon className="w-4 h-4" />
-                        <span>Tải lại</span>
-                    </Button>
-                    <Button
-                        disabled={!workdir}
-                        onClick={handleShowInExplorer}
-                        className="flex items-center space-x-2"
-                    >
-                        <FolderOpenIcon className="w-4 h-4" />
-                        <span>Show in Explorer</span>
-                    </Button>
-                    <Button
-                        onClick={handleCopyFiles}
-                        disabled={selectedFiles.size === 0}
-                        className="flex items-center space-x-2"
-                    >
-                        <DocumentDuplicateIcon className="w-4 h-4" />
-                        <span>Sao chép ({selectedFiles.size})</span>
-                    </Button>
-                </div>
-            </div>
-
             {files.length == 0 ? (
                 <div className="bg-white rounded-lg shadow">
                     <div className="bg-white rounded-lg shadow">
@@ -200,7 +162,7 @@ const WorkDirectoryPage: React.FC = () => {
                         selectedRows={new Set(Array.from(selectedFiles).map(f => f.name))}
                         onRowSelectionChange={handleFileCheckboxChange}
                         rowKey="name"
-                        scrollHeight={450}
+                        scrollHeight={550}
                         customCellRender={{
                             action: (row) => (
                                 <Button

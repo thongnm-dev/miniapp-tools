@@ -37,7 +37,7 @@ const columns = [
     }
 ];
 
-export interface FetchTranLog {
+export interface download_inf {
     id: number,
     download_ymd: string,
     download_hm: string,
@@ -60,7 +60,7 @@ export const S3DownloadPage: React.FC = () => {
     const [errorCheck, setErrorCheck] = useState<string>("");
     const [modalTitle, setModalTitle] = useState<string>("");
     const [currentExec, setCurrentExec] = useState<string>("");
-    const [S3FetchLog, setS3FetchLog] = useState<FetchTranLog[]>([]);
+    const [download_items, setDownloadItems] = useState<download_inf[]>([]);
     const [selectedBugs, setSelectedBugs] = useState<Set<string>>(new Set());
     const [S3_FOLDER_BUGS_02, setS3_FOLDER_BUGS_02] = useState<string[]>([]);
     const [S3_FOLDER_BUGS_04, setS3_FOLDER_BUGS_04] = useState<string[]>([]);
@@ -80,7 +80,7 @@ export const S3DownloadPage: React.FC = () => {
 
             const result2 = await downloadController.get_downloads(user?.username || "");
             if (result2.success && result2.data) {
-                setS3FetchLog(result2.data);
+                setDownloadItems(result2.data);
             }
         }
 
@@ -112,8 +112,8 @@ export const S3DownloadPage: React.FC = () => {
     }, [selectDestinationPath]);
 
     const trackingTranLog = useMemo(() => {
-        return S3FetchLog.length > 0;
-    }, [S3FetchLog])
+        return download_items.length > 0;
+    }, [download_items])
 
     const selectedFilesToMove = useMemo(() => {
         return (
@@ -147,7 +147,7 @@ export const S3DownloadPage: React.FC = () => {
 
             const result2 = await downloadController.get_downloads(user?.username || "");
             if (result2.success && result2.data) {
-                setS3FetchLog(result2.data);
+                setDownloadItems(result2.data);
             }
 
         } catch (error) {
@@ -267,7 +267,7 @@ export const S3DownloadPage: React.FC = () => {
 
     const customCellRender = {
         id: (row: Record<string, any>) => {
-            return <Link to={`/s3-tran-log/${row.id}`}
+            return <Link to={`/s3download/${row.id}`}
                 state={{ sync_path: row.sync_path }}
                 className="text-blue-500 hover:text-blue-700">#{row.id}</Link>;
         },
@@ -317,7 +317,7 @@ export const S3DownloadPage: React.FC = () => {
                 {trackingTranLog &&
                     <Fieldset title="Thông tin lịch sử đã tải về">
                         <DataTable
-                            data={S3FetchLog}
+                            data={download_items}
                             columns={columns}
                             showFilter={false}
                             showCheckboxes={false}
