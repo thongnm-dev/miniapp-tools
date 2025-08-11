@@ -1,0 +1,48 @@
+// IPC Channel Constants - Shared between main and renderer processes
+export const IPC_CHANNEL_HANDLERS = {
+  // Login Operations
+  LOGIN: 'login',
+  REGISTER: 'register',
+
+  // File System Operations
+  SELECT_DIRECTORY: 'SELECT_DIRECTORY',
+  READ_DIRECTORY: 'READ_DIRECTORY',
+  READ_DIRECTORY_RECUR: 'READ_DIRECTORY_RECUR',
+  READ_FILE: 'READ_FILE',
+  OPEN_FILE: 'OPEN_FILE',
+  COPY_FILES: 'COPY_FILES',
+  MOVE_FILES: 'MOVE_FILES',
+  DELETE_FILE: 'DELETE_FILE',
+  IS_EXIST_DIR: 'IS_EXIST_DIR',
+
+  // S3 Operations
+  S3_PULL_ALL_OBJECTS: 'S3_PULL_ALL_OBJECTS',
+  S3_PULL_OBJECT_TO_DOWNLOAD: 'S3_PULL_OBJECT_TO_DOWNLOAD',
+  S3_FETCH_OBJECT_STATE: 'S3_FETCH_OBJECT_STATE',
+  GET_S3_LOCAL_SYNC_WORKDIR: 'GET_S3_LOCAL_SYNC_WORKDIR',
+  S3_DOWNLOAD_FILES: 'S3_DOWNLOAD_FILES',
+  S3_MOVE_OBJECT: 'S3_MOVE_OBJECT',
+
+  // File Monitoring Operations
+  START_FILE_MONITORING: 'start-file-monitoring',
+  STOP_FILE_MONITORING: 'stop-file-monitoring',
+  STOP_ALL_FILE_MONITORING: 'stop-all-file-monitoring',
+  GET_MONITORED_DIRECTORIES: 'get-monitored-directories',
+  IS_FILE_MONITORING_ACTIVE: 'is-file-monitoring-active',
+
+  // Legacy Folder Watching (for backward compatibility)
+  WATCH_FOLDER: 'WATCH_FOLDER',
+  UNWATCH_FOLDER: 'UNWATCH_FOLDER',
+
+  // Events sent from main to renderer
+  FOLDER_CHANGED: 'FOLDER_CHANGED',
+  FILE_CHANGE_DETECTED: 'FILE_CHANGE_DETECTED',
+  FILE_COPIED: 'FILE_COPIED',
+
+  // Fetch Tran Operations
+  GET_DONWLOADS: 'GET_DONWLOADS',
+  GET_DOWNLOAD_DLTS: 'GET_DOWNLOAD_DLTS',
+  ALLOW_DOWNLOAD_OBJECT_S3: 'ALLOW_DOWNLOAD_OBJECT_S3',
+  ALLOW_MOVE_OBJECT_S3: 'ALLOW_MOVE_OBJECT_S3',
+
+} as const; 

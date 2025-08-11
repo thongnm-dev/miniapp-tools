@@ -1,0 +1,20 @@
+dist/
+node_modules/
+release/
+dist-electron/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# TypeScript compiled files
+src/**/*.js
+src/**/*.d.ts
+src/**/*.js.map
+src/**/*.d.ts.map
+
+
+# backlog API
+BẠCKLOG_API=https://alxvn.backlog.com/api/v2
+BACKLOG_APIKEY=Zzk9uKj2kX6K96kLg3BeSj1WPs5L8PyIQ6HcSfCe4bwHmEhl69s2veKO2lN2OzoS

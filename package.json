@@ -1,0 +1,83 @@
+{
+  "name": "WS",
+  "version": "1.0.0",
+  "description": "miniapp-tools",
+  "main": "dist/main/main.js",
+  "scripts": {
+    "start": "concurrently \"npm run dev:renderer\" \"npm run dev:main\"",
+    "dev:main": "tsc -p tsconfig.dev.json && electron . --dev",
+    "dev:renderer": "vite",
+    "build": "npm run build:main && npm run build:renderer",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:renderer": "vite build",
+    "dist": "npm run build && electron-builder",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "electron",
+    "react",
+    "typescript",
+    "tailwind",
+    "form",
+    "application"
+  ],
+  "author": "ThongnmDev",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/aws-sdk": "^0.0.42",
+    "@types/bcrypt": "^5.0.2",
+    "@types/luxon": "^3.6.2",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "autoprefixer": "^10.4.0",
+    "concurrently": "^8.0.0",
+    "electron": "^37.2.3",
+    "electron-builder": "^26.0.12",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5.0.0",
+    "vite": "^7.0.0"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.844.0",
+    "@heroicons/react": "^2.2.0",
+    "@types/pg": "^8.15.4",
+    "@types/react-paginate": "^7.1.4",
+    "@types/react-router-dom": "^5.3.3",
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.2.0",
+    "luxon": "^3.7.1",
+    "pg": "^8.16.3",
+    "react": "^18.2.0",
+    "react-accessible-treeview": "^2.11.2",
+    "react-dom": "^18.2.0",
+    "react-paginate": "^8.3.0",
+    "react-router-dom": "^7.6.3",
+    "sql.js": "^1.13.0"
+  },
+  "build": {
+    "appId": "ws.alx.app",
+    "productName": "miniapp-tools",
+    "icon": "src/main/icon/ws.ico",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": "portable",
+      "signAndEditExecutable": false,
+      "forceCodeSigning": false
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}
