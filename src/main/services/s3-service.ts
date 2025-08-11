@@ -1,4 +1,4 @@
-import { S3Client, ListObjectsV2Command, ListObjectsV2Output, GetObjectCommand, CopyObjectCommand, DeleteObjectCommand, _Object } from "@aws-sdk/client-s3";
+import { S3Client, ListObjectsV2Command, ListObjectsV2Output, GetObjectCommand, CopyObjectCommand, DeleteObjectCommand, _Object, PutObjectRequest } from "@aws-sdk/client-s3";
 import { getS3Config, getWorkdir } from '../_/main-config';
 import { FETCH_STATES_LIST } from "../../config/constants";
 import { Readable } from "stream";
@@ -358,16 +358,19 @@ export class S3Service {
     }
 
     // upload file to s3
-    async uploadFile(key: string, body: Buffer | string): Promise<{ success: boolean; message?: string }> {
+    async uploadFile(formData: { destination: string, objectData: {bug_no: string, file_path: string}[]}): Promise<ServiceReturn<string>> {
         try {
-            // const params: AWS.S3.PutObjectRequest = {
-            //   Bucket: this.config.bucketName,
-            //   Key: key,
-            //   Body: body,
-            // };
+            let _destination_path = this.config.folderName + '/' + formData.destination + '/';
 
-            // await this.s3.putObject(params).promise();
-            // console.log(`Successfully uploaded file to S3: ${key}`);
+            for (const objectKey of formData.objectData) {
+                _destination_path = _destination_path + objectKey.bug_no + "/"
+                const params: PutObjectRequest = {
+                    Bucket: this.config.bucketName,
+                    Key: _destination_path
+                };
+
+                // await this.s3.send(params);
+            }
             return { success: true };
         } catch (error) {
             return { success: false, message: (error as Error).message };
@@ -401,7 +404,7 @@ export class S3Service {
     }
 
     // move object from the folder to another folder
-    public async moveObjectS3(formData: {source: string, destination: string, objectData: string[]}): Promise<ServiceReturn<string>> {
+    public async moveObjectS3(formData: { source: string, destination: string, objectData: string[] }): Promise<ServiceReturn<string>> {
 
         try {
             const s3client = this.s3;
@@ -437,7 +440,7 @@ export class S3Service {
                         CopySource: encodeURIComponent(`${this.config.bucketName}/${oldKey}`),
                         Key: newKey
                     });
-        
+
                     await this.s3.send(commandCopy);
 
                     // perform delete object
@@ -456,6 +459,49 @@ export class S3Service {
                 success: result.success,
                 message: result.message
             }
+        } catch (error) {
+            return { success: false, message: (error as Error).message };
+        }
+    }
+
+    // delete object
+    public async deletObjectS3(formData: { source: string, objectData: string[] }): Promise<ServiceReturn<string>> {
+
+        try {
+            const s3client = this.s3;
+
+            async function listObjects(bucketName: string, prefix: string): Promise<_Object[]> {
+                const command = new ListObjectsV2Command({
+                    Bucket: bucketName,
+                    Prefix: prefix,
+                });
+                const response = await s3client.send(command);
+                return response.Contents || [];
+            }
+
+            const folderName = "80_system/Attach/11_alx/40_バグ管理";
+            const _source_path = folderName + '/' + formData.source + '/';
+
+            // const _source_path = this.config.folderName + '/' + formData.source + '/';
+
+            for (const objectKey of formData.objectData) {
+                let _source_bug_path = _source_path + objectKey + '/';
+                const objectDatas = await listObjects(this.config.bucketName, _source_bug_path) || [];
+
+                const _objectTarget = objectDatas.filter((item) => item.Key !== _source_path);
+                for (const objectData of _objectTarget) {
+                    const oldKey = objectData.Key || "";
+                    // perform delete object
+                    const commandDelete = new DeleteObjectCommand({
+                        Bucket: this.config.bucketName,
+                        Key: oldKey
+                    })
+
+                    await this.s3.send(commandDelete);
+                }
+            }
+
+            return { success: true, message: "Đã xoá thành công."}
         } catch (error) {
             return { success: false, message: (error as Error).message };
         }

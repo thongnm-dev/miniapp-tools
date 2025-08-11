@@ -160,8 +160,8 @@ export const S3DownloadPage: React.FC = () => {
     // Select destination folder
     const chooseDestinationFolder = async () => {
         const result = await fsController.selectDirectory();
-        if (result.success && result.path) {
-            setSelectDestinationPath(result.path);
+        if (result.success && result.data) {
+            setSelectDestinationPath(result.data);
             setErrorCheck("");
         }
     };

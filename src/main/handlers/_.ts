@@ -1,4 +1,3 @@
-import { setupFSMonitorHandlers } from "./fs-monitor_handler";
 import { setupFSHandlers } from "./fs-handler";
 import { setupFSWatchHandlers } from "./fs-watch-handler";
 import { setupLoginHandlers } from "./login-handler";
@@ -9,8 +8,6 @@ import { setupUploadHandlers } from "./upload-handler";
 export const initHandlers = () => {
     // setup handlers for database, s3, file monitor, folder watch, file system
     setupS3Handlers();
-
-    setupFSMonitorHandlers();
 
     setupFSWatchHandlers();
 

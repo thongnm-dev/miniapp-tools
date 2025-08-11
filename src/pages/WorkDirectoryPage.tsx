@@ -48,8 +48,8 @@ const WorkDirectoryPage: React.FC = () => {
         try {
             const result = await fsController.selectDirectory();
 
-            if (result.success && result.path) {
-                setWorkdir(result.path);
+            if (result.success && result.data) {
+                setWorkdir(result.data);
             }
         } catch (err) {
             showNotification('Failed to select directory', 'error');

@@ -17,7 +17,7 @@ export class FSService {
             }
 
             // Helper function to recursively collect Excel files
-            function getAllExcelFilesRecursively(directory: string, options?: {onlyExcel?: boolean, fileExtension?: string }): string[] {
+            function getAllFilesRecursively(directory: string, options?: {onlyExcel?: boolean, fileExtension?: string }): string[] {
                 let results: string[] = [];
                 const list = fs.readdirSync(directory, { withFileTypes: true});
                 for (const item of list) {
@@ -25,19 +25,22 @@ export class FSService {
                     if (item.isDirectory()) {
                         const excludes = ["202507", "202508", "エビデンス"];
                         if (!excludes.includes(item.name)) {
-                            results = results.concat(getAllExcelFilesRecursively(fullPath, options));
+                            results = results.concat(getAllFilesRecursively(fullPath, options));
                         }
-                    } else if (item.isFile() &&
-                        (fullPath.endsWith(options?.fileExtension || '.xls') || fullPath.endsWith(options?.fileExtension || '.xlsx')) &&
-                        !item.name.startsWith('~$')
-                    ) {
-                        results.push(fullPath);
+                    } else if (item.isFile() && !item.name.startsWith('~$')) {
+                        if (options?.onlyExcel) {
+                            if (fullPath.endsWith(options?.fileExtension || '.xls') || fullPath.endsWith(options?.fileExtension || '.xlsx')) {
+                                results.push(fullPath);
+                            }
+                        } else {
+                            results.push(fullPath);
+                        }
                     }
                 }
                 return results;
             }
 
-            const excelFiles = getAllExcelFilesRecursively(dirPath, options);
+            const excelFiles = getAllFilesRecursively(dirPath, options);
             for (const filePath of excelFiles) {
                 files.push({
                     name: path.basename(filePath),
@@ -51,6 +54,30 @@ export class FSService {
                 success: true,
                 data: files.sort((a, b) => a.name.localeCompare(b.name))
             };
+        } catch (error) {
+            return { success: false, message: (error as Error).message };
+        }
+    }
+
+    async readMultiDir(dirPaths: string[], options?: {onlyExcel?: boolean, fileExtension?: string }): 
+        Promise<ServiceReturn<Array<{ name: string; path: string; fullPath: string}>>> {
+        try {
+
+            let resultPromise = [];
+            for (const dirPath of dirPaths) {
+                resultPromise.push(this.readDirectory(dirPath, options));
+            }
+
+            const results_promise = await Promise.all(resultPromise);
+
+
+
+            let results: Array<{ name: string; path: string; fullPath: string; type: 'file' }> = [];
+
+            for (const item of results_promise.flat()) {
+            }
+
+            return { success: true, data: results};
         } catch (error) {
             return { success: false, message: (error as Error).message };
         }

@@ -52,8 +52,8 @@ const Explore: React.FC<ExploreProps> = ({ className = "", extDir = "" }) => {
 
     const selectDirectory = async () => {
         const result = await fsController.selectDirectory();
-        if (result.success && result.path) {
-            setDirectory(result.path);
+        if (result.success && result.data) {
+            setDirectory(result.data);
         }
     };
 
@@ -127,7 +127,7 @@ const Explore: React.FC<ExploreProps> = ({ className = "", extDir = "" }) => {
                                 {element.name}
                             </div>
                         )}
-                        />
+                    />
                 </div>
             </div>
         </>

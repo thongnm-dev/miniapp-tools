@@ -13,6 +13,7 @@ const IPC_CHANNELS = {
 
     // File System Operations
     SELECT_DIRECTORY: 'SELECT_DIRECTORY',
+    SELECT_MULTI_DIR: 'SELECT_MULTI_DIR',
     READ_DIRECTORY: 'READ_DIRECTORY',
     READ_DIRECTORY_RECUR: 'READ_DIRECTORY_RECUR',
     READ_FILE: 'READ_FILE',
@@ -67,6 +68,8 @@ contextBridge.exposeInMainWorld('systemAPI', {
     // OPEN BROWSER FOLDER
     selectDirectory: () => ipcRenderer.invoke(IPC_CHANNELS.SELECT_DIRECTORY),
 
+    selectMultiDir: () => ipcRenderer.invoke(IPC_CHANNELS.SELECT_MULTI_DIR),
+
     // READ DIRECTORY FOLDER
     readDirectory: (path: string, options?: {onlyExcel?: boolean, fileExtension?: string }) =>
         ipcRenderer.invoke(IPC_CHANNELS.READ_DIRECTORY, path, options),
@@ -96,18 +99,6 @@ contextBridge.exposeInMainWorld('systemAPI', {
     onFolderChanged: (callback: () => void) => {
         ipcRenderer.removeAllListeners(IPC_CHANNELS.FOLDER_CHANGED);
         ipcRenderer.on(IPC_CHANNELS.FOLDER_CHANGED, callback);
-    },
-
-    // File monitoring methods
-    startFileMonitoring: (directoryPath: string) => ipcRenderer.invoke(IPC_CHANNELS.START_FILE_MONITORING, directoryPath),
-    stopFileMonitoring: (directoryPath: string) => ipcRenderer.invoke(IPC_CHANNELS.STOP_FILE_MONITORING, directoryPath),
-    stopAllFileMonitoring: () => ipcRenderer.invoke(IPC_CHANNELS.STOP_ALL_FILE_MONITORING),
-    getMonitoredDirectories: () => ipcRenderer.invoke(IPC_CHANNELS.GET_MONITORED_DIRECTORIES),
-    isFileMonitoringActive: () => ipcRenderer.invoke(IPC_CHANNELS.IS_FILE_MONITORING_ACTIVE),
-
-    onFileChangeDetected: (callback: (event: any) => void) => {
-        ipcRenderer.removeAllListeners(IPC_CHANNELS.FILE_CHANGE_DETECTED);
-        ipcRenderer.on(IPC_CHANNELS.FILE_CHANGE_DETECTED, callback);
     },
     onFileCopied: (callback: (event: any) => void) => {
         ipcRenderer.removeAllListeners(IPC_CHANNELS.FILE_COPIED);
@@ -150,7 +141,8 @@ declare global {
         };
 
         systemAPI: {
-            selectDirectory: () => Promise<{ success: boolean; path?: string; message?: string }>;
+            selectDirectory: () => Promise<ServiceReturn<string>>;
+            selectMultiDir: () => Promise<ServiceReturn<string[]>>;
             readDirectory: (path: string, options?: {onlyExcel?: boolean, fileExtension?: string }) =>
                 Promise<{
                     success: boolean;
@@ -172,12 +164,6 @@ declare global {
             onFolderChanged: (callback: () => void) => void;
 
             // File monitoring methods
-            startFileMonitoring: (directoryPath: string) => Promise<{ success: boolean; message?: string }>;
-            stopFileMonitoring: (directoryPath: string) => Promise<{ success: boolean; message?: string }>;
-            stopAllFileMonitoring: () => Promise<{ success: boolean; message?: string }>;
-            getMonitoredDirectories: () => Promise<{ success: boolean; directories?: string[]; message?: string }>;
-            isFileMonitoringActive: () => Promise<{ success: boolean; isActive?: boolean; message?: string }>;
-            onFileChangeDetected: (callback: (event: any) => void) => void;
             onFileCopied: (callback: (event: any) => void) => void;
 
             isExitDirectory: (path: string) => boolean;

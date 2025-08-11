@@ -10,6 +10,7 @@ import { FETCH_STATES_LIST } from '../config/constants';
 import S3Upload, { S3UploadItem } from '../components/S3Upload';
 import { ArrowPathIcon, DocumentIcon, LinkIcon } from '@heroicons/react/24/outline';
 import Explore from '../components/Explore';
+import { fsController } from '../controller/fs-controller';
 
 const S3UploadPage: React.FC = () => {
 
@@ -49,21 +50,22 @@ const S3UploadPage: React.FC = () => {
                     <LinkIcon className="h-5 w-5 font-bold" />
                     <span>Chọn tập tin</span>
                 </Button>
-                <Button className="flex items-center space-x-2"
-                    onClick={refreshData}>
-                    <ArrowPathIcon className="h-5 w-5 font-bold" />
-                    <span>Tải danh sách</span>
-                </Button>
             </React.Fragment>
         )
     }, []);
 
     const addAttachment = async (code: string) => {
         
-        setOpenModal(true);
-        setAttachFlg(true);
-        setUploadFlg(false);
-        setModalTitle("Chọn tập tin để tải lên S3");
+        try {
+            const result = await fsController.selectMultiDir();
+
+            if (result.success && result.data) {
+            }
+        } catch (err) {
+            showNotification('Không thể chọn thư mục để tải lên.', 'error');
+        } finally {
+            hideLoading();
+        }
     };
 
 

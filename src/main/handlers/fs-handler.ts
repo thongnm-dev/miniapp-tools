@@ -15,11 +15,33 @@ export const setupFSHandlers = () => {
             const mainWindow = BrowserWindow.getAllWindows()[0];
             const result = await dialog.showOpenDialog(mainWindow, {
                 title: 'Select Directory',
-                properties: ['openDirectory', 'multiSelections'],
+                properties: ['openDirectory'],
             });
 
             if (!result.canceled && result.filePaths.length > 0) {
                 return { success: true, path: result.filePaths[0], message: 'Directory selected successfully' };
+            }
+
+            return { success: false, message: 'No directory selected' };
+        } catch (error) {
+            return { success: false, message: (error as Error).message };
+        }
+    });
+
+    ipcMain.handle(IPC_CHANNEL_HANDLERS.SELECT_MULTI_DIR, async (_event) => {
+        try {
+            if (!BrowserWindow.getAllWindows().length) {
+                return { success: false, message: 'Main window not available' };
+            }
+
+            const mainWindow = BrowserWindow.getAllWindows()[0];
+            const result = await dialog.showOpenDialog(mainWindow, {
+                title: 'Select Directory',
+                properties: ['openDirectory', 'multiSelections'],
+            });
+
+            if (!result.canceled && result.filePaths.length > 0) {
+                return { success: true, path: result.filePaths, message: 'Directory selected successfully' };
             }
 
             return { success: false, message: 'No directory selected' };

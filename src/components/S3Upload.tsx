@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Button from './ui/Button';
-import { ArrowUpTrayIcon, EyeIcon, FolderIcon, FolderMinusIcon, FolderPlusIcon } from '@heroicons/react/24/outline';
+import { ArchiveBoxXMarkIcon, ArrowUpTrayIcon, EyeIcon, FolderIcon, FolderMinusIcon, FolderPlusIcon } from '@heroicons/react/24/outline';
 import DataTable from './ui/DataTable';
 import { showNotification } from "../components/notification";
 import { fsController } from '../controller/fs-controller';
@@ -25,6 +25,8 @@ export interface S3UploadProps {
 const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = [], uploadAction, actions }) => {
     const [modalOpen, setModalOpen] = useState<boolean>(true);
     const [selectedItems, setSelectedItems] = useState<Set<S3UploadItem>>(new Set());
+    const [uploadableMap, setUploadableMap] = useState<Record<string, boolean>>({});
+    const [moveableMap, setMoveableMap] = useState<Record<string, boolean>>({});
 
     const toggle = () => {
         setModalOpen(!modalOpen);
@@ -70,12 +72,16 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
     const handleUpload = async () => {
         await uploadAction(key_code || "", Array.from(selectedItems));
     }
+
+    const hanldeMove = async () => {
+        
+    }
     return (
         <React.Fragment key={key_code}>
             <div className="shadow rounded grid grid-cols-1 bg-white" >
                 <div className="border-b px-4 py-1 border-gray-200 flex flex-col">
-                    <div className="flex items-center justify-between hover:cursor-pointer" onClick={toggle}>
-                        <div className='flex flex-row gap-2'>
+                    <div className="flex items-center justify-between hover:cursor-pointer" >
+                        <div className='flex flex-row gap-2 flex-1' onClick={toggle}>
                             <button onClick={toggle}>
                                 {modalOpen ? <FolderMinusIcon className='h-5 w-5' /> : <FolderPlusIcon className='h-5 w-5' />}
                             </button>
@@ -85,12 +91,17 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                         </div>
                         <div className="flex items-end space-x-2">
                             {actions}
-                            <Button className="flex items-center space-x-2"
+                            {moveableMap[key_code] && <Button className="flex items-center space-x-2 text-red-500 border-red-500"
+                                onClick={hanldeMove}>
+                                <ArchiveBoxXMarkIcon className="h-4 w-4 font-bold" />
+                                <span>Di chuyển trên S3</span>
+                            </Button>}
+                            {uploadableMap[key_code] &&  <Button className="flex items-center space-x-2"
                                 // disabled={selectedItems.size === 0}
                                 onClick={handleUpload}>
                                 <ArrowUpTrayIcon className="h-5 w-5 font-bold" />
                                 <span>Tải lên</span>
-                            </Button>
+                            </Button>}
                         </div>
                     </div>
                 </div>

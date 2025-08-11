@@ -6,6 +6,10 @@ export class FSController {
         return await window.systemAPI.selectDirectory();
     }
 
+    async selectMultiDir() {
+        return await window.systemAPI.selectMultiDir();
+    }
+
     // read dir
     async readDirectory(path: string, options?: {onlyExcel?: boolean, fileExtension?: string }) {
         return await window.systemAPI.readDirectory(path, options);
@@ -34,30 +38,6 @@ export class FSController {
 
     async onFolderChanged(callback: () => void) {
         return await window.systemAPI.onFolderChanged(callback);
-    }
-
-    async startFileMonitoring(directoryPath: string) {
-        return await window.systemAPI.startFileMonitoring(directoryPath);
-    }
-
-    async stopFileMonitoring(directoryPath: string) {
-        return await window.systemAPI.stopFileMonitoring(directoryPath);
-    }
-
-    async stopAllFileMonitoring() {
-        return await window.systemAPI.stopAllFileMonitoring();
-    }
-
-    async getMonitoredDirectories() {
-        return await window.systemAPI.getMonitoredDirectories();
-    }
-
-    async isFileMonitoringActive() {
-        return await window.systemAPI.isFileMonitoringActive();
-    }
-
-    async onFileChangeDetected(callback: (event: any) => void) {
-        return await window.systemAPI.onFileChangeDetected(callback);
     }
 
     async onFileCopied(callback: (event: any) => void) {
