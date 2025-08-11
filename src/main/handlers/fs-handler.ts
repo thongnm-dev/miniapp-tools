@@ -15,7 +15,7 @@ export const setupFSHandlers = () => {
             const mainWindow = BrowserWindow.getAllWindows()[0];
             const result = await dialog.showOpenDialog(mainWindow, {
                 title: 'Select Directory',
-                properties: ['openDirectory']
+                properties: ['openDirectory', 'multiSelections'],
             });
 
             if (!result.canceled && result.filePaths.length > 0) {

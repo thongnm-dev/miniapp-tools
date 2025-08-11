@@ -38,11 +38,10 @@ export class DownloadService {
                     for (const detail of data.bug_attachs) {
                         const download_id = result.rows[0].id;
                         await client.query(`
-                INSERT INTO download_dtl 
-                    (download_id, bug_no, last_modified, sync_path, s3_state) 
-                VALUES
-                    ($1, $2, $3, $4, $5)`,
-                            [download_id, detail.bug_no, detail.last_modified, detail.path, data.state]);
+                            INSERT INTO download_dtl 
+                                (download_id, bug_no, last_modified, sync_path, s3_state) 
+                            VALUES
+                                ($1, $2, $3, $4, $5)`, [download_id, detail.bug_no, detail.last_modified, detail.path, data.state]);
                     }
                 }
             }
@@ -77,7 +76,7 @@ export class DownloadService {
                             WHERE 1 = 1
                                 AND t1.download_count > 0 
                                 AND t1.is_moved_at_local = false
-                                AND t1.created_at = $1
+                                AND t1.created_by = $1
                             GROUP BY
                                 t1.id,
                                 t1.s3_state,

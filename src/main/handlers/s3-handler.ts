@@ -6,16 +6,12 @@ import { getWorkdir } from '../_/main-config';
 import { StringUtils } from '../../core/utils/string-utils';
 
 export const setupS3Handlers = () => {
-  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_PULL_ALL_OBJECTS, async (_event) => {
-    return await s3Service.backgroundDownload();
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_GET_ALL_STATES, async (_event) => {
+    return await s3Service.getAllStates();
   });
 
-  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_FETCH_OBJECT_STATE, async (_event) => {
-    return await s3Service.fetchStates();
-  });
-
-  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_PULL_OBJECT_TO_DOWNLOAD, async (_event) => {
-    return await s3Service.fetchToDownload();
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_GET_DOWNLOAD_LIST, async (_event) => {
+    return await s3Service.getDownloadList();
   });
 
   ipcMain.handle(IPC_CHANNEL_HANDLERS.GET_S3_LOCAL_SYNC_WORKDIR, async (_event) => {

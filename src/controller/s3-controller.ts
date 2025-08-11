@@ -1,16 +1,12 @@
 export class S3Controller {
 
     // handle fetch object state
-    async handleFetchObjectState() {
-        return await window.s3API.fetchObjectState();
+    async handleGetAllState() {
+        return await window.s3API.getAllStates();
     }
 
-    async handlePullAllObjects() {
-        return await window.s3API.pullAllObjects();
-    }
-
-    async handlePullObjectToDownload() {
-        return await window.s3API.pullObjectToDownload();
+    async handleGetDownloadList() {
+        return await window.s3API.getDownloadList();
     }
 
     async handleGetLocalPathSync() {

@@ -80,7 +80,7 @@ const S3Download: React.FC<S3UploadProps> = ({ key_code = "", title = "", items 
     return (
         <React.Fragment >
             {checkDisplay && <div className="shadow rounded grid grid-cols-1 bg-white">
-                <div className="border-b p-4 border-gray-200">
+                <div className="border-b px-4 border-gray-200">
                     <div className="flex items-center justify-between">
                         <button className='flex flex-row gap-4 bg-transparent flex-1' onClick={toggle}>
                             <span>
@@ -90,7 +90,7 @@ const S3Download: React.FC<S3UploadProps> = ({ key_code = "", title = "", items 
                                 <span className="text-red-600">({items.length})</span>
                             </span>
                         </button>
-                        <div className="flex items-end space-x-2">
+                        <div className="flex items-end space-x-2 py-2">
                             {moveableMap[key_code] && <Button className="flex items-center space-x-2 text-red-500 border-red-500"
                                 onClick={hanldeMove}>
                                 <ArchiveBoxXMarkIcon className="h-4 w-4 font-bold" />

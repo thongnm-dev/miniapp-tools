@@ -4,7 +4,6 @@ import { config } from 'dotenv';
 config();
 
 import { databaseService } from './services/database-service';
-import { s3Service } from './services/s3-service';
 import { cleanupFolderWatcher } from './handlers/fs-watch-handler';
 import { initHandlers } from './handlers/_';
 
@@ -72,7 +71,6 @@ app.whenReady().then(async () => {
 // Quit when all windows are closed
 app.on('window-all-closed', async () => {
   await databaseService.disconnect();
-  s3Service.stopBackgroundService();
   cleanupFolderWatcher();
   if (process.platform !== 'darwin') {
     app.quit();

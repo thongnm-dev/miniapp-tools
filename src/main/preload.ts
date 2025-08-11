@@ -23,12 +23,13 @@ const IPC_CHANNELS = {
     IS_EXIST_DIR: 'IS_EXIST_DIR',
 
     // S3 Operations
-    S3_PULL_ALL_OBJECTS: 'S3_PULL_ALL_OBJECTS',
-    S3_PULL_OBJECT_TO_DOWNLOAD: 'S3_PULL_OBJECT_TO_DOWNLOAD',
-    S3_FETCH_OBJECT_STATE: 'S3_FETCH_OBJECT_STATE',
+    S3_GET_DOWNLOAD_LIST: 'S3_GET_DOWNLOAD_LIST',
+    S3_GET_ALL_STATES: 'S3_GET_ALL_STATES',
     GET_S3_LOCAL_SYNC_WORKDIR: 'GET_S3_LOCAL_SYNC_WORKDIR',
     S3_DOWNLOAD_FILES: 'S3_DOWNLOAD_FILES',
     S3_MOVE_OBJECT: 'S3_MOVE_OBJECT',
+    S3_UPLOAD_OBJECTS: 'S3_UPLOAD_OBJECTS',
+    S3_DELETE_OBJECTS: 'S3_DELETE_OBJECTS',
 
     // File Monitoring Operations
     START_FILE_MONITORING: 'start-file-monitoring',
@@ -116,9 +117,8 @@ contextBridge.exposeInMainWorld('systemAPI', {
 
 // S3 API 
 contextBridge.exposeInMainWorld('s3API', {
-    pullAllObjects: () => ipcRenderer.invoke(IPC_CHANNELS.S3_PULL_ALL_OBJECTS),
-    pullObjectToDownload: () => ipcRenderer.invoke(IPC_CHANNELS.S3_PULL_OBJECT_TO_DOWNLOAD),
-    fetchObjectState: () => ipcRenderer.invoke(IPC_CHANNELS.S3_FETCH_OBJECT_STATE),
+    getAllStates: () => ipcRenderer.invoke(IPC_CHANNELS.S3_GET_ALL_STATES),
+    getDownloadList: () => ipcRenderer.invoke(IPC_CHANNELS.S3_GET_DOWNLOAD_LIST),
     getLocalPathSyncDir: () => ipcRenderer.invoke(IPC_CHANNELS.GET_S3_LOCAL_SYNC_WORKDIR),
     downloadFile: (keys: string[], localPath: string) => ipcRenderer.invoke(IPC_CHANNELS.S3_DOWNLOAD_FILES, keys, localPath),
     moveObjectS3: (formData: { source: string, destination: string, objectData: string[] }) => ipcRenderer.invoke(IPC_CHANNELS.S3_MOVE_OBJECT, formData),
@@ -126,7 +126,7 @@ contextBridge.exposeInMainWorld('s3API', {
 
 // Fetch Tran API
 contextBridge.exposeInMainWorld('downloadAPI', {
-    get_downloads: (user_id: string) => ipcRenderer.invoke(IPC_CHANNELS.GET_DONWLOADS),
+    get_downloads: (user_id: string) => ipcRenderer.invoke(IPC_CHANNELS.GET_DONWLOADS, user_id),
     get_download_dtls: (fetchId: string) => ipcRenderer.invoke(IPC_CHANNELS.GET_DOWNLOAD_DLTS, fetchId),
     allow_download: (bugs: string[]) => ipcRenderer.invoke(IPC_CHANNELS.ALLOW_DOWNLOAD_OBJECT_S3, bugs),
     allow_remove: (bugs: string[]) => ipcRenderer.invoke(IPC_CHANNELS.ALLOW_MOVE_OBJECT_S3, bugs),
@@ -142,9 +142,8 @@ declare global {
                 Promise<{ success: boolean; message?: string; user?: User }>;
         };
         s3API: {
-            pullAllObjects: () => Promise<ServiceReturn<{ [key: string]: { bugs: string[] } }>>;
-            fetchObjectState: () => Promise<ServiceReturn<{ [key: string]: { bugs: { bug_no: string; message: string }[] } }>>;
-            pullObjectToDownload: () => Promise<ServiceReturn<{ [key: string]: { bugs: string[] } }>>;
+            getAllStates: () => Promise<ServiceReturn<{ [key: string]: { bugs: { bug_no: string; message: string }[] } }>>;
+            getDownloadList: () => Promise<ServiceReturn<{ [key: string]: { bugs: string[] } }>>;
             getLocalPathSyncDir: () => Promise<ServiceReturn<string>>;
             downloadFile: (keys: string[], localPath: string) => Promise<ServiceReturn<boolean>>;
             moveObjectS3: (formData: { source: string, destination: string, objectData: string[] }) => Promise<ServiceReturn<boolean>>;

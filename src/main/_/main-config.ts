@@ -37,9 +37,9 @@ const getEnvVarNumber = (key: string, defaultValue?: number): number => {
       // database: "miniapp_staging", // getEnvVar('DB_NAME'),
       // user: "postgres", // getEnvVar('DB_USER'),
       // password: "123456", // getEnvVar('DB_PASSWORD'),
-      host: "localhost", // getEnvVar('DB_HOST'),
-      port: 5432, // getEnvVarNumber('DB_PORT'),
-      database: "miniapp", // getEnvVar('DB_NAME'),
+      host: getEnvVar('DB_HOST'),
+      port: getEnvVarNumber('DB_PORT'),
+      database: getEnvVar('DB_NAME'),
       user:  getEnvVar('DB_USER'),
       password:  getEnvVar('DB_PASSWORD'),
     };

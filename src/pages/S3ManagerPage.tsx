@@ -17,7 +17,7 @@ const S3ManagerPage: React.FC = () => {
     const fetchState = async () => {
       try {
         showLoading();
-        const result = await s3Controller.handleFetchObjectState();
+        const result = await s3Controller.handleGetAllState();
         if (result.success && result.data && isMounted) {
           setS3FetchState(result.data);
         }
@@ -62,7 +62,7 @@ const S3ManagerPage: React.FC = () => {
 
   const handleRefreshFetchState = async () => {
     showLoading();
-    await s3Controller.handleFetchObjectState();
+    await s3Controller.handleGetAllState();
     hideLoading();
   };
 
@@ -72,7 +72,6 @@ const S3ManagerPage: React.FC = () => {
           <fieldset className="border border-gray-300 rounded-lg p-2 bg-white shadow-lg min-h-[calc(100vh-195px)]">
             <legend className="rounded-lg">
                 <Button
-                    variant="primary"
                     onClick={handleRefreshFetchState}
                     className="flex items-center gap-2">
                     <ArrowPathIcon className="w-4 h-4 stroke-2" />

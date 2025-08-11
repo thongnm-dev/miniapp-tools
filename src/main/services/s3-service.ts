@@ -22,8 +22,6 @@ export interface S3Config {
 export class S3Service {
     private s3: S3Client;
     private config: S3Config;
-    private intervalId: NodeJS.Timeout | null = null;
-    private isRunning: boolean = false;
 
     constructor(config: S3Config) {
         this.config = config;
@@ -38,7 +36,7 @@ export class S3Service {
     }
 
     // fetch state from s3
-    async fetchStates(): Promise<{ success: boolean; data?: { [key: string]: { bugs: { bug_no: string; message: string }[] } }; message?: string }> {
+    async getAllStates(): Promise<{ success: boolean; data?: { [key: string]: { bugs: { bug_no: string; message: string }[] } }; message?: string }> {
         try {
 
             const bug_list: { [key: string]: { state: string, bugs: { bug_no: string; message: string }[] } } = {};
@@ -129,26 +127,8 @@ export class S3Service {
         }
     }
 
-    // fetch files from s3
-    async backgroundDownload(): Promise<ServiceReturn<boolean>> {
-        try {
-            const path = getWorkdir().S3_LOCAL_SYNC_WORKDIR;
-            if (StringUtils.isBlank(path) || !await fsService.isExitDirectory(path)) {
-                return {
-                    success: false
-                }
-            }
-            const S3_FOLDER_GETLIST = FETCH_STATES_LIST
-                                        .filter((item) => item.is_to_alx)
-                                        .map((item) => item.code);
-            return await this.downloadFile(S3_FOLDER_GETLIST, path);
-        } catch (error) {
-            return { success: false, message: (error as Error).message };
-        }
-    }
-
     // fetch to download
-    async fetchToDownload(): Promise<ServiceReturn<{ [key: string]: { bugs: string[] } }>> {
+    async getDownloadList(): Promise<ServiceReturn<{ [key: string]: { bugs: string[] } }>> {
 
         try {
             const bugs: { [key: string]: { state: string, path: string, bugs: string[] } } = {};
@@ -156,9 +136,9 @@ export class S3Service {
             const GET_LIST_OF_BUGS = FETCH_STATES_LIST.filter((item) => item.is_to_alx);
             for (const S3_GET_ITEM of GET_LIST_OF_BUGS) {
                 let continuationToken: string | undefined = undefined;
-                // const folderName = "80_system/Attach/11_alx/40_バグ管理";
-                // const _prefix_path = folderName + '/' + S3_GET_ITEM.path + '/' + S3_GET_ITEM.subscribe + '/';
-                let _prefix_path = this.config.folderName + '/' + S3_GET_ITEM.path + '/' + S3_GET_ITEM.subscribe + '/';
+                const folderName = "80_system/Attach/11_alx/40_バグ管理";
+                const _prefix_path = folderName + '/' + S3_GET_ITEM.path + '/' + S3_GET_ITEM.subscribe + '/';
+                // let _prefix_path = this.config.folderName + '/' + S3_GET_ITEM.path + '/' + S3_GET_ITEM.subscribe + '/';
 
                 let folders: string[] = [];
                 do {
@@ -229,9 +209,9 @@ export class S3Service {
                 let continuationToken: string | undefined = undefined;
 
                 // prefix path of bugs
-                // const folderName = "80_system/Attach/11_alx/40_バグ管理";
-                // const _prefix_path = folderName + '/' + bug_path_info.path + '/' + bug_path_info.subscribe + '/';
-                let _prefix_path = this.config.folderName + '/' + bug_path_info.path + '/' + bug_path_info.subscribe + '/';
+                const folderName = "80_system/Attach/11_alx/40_バグ管理";
+                const _prefix_path = folderName + '/' + bug_path_info.path + '/' + bug_path_info.subscribe + '/';
+                // let _prefix_path = this.config.folderName + '/' + bug_path_info.path + '/' + bug_path_info.subscribe + '/';
                 do {
                     const params = {
                         Bucket: this.config.bucketName,
@@ -392,47 +372,6 @@ export class S3Service {
         } catch (error) {
             return { success: false, message: (error as Error).message };
         }
-    }
-
-    // start background service to fetch files every 2 hours
-    startBackgroundService(): { success: boolean; message?: string } {
-        if (this.isRunning) {
-            return { success: false, message: 'Background service is already running' };
-        }
-
-        try {
-            this.isRunning = true;
-            this.backgroundDownload();
-
-            return { success: true, message: 'Background service started successfully' };
-        } catch (error) {
-            this.isRunning = false;
-            return { success: false, message: (error as Error).message };
-        }
-    }
-
-    // stop background service
-    stopBackgroundService(): { success: boolean; message?: string } {
-        if (!this.isRunning) {
-            return { success: false, message: 'Background service is not running' };
-        }
-
-        try {
-            if (this.intervalId) {
-                clearInterval(this.intervalId);
-                this.intervalId = null;
-            }
-
-            this.isRunning = false;
-            return { success: true, message: 'Background service stopped successfully' };
-        } catch (error) {
-            return { success: false, message: (error as Error).message };
-        }
-    }
-
-    // check if the background service is running
-    isBackgroundServiceRunning(): boolean {
-        return this.isRunning;
     }
 
     // copy object from the folder to another folder

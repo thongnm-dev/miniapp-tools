@@ -71,7 +71,7 @@ export const S3DownloadPage: React.FC = () => {
 
     useEffect(() => {
         const init = async () => {
-            const result = await s3Controller.handlePullObjectToDownload();
+            const result = await s3Controller.handleGetDownloadList();
 
             if (result.success && result.data) {
                 setS3_FOLDER_BUGS_02(result.data[S3_FOLDER_DOWNLOAD_02?.code || ""]?.bugs || []);
@@ -138,7 +138,7 @@ export const S3DownloadPage: React.FC = () => {
     const handleRefresh = async () => {
         try {
             showLoading();
-            const result = await s3Controller.handlePullObjectToDownload();
+            const result = await s3Controller.handleGetDownloadList();
 
             if (result.success && result.data) {
                 setS3_FOLDER_BUGS_02(result.data[S3_FOLDER_DOWNLOAD_02?.code || ""]?.bugs || []);
