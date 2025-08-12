@@ -8,7 +8,7 @@ import closeBtn from "../assets/close.png";
 import okIcon from "../assets/okIcon.png";
 import { FETCH_STATES_LIST } from '../config/constants';
 import S3Upload from '../components/S3Upload';
-import { DocumentIcon, LinkIcon } from '@heroicons/react/24/outline';
+import { DocumentIcon, LinkIcon, TrashIcon } from '@heroicons/react/24/outline';
 import Explore from '../components/Explore';
 import { fsController } from '../controller/fs-controller';
 import { FileItem } from '../types/FileItem';
@@ -37,16 +37,26 @@ const S3UploadPage: React.FC = () => {
 
     const actions03 = useCallback((code: string) => {
         return (
-            <Button onClick={() => addAttachment(code)} className="flex items-center space-x-2">
-                <LinkIcon className="h-5 w-5 font-bold" />
-                <span>Chọn tập tin</span>
-            </Button>
+            <>
+                <Button onClick={() => addAttachment(code)} className="flex items-center space-x-2 text-red-500 border-red-500">
+                    <TrashIcon className="h-5 w-5 font-bold" />
+                    <span>Dọn sạch</span>
+                </Button>
+                <Button onClick={() => addAttachment(code)} className="flex items-center space-x-2">
+                    <LinkIcon className="h-5 w-5 font-bold" />
+                    <span>Chọn tập tin</span>
+                </Button>
+            </>
         )
     }, []);
 
     const actions05 = useCallback((code: string) => {
         return (
             <React.Fragment>
+                <Button onClick={() => addAttachment(code)} className="flex items-center space-x-2 text-red-500 border-red-500">
+                    <TrashIcon className="h-5 w-5 font-bold" />
+                    <span>Dọn sạch</span>
+                </Button>
                 <Button onClick={() => addAttachment(code)} className="flex items-center space-x-2">
                     <LinkIcon className="h-5 w-5 font-bold" />
                     <span>Chọn tập tin</span>
@@ -56,7 +66,7 @@ const S3UploadPage: React.FC = () => {
     }, []);
 
     const addAttachment = async (code: string) => {
-        
+
         try {
             const result = await fsController.selectMultiDir();
 
@@ -220,12 +230,12 @@ const S3UploadPage: React.FC = () => {
         <React.Fragment>
             <div className="space-y-4">
                 <div className="grid grid-cols-1 space-y-3">
-                    <S3Upload key_code={S3_FOLDER_UPLOAD_03?.code} title={S3_FOLDER_UPLOAD_03?.path} 
+                    <S3Upload key_code={S3_FOLDER_UPLOAD_03?.code} title={S3_FOLDER_UPLOAD_03?.path}
                         uploadAction={uploadAction03} actions={actions03(S3_FOLDER_UPLOAD_03?.code || "03")}
-                        items={S303UploadItems}/>
-                    <S3Upload key_code={S3_FOLDER_UPLOAD_05?.code} title={S3_FOLDER_UPLOAD_05?.path} 
+                        items={S303UploadItems} />
+                    <S3Upload key_code={S3_FOLDER_UPLOAD_05?.code} title={S3_FOLDER_UPLOAD_05?.path}
                         uploadAction={uploadAction05} actions={actions05(S3_FOLDER_UPLOAD_05?.code || "05")}
-                        items={S305UploadItems}/>
+                        items={S305UploadItems} />
                 </div>
             </div>
 
@@ -234,7 +244,7 @@ const S3UploadPage: React.FC = () => {
                 <div className='grid grid-cols-1 gap-1 h-[calc(100% - 80px)]'>
 
                     {attachFlg && !uploadFlg && <Explore />}
-                    {!attachFlg && uploadFlg && 
+                    {!attachFlg && uploadFlg &&
                         <div className="bg-white rounded-lg shadow min-h-[calc(100% - 80px)]">
                             <DataTable
                                 columns={columns}

@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import Button from './ui/Button';
-import { ArchiveBoxXMarkIcon, ArrowUpTrayIcon, FolderMinusIcon, FolderPlusIcon, NewspaperIcon } from '@heroicons/react/24/outline';
+import { ArchiveBoxXMarkIcon, ArrowUpTrayIcon, FolderMinusIcon, FolderPlusIcon, NewspaperIcon, TruckIcon } from '@heroicons/react/24/outline';
 import { showNotification } from "../components/notification";
 import { fsController } from '../controller/fs-controller';
 import { FileItem } from '../types/FileItem';
-import TreeView, { flattenTree, ITreeViewOnSelectProps } from 'react-accessible-treeview';
+import TreeView, { flattenTree, ITreeViewOnNodeSelectProps, ITreeViewOnSelectProps, NodeId } from 'react-accessible-treeview';
 import { FaCheckSquare, FaMinusSquare, FaSquare } from 'react-icons/fa';
 
 export interface S3UploadProps {
@@ -33,7 +33,8 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
     const [selectedItems, setSelectedItems] = useState<Set<FileItem>>(new Set());
     const [uploadableMap, setUploadableMap] = useState<Record<string, boolean>>({});
     const [moveableMap, setMoveableMap] = useState<Record<string, boolean>>({});
-    const [selectedIds, setSelectedIds] = useState([]);
+    const [selectedIds, setSelectedIds] = useState<NodeId[]>([]);
+    const [count, setCount] = useState<number>(0);
 
     const toggle = () => {
         setModalOpen(!modalOpen);
@@ -58,12 +59,14 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                 return acc;
             }, {});
 
+            let _count = 1;
             for (const [folder, children] of Object.entries(grouped)) {
                 const child = {
                     name: folder, children: children.map((item) => {
                         return { ...item, name: item.file_name }
                     })
                 }
+                setCount(_count++);
                 treeview.children.push(child as never)
             }
         }
@@ -72,7 +75,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
     }, [items])
 
     // Handle file checkbox change
-    const handleFileCheckboxChange = (ids: ITreeViewOnSelectProps) => {
+    const handleFileCheckboxChange = (ids: ITreeViewOnNodeSelectProps) => {
         console.log(ids)
     };
 
@@ -96,7 +99,6 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
 
     }
 
-
     return (
         <React.Fragment key={key_code}>
             <div className="shadow rounded grid grid-cols-1 bg-white" >
@@ -107,18 +109,18 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                                 {modalOpen ? <FolderMinusIcon className='h-5 w-5' /> : <FolderPlusIcon className='h-5 w-5' />}
                             </button>
                             <span className="text-lg font-bold">{title}
-                                <span className="text-red-600">({items.length})</span>
+                                <span className="text-red-600">({count})</span>
                             </span>
                         </div>
                         <div className="flex items-end space-x-2">
                             {actions}
-                            {moveableMap[key_code] && <Button className="flex items-center space-x-2 text-red-500 border-red-500"
+                            {<Button className="flex items-center space-x-2 text-red-500 border-red-500"
                                 onClick={hanldeMove}>
-                                <ArchiveBoxXMarkIcon className="h-4 w-4 font-bold" />
+                                <TruckIcon className="h-4 w-4 font-bold" />
                                 <span>Di chuyển trên S3</span>
                             </Button>}
-                            {uploadableMap[key_code] && <Button className="flex items-center space-x-2"
-                                disabled={selectedItems.size === 0}
+                            {<Button className="flex items-center space-x-2"
+                                // disabled={selectedItems.size === 0}
                                 onClick={handleUpload}>
                                 <ArrowUpTrayIcon className="h-5 w-5 font-bold" />
                                 <span>Tải lên</span>
@@ -136,7 +138,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                         propagateSelect
                         propagateSelectUpwards
                         togglableSelect
-                        onSelect={handleFileCheckboxChange}
+                        onNodeSelect={handleFileCheckboxChange}
                         nodeRenderer={({
                             element,
                             isBranch,
@@ -144,14 +146,17 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                             isSelected,
                             isHalfSelected,
                             getNodeProps,
-                            level
+                            level,
+                            handleExpand,
+                            handleSelect
                         }) => (
-                            <div {...getNodeProps()} style={{ paddingLeft: 20 * (level - 1) }} className="flex flex-row hover:cursor-pointer gap-2">
-                                <CheckBoxIcon
-                                    variant={
-                                        isHalfSelected ? "some" : isSelected ? "all" : "none"
-                                    }
-                                />
+                            <div {...getNodeProps({ onClick: handleExpand })} style={{ paddingLeft: 20 * (level - 1) }} className="flex flex-row hover:cursor-pointer gap-2">
+                                <div onClick={(e) => {
+                                        handleSelect(e);
+                                        e.stopPropagation();
+                                    }}>
+                                    <CheckBoxIcon variant={isHalfSelected ? "some" : isSelected ? "all" : "none"}/>
+                                </div>
                                 {isBranch ? (
                                     isExpanded ? <FolderMinusIcon className='w-5 h-5 text-orange-400' /> : <FolderPlusIcon className='w-5 h-5 text-orange-400' />
                                 ) : (
