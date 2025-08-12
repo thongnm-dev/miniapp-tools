@@ -3,6 +3,20 @@ import { getDatabaseConfig } from "../_/main-config";
 import { ServiceReturn } from "../@types/service-return";
 import * as path from 'path';
 
+export interface download_item {
+    id: number, 
+    download_ymd: string, 
+    download_hm?: string, 
+    sync_path: string, 
+    download_count?: number, 
+    s3_state: string,
+    bug_no?: string,
+    fileName?: string,
+    file_path?: string,
+    last_modified?: string,
+    path_copied?: string
+}
+
 export class DownloadService {
     private db: DatabaseService;
 
@@ -15,6 +29,7 @@ export class DownloadService {
         state: string,
         date: string,
         time: string,
+        user_id: string,
         sync_path: string,
         bug_attachs: { bug_no: string, last_modified?: Date, path: string, s3_path: string }[]
     }[]): Promise<ServiceReturn<string>> {
@@ -27,12 +42,12 @@ export class DownloadService {
             await client.query(`BEGIN`);
             for (const data of dataObjects) {
                 const result = await client.query(`
-            INSERT INTO download_hdr 
-                (download_ymd, download_hm, s3_state, sync_path, download_count) 
-            VALUES
-                ($1, $2, $3, $4, $5)
-            RETURNING id`,
-                    [data.date, data.time, data.state, data.sync_path, data.bug_attachs.length]);
+                        INSERT INTO download_hdr 
+                            (download_ymd, download_hm, s3_state, sync_path, download_count, created_by) 
+                        VALUES
+                            ($1, $2, $3, $4, $5, $6)
+                        RETURNING id`,
+                    [data.date, data.time, data.state, data.sync_path, data.bug_attachs.length, data.user_id]);
 
                 if (result?.rows[0]?.id) {
                     for (const detail of data.bug_attachs) {
@@ -54,8 +69,7 @@ export class DownloadService {
     }
 
     // get fetch trans
-    async get_downloads(user_id: string): 
-            Promise<ServiceReturn<{id: number, download_ymd: string, download_hm: string, sync_path: string, download_count: number, s3_state: string}[]>> {
+    async get_downloads(user_id: string): Promise<ServiceReturn<download_item[]>> {
 
         if (!this.db) {
             return { success: false };
@@ -105,17 +119,7 @@ export class DownloadService {
     }
 
     // fetch
-    async get_download_dtls(fetchId: string):
-        Promise<ServiceReturn<{
-            download_ymd: string,
-            bug_no: string,
-            fileName: string,
-            file_path: string,
-            last_modified: string,
-            sync_path: string,
-            path_copied: string,
-            s3_state: string
-        }[]>> {
+    async get_download_dtls(fetchId: string): Promise<ServiceReturn<download_item[]>> {
         if (!this.db) {
             return { success: false };
         }
@@ -123,6 +127,7 @@ export class DownloadService {
             const client = await this.db.getClient();
             const result = await client.query(`
                         SELECT
+                            t1.id,
                             t1.download_ymd,
                             t2.bug_no,
                             to_char(t2.last_modified, 'yyyy/MM/dd HH24:mm:ss') AS last_modified,
@@ -146,12 +151,13 @@ export class DownloadService {
                             t2.s3_state,
                             t2.bug_no,
                             t2.last_modified`, [fetchId]);
-            const fetch_logs: {download_ymd: string, bug_no: string, fileName: string, file_path: string, last_modified: string, sync_path: string, path_copied: string, s3_state: string}[] = [];
+            const download_items: download_item[] = [];
             for (const row of result?.rows || []) {
 
                 const fileName = path.basename(row.sync_path);
                 const file_path = path.dirname(row.sync_path);
-                fetch_logs.push({
+                download_items.push({
+                    id:  row.id,
                     download_ymd: row.download_ymd,
                     bug_no: row.bug_no,
                     fileName: fileName,
@@ -162,7 +168,7 @@ export class DownloadService {
                     s3_state: row.s3_state
                 });
             }
-            return { success: true, data: fetch_logs };
+            return { success: true, data: download_items };
         } catch (error) {
             return { success: false, message: (error as Error).message };
         }

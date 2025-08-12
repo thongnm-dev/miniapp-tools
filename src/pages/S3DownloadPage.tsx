@@ -206,7 +206,7 @@ export const S3DownloadPage: React.FC = () => {
     const handleDownloadFile = async (keys: string[], localPath: string) => {
         try {
             showLoading();
-            const result = await s3Controller.handleDownloadFile(keys, localPath);
+            const result = await s3Controller.handleDownloadFile(user?.username || "", keys, localPath);
             if (result.success) {
                 showNotification('Tải về thành công.', 'success');
             } else {

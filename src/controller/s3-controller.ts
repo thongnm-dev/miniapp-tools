@@ -13,8 +13,8 @@ export class S3Controller {
         return await window.s3API.getLocalPathSyncDir();
     }
 
-    async handleDownloadFile(keys: string[], localPath: string) {
-        return await window.s3API.downloadFile(keys, localPath);
+    async handleDownloadFile(user_id: string, keys: string[], localPath: string) {
+        return await window.s3API.downloadFile(user_id, keys, localPath);
     }
 
     // handle move object S3

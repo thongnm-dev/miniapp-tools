@@ -60,6 +60,7 @@ const S3UploadPage: React.FC = () => {
             const result = await fsController.selectMultiDir();
 
             if (result.success && result.data) {
+                await fsController.readMultiDir(result.data);
             }
         } catch (err) {
             showNotification('Không thể chọn thư mục để tải lên.', 'error');

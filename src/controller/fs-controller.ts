@@ -16,8 +16,8 @@ export class FSController {
     }
 
     // read dir to tree
-    async readDirRecursively(path: string, options: { onlyFolders?: boolean, isHistory?: boolean, onlyExcel?: boolean, fileExtension?: string }) {
-        return await window.systemAPI.readDirRecursively(path, options);
+    async readMultiDir(paths: string[], options?: { isHistory?: boolean, onlyExcel?: boolean, fileExtension?: string }) {
+        return await window.systemAPI.readMultiDir(paths, options);
     }
 
     async openFile(path: string) {

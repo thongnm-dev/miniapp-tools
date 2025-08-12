@@ -19,7 +19,7 @@ export const setupFSHandlers = () => {
             });
 
             if (!result.canceled && result.filePaths.length > 0) {
-                return { success: true, path: result.filePaths[0], message: 'Directory selected successfully' };
+                return { success: true, data: result.filePaths[0], message: 'Directory selected successfully' };
             }
 
             return { success: false, message: 'No directory selected' };
@@ -41,7 +41,7 @@ export const setupFSHandlers = () => {
             });
 
             if (!result.canceled && result.filePaths.length > 0) {
-                return { success: true, path: result.filePaths, message: 'Directory selected successfully' };
+                return { success: true, data: result.filePaths, message: 'Directory selected successfully' };
             }
 
             return { success: false, message: 'No directory selected' };
@@ -56,25 +56,13 @@ export const setupFSHandlers = () => {
     });
 
     // Read directory
-    ipcMain.handle(IPC_CHANNEL_HANDLERS.READ_DIRECTORY, async (_event,
-        dirPath: string, options: {onlyExcel?: boolean, fileExtension?: string }) => {
-        const result = await fsService.readDirectory(dirPath, options);
-        return {
-            success: result.success,
-            message: result.message,
-            files: result.data?.sort((a, b) => a.name.localeCompare(b.name))
-        };
+    ipcMain.handle(IPC_CHANNEL_HANDLERS.READ_DIRECTORY, async (_event, dirPath: string, options: {onlyExcel?: boolean, fileExtension?: string }) => {
+        return await fsService.readDirectory(dirPath, options);
     });
 
     // Read directory to tree
-    ipcMain.handle(IPC_CHANNEL_HANDLERS.READ_DIRECTORY_RECUR, async (_event, 
-            dirPath: string, options: { onlyFolders?: boolean, isHistory?: boolean, onlyExcel?: boolean, fileExtension?: string }) => {
-        const result = await fsService.readDirRecursively(dirPath, options);
-        return {
-            success: result.success,
-            message: result.message,
-            data: result.data
-        };
+    ipcMain.handle(IPC_CHANNEL_HANDLERS.READ_MULTI_DIR, async (_event, dirPath: string[], options?: { isHistory?: boolean, onlyExcel?: boolean, fileExtension?: string }) => {
+        return await fsService.readMultiDir(dirPath, options);
     });
 
     // Read file
@@ -104,16 +92,7 @@ export const setupFSHandlers = () => {
 
     // File copy/move operations
     ipcMain.handle(IPC_CHANNEL_HANDLERS.COPY_FILES, async (_event, filePaths: string[], destinationPath: string) => {
-        try {
-            const result = await fsService.copy(filePaths, destinationPath);
-            return {
-                success: result.success,
-                message: result.message,
-                data: result.data
-            };
-        } catch (error) {
-            return { success: false, message: (error as Error).message };
-        }
+        return await fsService.copy(filePaths, destinationPath);
     });
 
     // Move files

@@ -2,15 +2,14 @@ import { ServiceReturn } from "../@types/service-return";
 import * as path from 'path';
 import * as fs from 'fs';
 import { DateUtils } from "../../core/utils/date-utils";
-import { TreeNode } from "../../types/TreeNode";
+import { FileItem } from "../../types/FileItem";
 
 export class FSService {
 
     // read directory
-    async readDirectory(dirPath: string, options?: {onlyExcel?: boolean, fileExtension?: string }):
-        Promise<ServiceReturn<Array<{ name: string; path: string; fullPath: string; type: 'file' }>>> {
+    async readDirectory(dirPath: string, options?: {onlyExcel?: boolean, fileExtension?: string }): Promise<ServiceReturn<FileItem[]>> {
         try {
-            let files: Array<{ name: string; path: string; fullPath: string; type: 'file' }> = [];
+            let files: FileItem[] = [];
 
             if (!fs.existsSync(dirPath)) {
                 return { success: false, message: 'Đường dẫn không tồn tại.' };
@@ -41,12 +40,13 @@ export class FSService {
             }
 
             const excelFiles = getAllFilesRecursively(dirPath, options);
+
             for (const filePath of excelFiles) {
                 files.push({
+                    parent_folder: path.basename(dirPath),
                     name: path.basename(filePath),
                     path: path.dirname(filePath),
-                    fullPath: filePath,
-                    type: 'file',
+                    fullPath: filePath
                 });
             }
 
@@ -59,8 +59,8 @@ export class FSService {
         }
     }
 
-    async readMultiDir(dirPaths: string[], options?: {onlyExcel?: boolean, fileExtension?: string }): 
-        Promise<ServiceReturn<Array<{ name: string; path: string; fullPath: string}>>> {
+    // read multi path
+    async readMultiDir(dirPaths: string[], options?: {onlyExcel?: boolean, fileExtension?: string }): Promise<ServiceReturn<FileItem[]>> {
         try {
 
             let resultPromise = [];
@@ -70,31 +70,14 @@ export class FSService {
 
             const results_promise = await Promise.all(resultPromise);
 
-
-
-            let results: Array<{ name: string; path: string; fullPath: string; type: 'file' }> = [];
+            let results: FileItem [] = [];
 
             for (const item of results_promise.flat()) {
+                results.push(...item?.data as []);
             }
 
             return { success: true, data: results};
         } catch (error) {
-            return { success: false, message: (error as Error).message };
-        }
-    }
-
-    async readDirRecursively(dirPath: string,
-        options: { onlyFolders?: boolean, isHistory?: boolean, onlyExcel?: boolean, fileExtension?: string }) : Promise<ServiceReturn<TreeNode>> {
-
-            try {
-
-                if (!fs.existsSync(dirPath)) {
-                    return { success: false, message: 'Đường dẫn không tồn tại.' };
-                }
-                return {
-                success: true,
-            };
-            } catch (error) {
             return { success: false, message: (error as Error).message };
         }
     }

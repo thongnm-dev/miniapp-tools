@@ -185,7 +185,7 @@ export class S3Service {
     }
 
     // download file from s3
-    async downloadFile(keys: string[], localPath: string): Promise<ServiceReturn<boolean>> {
+    async downloadFile(user_id: string, keys: string[], localPath: string): Promise<ServiceReturn<boolean>> {
 
         try {
             if (StringUtils.isBlank(localPath)) {
@@ -250,6 +250,7 @@ export class S3Service {
             // loop bugs download
             let downloadResults: {
                 state: string,
+                user_id: string,
                 date: string,
                 time: string,
                 sync_path: string,
@@ -270,6 +271,7 @@ export class S3Service {
                             state: state,
                             date: yyyyMMdd,
                             time: hhmm,
+                            user_id: user_id,
                             sync_path: storage_path,
                             bug_attachs: bug_attachs_results.flat()
                         }

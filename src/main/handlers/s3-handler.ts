@@ -29,8 +29,8 @@ export const setupS3Handlers = () => {
     };
   });
 
-  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_DOWNLOAD_FILES, async (_event, keys: string[], localPath: string) => {
-    return await s3Service.downloadFile(keys, localPath);
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_DOWNLOAD_FILES, async (_event, user_id: string, keys: string[], localPath: string) => {
+    return await s3Service.downloadFile(user_id, keys, localPath);
   });
 
   // handle move object s3

@@ -31,7 +31,7 @@ const WorkDirectoryPage: React.FC = () => {
             const reload = async (path: string) => {
                 const resultFile = await fsController.readDirectory(path);
                 if (resultFile.success) {
-                    setFiles(resultFile.files || []);
+                    setFiles(resultFile.data || []);
                 }
             };
 
@@ -48,6 +48,7 @@ const WorkDirectoryPage: React.FC = () => {
         try {
             const result = await fsController.selectDirectory();
 
+            console.log(result.data)
             if (result.success && result.data) {
                 setWorkdir(result.data);
             }
@@ -101,7 +102,7 @@ const WorkDirectoryPage: React.FC = () => {
             showLoading();
             const resultFile = await fsController.readDirectory(workdir);
             if (resultFile.success) {
-                setFiles(resultFile.files || []);
+                setFiles(resultFile.data || []);
             }
         } catch (err) {
             showNotification('Failed to open file', 'error');

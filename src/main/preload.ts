@@ -2,7 +2,8 @@ import { contextBridge, ipcRenderer, MenuItem } from 'electron';
 import { RegisterCredentials } from '../types/user';
 import { LoginCredentials, User } from '../types/auth';
 import { ServiceReturn } from './@types/service-return';
-import { TreeNode } from '../types/TreeNode';
+import { FileItem } from '../types/FileItem';
+import { download_item } from './services/download-service';
 
 // IPC Channel Constants - Inlined to avoid module resolution issues
 // These match the constants in src/config/ipcChannels.ts
@@ -15,7 +16,7 @@ const IPC_CHANNELS = {
     SELECT_DIRECTORY: 'SELECT_DIRECTORY',
     SELECT_MULTI_DIR: 'SELECT_MULTI_DIR',
     READ_DIRECTORY: 'READ_DIRECTORY',
-    READ_DIRECTORY_RECUR: 'READ_DIRECTORY_RECUR',
+    READ_MULTI_DIR: 'READ_MULTI_DIR',
     READ_FILE: 'READ_FILE',
     OPEN_FILE: 'OPEN_FILE',
     COPY_FILES: 'COPY_FILES',
@@ -75,8 +76,8 @@ contextBridge.exposeInMainWorld('systemAPI', {
         ipcRenderer.invoke(IPC_CHANNELS.READ_DIRECTORY, path, options),
 
     // READ TREE NODE
-    readDirRecursively: (path: string, options: { onlyFolders?: boolean, isHistory?: boolean, onlyExcel?: boolean, fileExtension?: string }) => 
-        ipcRenderer.invoke(IPC_CHANNELS.READ_DIRECTORY_RECUR, path, options),
+    readMultiDir: (path: string, options?: { isHistory?: boolean, onlyExcel?: boolean, fileExtension?: string }) => 
+        ipcRenderer.invoke(IPC_CHANNELS.READ_MULTI_DIR, path, options),
 
     // OPEN FILE
     openFile: (path: string) => ipcRenderer.invoke(IPC_CHANNELS.OPEN_FILE, path),
@@ -111,7 +112,7 @@ contextBridge.exposeInMainWorld('s3API', {
     getAllStates: () => ipcRenderer.invoke(IPC_CHANNELS.S3_GET_ALL_STATES),
     getDownloadList: () => ipcRenderer.invoke(IPC_CHANNELS.S3_GET_DOWNLOAD_LIST),
     getLocalPathSyncDir: () => ipcRenderer.invoke(IPC_CHANNELS.GET_S3_LOCAL_SYNC_WORKDIR),
-    downloadFile: (keys: string[], localPath: string) => ipcRenderer.invoke(IPC_CHANNELS.S3_DOWNLOAD_FILES, keys, localPath),
+    downloadFile: (user_id: string, keys: string[], localPath: string) => ipcRenderer.invoke(IPC_CHANNELS.S3_DOWNLOAD_FILES, user_id, keys, localPath),
     moveObjectS3: (formData: { source: string, destination: string, objectData: string[] }) => ipcRenderer.invoke(IPC_CHANNELS.S3_MOVE_OBJECT, formData),
 });
 
@@ -136,22 +137,15 @@ declare global {
             getAllStates: () => Promise<ServiceReturn<{ [key: string]: { bugs: { bug_no: string; message: string }[] } }>>;
             getDownloadList: () => Promise<ServiceReturn<{ [key: string]: { bugs: string[] } }>>;
             getLocalPathSyncDir: () => Promise<ServiceReturn<string>>;
-            downloadFile: (keys: string[], localPath: string) => Promise<ServiceReturn<boolean>>;
+            downloadFile: (user_id: string, keys: string[], localPath: string) => Promise<ServiceReturn<boolean>>;
             moveObjectS3: (formData: { source: string, destination: string, objectData: string[] }) => Promise<ServiceReturn<boolean>>;
         };
 
         systemAPI: {
             selectDirectory: () => Promise<ServiceReturn<string>>;
             selectMultiDir: () => Promise<ServiceReturn<string[]>>;
-            readDirectory: (path: string, options?: {onlyExcel?: boolean, fileExtension?: string }) =>
-                Promise<{
-                    success: boolean;
-                    files?: Array<{ name: string; path: string; fullPath: string; type: 'file' }>;
-                    message?: string
-                }>;
-
-            readDirRecursively: (path: string, options: {onlyFolders?: boolean, isHistory?: boolean, onlyExcel?: boolean, fileExtension?: string }) => Promise<ServiceReturn<TreeNode>>;
-
+            readDirectory: (path: string, options?: {onlyExcel?: boolean, fileExtension?: string }) => Promise<ServiceReturn<FileItem[]>>;
+            readMultiDir: (paths: string[], options?: {isHistory?: boolean, onlyExcel?: boolean, fileExtension?: string }) => Promise<ServiceReturn<FileItem[]>>;
             readFile: (path: string) => Promise<{ success: boolean; data?: string; message?: string }>;
             openFile: (path: string) => Promise<{ success: boolean; message?: string }>;
             copyFiles: (filePaths: string[], destinationPath: string) =>
@@ -165,12 +159,11 @@ declare global {
 
             // File monitoring methods
             onFileCopied: (callback: (event: any) => void) => void;
-
             isExitDirectory: (path: string) => boolean;
         };
         downloadAPI: {
-            get_downloads: (user_id: string) => Promise<ServiceReturn<{ id: number, download_ymd: string, download_hm: string, sync_path: string, download_count: number, s3_state: string }[]>>;
-            get_download_dtls: (fetchId: string) => Promise<ServiceReturn<{}[]>>;
+            get_downloads: (user_id: string) => Promise<ServiceReturn<download_item[]>>;
+            get_download_dtls: (fetchId: string) => Promise<ServiceReturn<download_item[]>>;
             allow_download: (bugs: string[]) => Promise<ServiceReturn<boolean>>;
             allow_remove: (bugs: string[]) => Promise<ServiceReturn<boolean>>;
         };
