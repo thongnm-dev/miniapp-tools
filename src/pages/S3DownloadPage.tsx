@@ -80,7 +80,7 @@ export const S3DownloadPage: React.FC = () => {
 
             const result2 = await downloadController.get_downloads(user?.username || "");
             if (result2.success && result2.data) {
-                setDownloadItems(result2.data);
+                setDownloadItems(result2.data as []);
             }
         }
 
@@ -147,7 +147,7 @@ export const S3DownloadPage: React.FC = () => {
 
             const result2 = await downloadController.get_downloads(user?.username || "");
             if (result2.success && result2.data) {
-                setDownloadItems(result2.data);
+                setDownloadItems(result2.data as []);
             }
 
         } catch (error) {

@@ -1,7 +1,7 @@
 
 export interface FileItem {
   parent_folder: string;
-  name: string;
-  path: string;
-  fullPath: string;
+  file_name: string;
+  file_path: string;
+  full_path: string;
 }

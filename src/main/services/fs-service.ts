@@ -44,15 +44,15 @@ export class FSService {
             for (const filePath of excelFiles) {
                 files.push({
                     parent_folder: path.basename(dirPath),
-                    name: path.basename(filePath),
-                    path: path.dirname(filePath),
-                    fullPath: filePath
+                    file_name: path.basename(filePath),
+                    file_path: path.dirname(filePath),
+                    full_path: filePath
                 });
             }
 
             return {
                 success: true,
-                data: files.sort((a, b) => a.name.localeCompare(b.name))
+                data: files.sort((a, b) => a.file_name.localeCompare(b.file_name))
             };
         } catch (error) {
             return { success: false, message: (error as Error).message };

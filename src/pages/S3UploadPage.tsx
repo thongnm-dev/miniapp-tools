@@ -7,10 +7,11 @@ import { useLoading } from '../stores/LoadingContext';
 import closeBtn from "../assets/close.png";
 import okIcon from "../assets/okIcon.png";
 import { FETCH_STATES_LIST } from '../config/constants';
-import S3Upload, { S3UploadItem } from '../components/S3Upload';
-import { ArrowPathIcon, DocumentIcon, LinkIcon } from '@heroicons/react/24/outline';
+import S3Upload from '../components/S3Upload';
+import { DocumentIcon, LinkIcon } from '@heroicons/react/24/outline';
 import Explore from '../components/Explore';
 import { fsController } from '../controller/fs-controller';
+import { FileItem } from '../types/FileItem';
 
 const S3UploadPage: React.FC = () => {
 
@@ -20,11 +21,11 @@ const S3UploadPage: React.FC = () => {
     const [uploadFlg, setUploadFlg] = useState<boolean>(false);
     const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
     const { showLoading, hideLoading } = useLoading();
-    const [uploadFileItems, setUploadFileItems] = useState<S3UploadItem[]>([]);
-    const [selectedFilesUpload, setSelectedFilesUpload] = useState<Set<S3UploadItem>>(new Set());
+    const [uploadFileItems, setUploadFileItems] = useState<FileItem[]>([]);
+    const [selectedFilesUpload, setSelectedFilesUpload] = useState<Set<FileItem>>(new Set());
 
-    const [S303UploadItems, setS303UploadItems] = useState<S3UploadItem[]>([]);
-    const [S305UploadItems, setS305UploadItems] = useState<S3UploadItem[]>([]);
+    const [S303UploadItems, setS303UploadItems] = useState<FileItem[]>([]);
+    const [S305UploadItems, setS305UploadItems] = useState<FileItem[]>([]);
 
     const S3_FOLDER_UPLOAD = useMemo(() => {
         return FETCH_STATES_LIST.
@@ -60,7 +61,15 @@ const S3UploadPage: React.FC = () => {
             const result = await fsController.selectMultiDir();
 
             if (result.success && result.data) {
-                await fsController.readMultiDir(result.data);
+                const results = await fsController.readMultiDir(result.data);
+
+                if (results.success && results.data) {
+                    if (S3_FOLDER_UPLOAD_03?.code === code) {
+                        setS303UploadItems(results.data as []);
+                    } else if (S3_FOLDER_UPLOAD_05?.code === code) {
+                        setS305UploadItems(results.data as []);
+                    }
+                }
             }
         } catch (err) {
             showNotification('Không thể chọn thư mục để tải lên.', 'error');
@@ -91,7 +100,7 @@ const S3UploadPage: React.FC = () => {
         });
     };
 
-    const uploadAction03 = async (keyCode: string, rows: S3UploadItem[]) => {
+    const uploadAction03 = async (keyCode: string, rows: FileItem[]) => {
 
         // if (rows.length === 0) {
         //     showNotification("Chưa chọn tập tin để tải lên.", "error");
@@ -104,7 +113,7 @@ const S3UploadPage: React.FC = () => {
         setUploadFlg(true);
     }
 
-    const uploadAction05 = async (keyCode: string, rows: S3UploadItem[]) => {
+    const uploadAction05 = async (keyCode: string, rows: FileItem[]) => {
 
         // if (rows.length === 0) {
         //     showNotification("Chưa chọn tập tin để tải lên.", "error");

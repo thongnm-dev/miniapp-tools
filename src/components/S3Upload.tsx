@@ -4,27 +4,19 @@ import { ArchiveBoxXMarkIcon, ArrowUpTrayIcon, EyeIcon, FolderIcon, FolderMinusI
 import DataTable from './ui/DataTable';
 import { showNotification } from "../components/notification";
 import { fsController } from '../controller/fs-controller';
-
-export interface S3UploadItem {
-    file_name: string,
-    file_path: string,
-    full_path: string,
-    bug_no: string,
-    file_size: number,
-    current_state: string
-}
+import { FileItem } from '../types/FileItem';
 
 export interface S3UploadProps {
     key_code?: string,
     title?: string,
-    items?: S3UploadItem[],
+    items?: FileItem[],
     actions?: React.ReactNode,
-    uploadAction: (keyCode: string, rows: S3UploadItem[]) => void
+    uploadAction: (keyCode: string, rows: FileItem[]) => void
 }
 
 const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = [], uploadAction, actions }) => {
     const [modalOpen, setModalOpen] = useState<boolean>(true);
-    const [selectedItems, setSelectedItems] = useState<Set<S3UploadItem>>(new Set());
+    const [selectedItems, setSelectedItems] = useState<Set<FileItem>>(new Set());
     const [uploadableMap, setUploadableMap] = useState<Record<string, boolean>>({});
     const [moveableMap, setMoveableMap] = useState<Record<string, boolean>>({});
 
@@ -52,20 +44,11 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
     const handleOpenFile = async (filePath: string) => {
         try {
             const result = await fsController.openFile(filePath);
-
             if (!result.success) {
-                showNotification(result.message || 'Failed to open file', 'error');
+                showNotification('Không thể mở file', 'error');
             }
         } catch (err) {
-            showNotification('Failed to open file', 'error');
-        }
-    };
-
-    // Show in explorer
-    const showInExplorer = async (path: string) => {
-        const result = await fsController.openFile(path);
-        if (!result.success) {
-            showNotification(result.message || 'Failed to open file', 'error');
+            showNotification('Lỗi mở file', 'error');
         }
     };
 
@@ -74,7 +57,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
     }
 
     const hanldeMove = async () => {
-        
+
     }
     return (
         <React.Fragment key={key_code}>
@@ -96,8 +79,8 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                                 <ArchiveBoxXMarkIcon className="h-4 w-4 font-bold" />
                                 <span>Di chuyển trên S3</span>
                             </Button>}
-                            {uploadableMap[key_code] &&  <Button className="flex items-center space-x-2"
-                                // disabled={selectedItems.size === 0}
+                            {uploadableMap[key_code] && <Button className="flex items-center space-x-2"
+                                disabled={selectedItems.size === 0}
                                 onClick={handleUpload}>
                                 <ArrowUpTrayIcon className="h-5 w-5 font-bold" />
                                 <span>Tải lên</span>
@@ -110,15 +93,14 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                         <DataTable className='px-2'
                             columns={[
                                 { key: 'action', label: '' },
-                                { key: 'name', label: 'Tên tập tin' },
+                                { key: 'file_name', label: 'Tên tập tin' },
                                 { key: 'file_size', label: 'Kích thước' },
-                                { key: 'local', label: '' },
                             ]}
                             data={items
                                 .map(item => ({
-                                    name: item.file_name,
+                                    file_name: item.file_name,
                                     action: item.full_path,
-                                    local: item.file_path,
+                                    file_size: null
                                 }))}
                             showPagination={false}
                             showFilter={false}
@@ -132,22 +114,13 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                                     <Button
                                         onClick={(e: React.MouseEvent) => {
                                             e.stopPropagation();
-                                            handleOpenFile(row.sync_path);
+                                            const file = items.find(f => f.file_name === row.file_name);
+                                            handleOpenFile(file?.full_path || "");
                                         }}
                                     >
                                         <EyeIcon className="w-5 h-5" />
                                     </Button>
-                                ),
-                                local: (row) => (
-                                    <Button
-                                        onClick={(e: React.MouseEvent) => {
-                                            e.stopPropagation();
-                                            showInExplorer(row.local);
-                                        }}
-                                    >
-                                        <FolderIcon className="w-5 h-5" />
-                                    </Button>
-                                ),
+                                )
                             }}
                         />
                     </div>

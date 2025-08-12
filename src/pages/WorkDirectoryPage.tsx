@@ -62,7 +62,7 @@ const WorkDirectoryPage: React.FC = () => {
     // handle file click
     const handleFileClick = async (file: FileItem) => {
         try {
-            const result = await fsController.openFile(file.fullPath);
+            const result = await fsController.openFile(file.full_path);
 
             if (!result.success) {
                 showNotification(result.message || 'Failed to open file', 'error');
@@ -84,7 +84,7 @@ const WorkDirectoryPage: React.FC = () => {
     const handleFileCheckboxChange = (fileName: string, checked: boolean) => {
         setSelectedFiles(prev => {
             const newSet = new Set(prev);
-            const file = files.find(f => f.name === fileName);
+            const file = files.find(f => f.file_name === fileName);
             if (file) {
                 if (checked) {
                     newSet.add(file);
@@ -153,14 +153,14 @@ const WorkDirectoryPage: React.FC = () => {
                         ]}
                         data={files
                             .map(file => ({
-                                name: file.name,
-                                action: file.fullPath,
-                                local: file.path,
+                                name: file.file_name,
+                                action: file.full_path,
+                                local: file.file_path,
                             }))}
                         showPagination={false}
                         showFilter={true}
                         showCheckboxes={true}
-                        selectedRows={new Set(Array.from(selectedFiles).map(f => f.name))}
+                        selectedRows={new Set(Array.from(selectedFiles).map(f => f.file_name))}
                         onRowSelectionChange={handleFileCheckboxChange}
                         rowKey="name"
                         scrollHeight={550}
@@ -169,7 +169,7 @@ const WorkDirectoryPage: React.FC = () => {
                                 <Button
                                     onClick={(e: React.MouseEvent) => {
                                         e.stopPropagation();
-                                        const file = files.find(f => f.name === row.name);
+                                        const file = files.find(f => f.file_name === row.name);
                                         if (file) handleFileClick(file);
                                     }}
                                 >
