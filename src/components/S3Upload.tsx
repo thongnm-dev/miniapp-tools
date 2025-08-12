@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Button from './ui/Button';
-import { ArchiveBoxXMarkIcon, ArrowUpTrayIcon, EyeIcon, FolderIcon, FolderMinusIcon, FolderPlusIcon } from '@heroicons/react/24/outline';
-import DataTable from './ui/DataTable';
+import { ArchiveBoxXMarkIcon, ArrowUpTrayIcon, FolderMinusIcon, FolderPlusIcon, NewspaperIcon } from '@heroicons/react/24/outline';
 import { showNotification } from "../components/notification";
 import { fsController } from '../controller/fs-controller';
 import { FileItem } from '../types/FileItem';
+import TreeView, { flattenTree, ITreeViewOnSelectProps } from 'react-accessible-treeview';
+import { FaCheckSquare, FaMinusSquare, FaSquare } from 'react-icons/fa';
 
 export interface S3UploadProps {
     key_code?: string,
@@ -14,30 +15,65 @@ export interface S3UploadProps {
     uploadAction: (keyCode: string, rows: FileItem[]) => void
 }
 
+const CheckBoxIcon: React.FC<{variant: string}> = ({variant, ...rest}) => {
+    switch (variant) {
+        case "all":
+            return <FaCheckSquare {...rest} className='text-primary-600'/>;
+        case "none":
+            return <FaSquare {...rest} className='text-primary-600'/>;
+        case "some":
+            return <FaMinusSquare {...rest} className='text-primary-600'/>;
+        default:
+            return null;
+    }
+};
+
 const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = [], uploadAction, actions }) => {
     const [modalOpen, setModalOpen] = useState<boolean>(true);
     const [selectedItems, setSelectedItems] = useState<Set<FileItem>>(new Set());
     const [uploadableMap, setUploadableMap] = useState<Record<string, boolean>>({});
     const [moveableMap, setMoveableMap] = useState<Record<string, boolean>>({});
+    const [selectedIds, setSelectedIds] = useState([]);
 
     const toggle = () => {
         setModalOpen(!modalOpen);
     }
 
-    // Handle file checkbox change
-    const handleFileCheckboxChange = (fileName: string, checked: boolean) => {
-        setSelectedItems(prev => {
-            const newSet = new Set(prev);
-            const file = items.find(f => f.file_name === fileName);
-            if (file) {
-                if (checked) {
-                    newSet.add(file);
-                } else {
-                    newSet.delete(file);
+    const dataTree = useMemo(() => {
+
+        let treeview = {
+            name: "root",
+            children: []
+        }
+
+        if (items && items.length > 0) {
+            const grouped = items.reduce((acc: { [key: string]: FileItem[] }, item) => {
+                // If the category doesn't exist yet, create an array for it
+                if (!acc[item.parent_folder]) {
+                    acc[item.parent_folder] = [];
                 }
+                // Push the current item into its category array
+                acc[item.parent_folder].push(item);
+
+                return acc;
+            }, {});
+
+            for (const [folder, children] of Object.entries(grouped)) {
+                const child = {
+                    name: folder, children: children.map((item) => {
+                        return { ...item, name: item.file_name }
+                    })
+                }
+                treeview.children.push(child as never)
             }
-            return newSet;
-        });
+        }
+
+        return flattenTree(treeview);
+    }, [items])
+
+    // Handle file checkbox change
+    const handleFileCheckboxChange = (ids: ITreeViewOnSelectProps) => {
+        console.log(ids)
     };
 
     // Open file
@@ -59,6 +95,8 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
     const hanldeMove = async () => {
 
     }
+
+
     return (
         <React.Fragment key={key_code}>
             <div className="shadow rounded grid grid-cols-1 bg-white" >
@@ -88,42 +126,41 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                         </div>
                     </div>
                 </div>
-                <div className={`${modalOpen ? 'max-h-[300px] overflow-y-auto py-4' : 'h-0 hidden'}`}>
-                    <div className="bg-white rounded-lg grid grid-cols-1 gap-2">
-                        <DataTable className='px-2'
-                            columns={[
-                                { key: 'action', label: '' },
-                                { key: 'file_name', label: 'Tên tập tin' },
-                                { key: 'file_size', label: 'Kích thước' },
-                            ]}
-                            data={items
-                                .map(item => ({
-                                    file_name: item.file_name,
-                                    action: item.full_path,
-                                    file_size: null
-                                }))}
-                            showPagination={false}
-                            showFilter={false}
-                            showCheckboxes={true}
-                            scrollHeight={500}
-                            selectedRows={new Set(Array.from(selectedItems).map(f => f.file_name))}
-                            onRowSelectionChange={handleFileCheckboxChange}
-                            rowKey="name"
-                            customCellRender={{
-                                action: (row) => (
-                                    <Button
-                                        onClick={(e: React.MouseEvent) => {
-                                            e.stopPropagation();
-                                            const file = items.find(f => f.file_name === row.file_name);
-                                            handleOpenFile(file?.full_path || "");
-                                        }}
-                                    >
-                                        <EyeIcon className="w-5 h-5" />
-                                    </Button>
-                                )
-                            }}
-                        />
-                    </div>
+                <div className={`${modalOpen ? 'max-h-[300px] overflow-y-auto py-2' : 'h-0 hidden'}`}>
+                    <TreeView
+                        className='px-4'
+                        data={dataTree}
+                        aria-label="directory tree"
+                        multiSelect
+                        selectedIds={selectedIds}
+                        propagateSelect
+                        propagateSelectUpwards
+                        togglableSelect
+                        onSelect={handleFileCheckboxChange}
+                        nodeRenderer={({
+                            element,
+                            isBranch,
+                            isExpanded,
+                            isSelected,
+                            isHalfSelected,
+                            getNodeProps,
+                            level
+                        }) => (
+                            <div {...getNodeProps()} style={{ paddingLeft: 20 * (level - 1) }} className="flex flex-row hover:cursor-pointer gap-2">
+                                <CheckBoxIcon
+                                    variant={
+                                        isHalfSelected ? "some" : isSelected ? "all" : "none"
+                                    }
+                                />
+                                {isBranch ? (
+                                    isExpanded ? <FolderMinusIcon className='w-5 h-5 text-orange-400' /> : <FolderPlusIcon className='w-5 h-5 text-orange-400' />
+                                ) : (
+                                    <NewspaperIcon className="w-5 h-5 text-green-700" />
+                                )}
+                                <span className={`${isBranch? '' : 'text-green-700'}`}>{element.name}</span>
+                            </div>
+                        )}
+                    />
                 </div>
             </div>
         </React.Fragment>

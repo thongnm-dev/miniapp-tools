@@ -179,7 +179,7 @@ export const S3DownloadPage: React.FC = () => {
         } else {
             setDisplayModal(false);
             const keyDownloads = [currentExec];
-            console.log(keyDownloads)
+            
             await handleDownloadFile(keyDownloads, selectDestinationPath);
 
             await handleRefresh();

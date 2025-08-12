@@ -187,6 +187,7 @@ export class S3Service {
     // download file from s3
     async downloadFile(user_id: string, keys: string[], localPath: string): Promise<ServiceReturn<boolean>> {
 
+        const paths_downloaded: string[] = [];
         try {
             if (StringUtils.isBlank(localPath)) {
                 return { success: false, message: "The local path is blank." };
@@ -265,6 +266,7 @@ export class S3Service {
                     for (const bug of bugs_info[bug_path_info.path].bugs) {
                         bug_attachs.push(this.downloadFiles(bug, storage_path));
                     }
+                    paths_downloaded.push(storage_path);
                     const bug_attachs_results = await Promise.all(bug_attachs);
                     downloadResults.push(
                         {
@@ -281,8 +283,14 @@ export class S3Service {
 
             // insert fetch tran
             const result = await downloadService.ins_download(downloadResults);
+
+            if (!result.success) {
+                await fsService.deleteFile(paths_downloaded);
+            }
             return { success: result.success, message: result.message };
         } catch (error) {
+
+            await fsService.deleteFile(paths_downloaded);
             return { success: false, message: (error as Error).message };
         }
     }

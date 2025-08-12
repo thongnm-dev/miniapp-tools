@@ -64,6 +64,7 @@ export class DownloadService {
             await client.query(`COMMIT`);
             return { success: true }
         } catch (e) {
+            (await this.db.getClient()).query("ROLLBACK")
             return { success: false, message: (e as Error).message }
         }
     }

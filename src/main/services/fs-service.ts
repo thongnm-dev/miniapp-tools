@@ -190,6 +190,15 @@ export class FSService {
     async isExitDirectory(path: string) {
         return await fs.existsSync(path);
     }
+
+    async deleteFile(paths: string[]) {
+        let results = [];
+        for (const path of paths) {
+            results.push(fs.unlinkSync(path));
+        }
+
+        await Promise.all(results);
+    }
 }
 
 export const fsService = new FSService();
