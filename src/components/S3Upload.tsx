@@ -1,12 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Button from './ui/Button';
 import { ArrowUpTrayIcon, FolderMinusIcon, FolderPlusIcon, NewspaperIcon, TruckIcon } from '@heroicons/react/24/outline';
 import { showNotification } from "../components/notification";
 import { fsController } from '../controller/fs-controller';
 import { FileItem } from '../types/FileItem';
-import TreeView, { flattenTree, ITreeViewOnNodeSelectProps, NodeId } from 'react-accessible-treeview';
+import TreeView, { flattenTree, ITreeViewOnNodeSelectProps, ITreeViewOnSelectProps, NodeId } from 'react-accessible-treeview';
 import { FaCheckSquare, FaMinusSquare, FaRegSquare } from 'react-icons/fa';
-import { IFlatMetadata } from 'react-accessible-treeview/dist/TreeView/utils';
 
 export interface S3UploadProps {
     key_code?: string,
@@ -32,14 +31,34 @@ const CheckBoxIcon: React.FC<{variant: string}> = ({variant, ...rest}) => {
 const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = [], uploadAction, actions }) => {
     const [modalOpen, setModalOpen] = useState<boolean>(true);
     const [selectedItems, setSelectedItems] = useState<Set<FileItem>>(new Set());
-    const [uploadableMap, setUploadableMap] = useState<Record<string, boolean>>({});
     const [moveableMap, setMoveableMap] = useState<Record<string, boolean>>({});
     const [selectedIds, setSelectedIds] = useState<NodeId[]>([]);
+    const [expandedIds, setExpandedIds] = useState<NodeId[]>([]);
     const [count, setCount] = useState<number>(0);
 
     const toggle = () => {
         setModalOpen(!modalOpen);
     }
+
+    useEffect(() => {
+        if (items.length > 0 && key_code.length > 0) {
+            const checkAll = async () => {
+                const moveMap: Record<string, boolean> = {};
+
+                // const resultMove = await displayMoveObject();    
+                // moveMap[key_code] = !!resultMove;
+                setMoveableMap(moveMap);
+            };
+    
+            checkAll();
+        }
+        }, [items]);
+
+    useEffect(() => {
+        if (items.length > 0) {
+            setExpandedIds(dataTree.map((item) => item.id));
+        }
+    }, [items])
 
     const dataTree = useMemo(() => {
 
@@ -72,12 +91,58 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
             }
         }
 
-        return flattenTree(treeview);
-    }, [items])
+        const nodes = flattenTree(treeview);
+        if (items.length > 0) {
+            setSelectedIds(nodes.map((item) => item.id));
+            setSelectedItems(new Set(items));
+        }
+        return nodes;
+    }, [items]);
+
+
+    const handleNodeOnCheckbox = (node : ITreeViewOnNodeSelectProps) => {
+        const fileName = node.element.name;
+        const checked = node.isSelected;
+        console.log(node)
+        setSelectedItems(prev => {
+            const newSet = new Set(prev);
+            const file = items.find(f => f.file_name === fileName);
+            if (file) {
+                if (checked) {
+                    console.log(checked)
+                    newSet.add(file);
+                } else {
+                    newSet.delete(file);
+                }
+            }
+            return newSet;
+        });
+
+        console.log(selectedItems);
+
+    }
 
     // Handle file checkbox change
-    const handleFileCheckboxChange = (ids: ITreeViewOnNodeSelectProps) => {
-        console.log(ids)
+    const handleOnCheckbox = (ids: ITreeViewOnSelectProps) => {
+        
+        // const fileName = ids.element.name;
+        // const checked = ids.isSelected;
+        // console.log(ids)
+        // setSelectedItems(prev => {
+        //     const newSet = new Set(prev);
+        //     const file = items.find(f => f.file_name === fileName);
+        //     if (file) {
+        //         if (checked) {
+        //             console.log(checked)
+        //             newSet.add(file);
+        //         } else {
+        //             newSet.delete(file);
+        //         }
+        //     }
+        //     return newSet;
+        // });
+
+        // console.log(selectedItems);
     };
 
     // Open file
@@ -115,13 +180,13 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                         </div>
                         <div className="flex items-end space-x-2">
                             {actions}
-                            {<Button className="flex items-center space-x-2 text-red-500 border-red-500"
+                            {moveableMap[key_code] && <Button className="flex items-center space-x-2 text-red-500 border-red-500"
                                 onClick={hanldeMove}>
                                 <TruckIcon className="h-4 w-4 font-bold" />
                                 <span>Di chuyển trên S3</span>
                             </Button>}
-                            {<Button className="flex items-center space-x-2"
-                                // disabled={selectedItems.size === 0}
+                            {items.length > 0 && <Button className="flex items-center space-x-2"
+                                disabled={selectedItems.size === 0}
                                 onClick={handleUpload}>
                                 <ArrowUpTrayIcon className="h-5 w-5 font-bold" />
                                 <span>Tải lên</span>
@@ -130,16 +195,18 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                     </div>
                 </div>
                 <div className={`${modalOpen ? 'overflow-y-auto py-2' : 'hidden'}`}>
-                    <TreeView
+                    {items.length > 0 && <TreeView
                         className='px-4'
                         data={dataTree}
                         aria-label="directory tree"
                         multiSelect
+                        expandedIds={expandedIds}
                         selectedIds={selectedIds}
                         propagateSelect
                         propagateSelectUpwards
                         togglableSelect
-                        onNodeSelect={handleFileCheckboxChange}
+                        onNodeSelect={handleNodeOnCheckbox}
+                        onSelect={handleOnCheckbox}
                         nodeRenderer={({
                             element,
                             isBranch,
@@ -166,7 +233,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                                 <span className={`${isBranch? '' : 'text-green-700'}`}>{element.name}</span>
                             </div>
                         )}
-                    />
+                    />}
                 </div>
             </div>
         </React.Fragment>

@@ -34,17 +34,17 @@ const S3UploadPage: React.FC = () => {
     const actions03 = useCallback((code: string) => {
         return (
             <>
-                <Button onClick={() => trashList(code)} className="flex items-center space-x-2 text-red-500 border-red-500">
+                {S303UploadItems.length > 0 && <Button onClick={() => trashList(code)} className="flex items-center space-x-2 text-red-500 border-red-500">
                     <TrashIcon className="h-5 w-5 font-bold" />
                     <span>Dọn sạch</span>
-                </Button>
+                </Button>}
                 <Button onClick={() => addAttachment(code)} className="flex items-center space-x-2">
                     <LinkIcon className="h-5 w-5 font-bold" />
                     <span>Chọn tập tin</span>
                 </Button>
             </>
         )
-    }, []);
+    }, [S303UploadItems]);
 
     const trashList = async (code: string) => {
         if (S3_FOLDER_UPLOAD_03?.code === code) {
@@ -57,17 +57,17 @@ const S3UploadPage: React.FC = () => {
     const actions05 = useCallback((code: string) => {
         return (
             <React.Fragment>
-                <Button onClick={() => addAttachment(code)} className="flex items-center space-x-2 text-red-500 border-red-500">
+                {S305UploadItems.length > 0 && <Button onClick={() => trashList(code)} className="flex items-center space-x-2 text-red-500 border-red-500">
                     <TrashIcon className="h-5 w-5 font-bold" />
                     <span>Dọn sạch</span>
-                </Button>
+                </Button>}
                 <Button onClick={() => addAttachment(code)} className="flex items-center space-x-2">
                     <LinkIcon className="h-5 w-5 font-bold" />
                     <span>Chọn tập tin</span>
                 </Button>
             </React.Fragment>
         )
-    }, []);
+    }, [S305UploadItems]);
 
     const addAttachment = async (code: string) => {
 
