@@ -136,9 +136,7 @@ export class S3Service {
             const GET_LIST_OF_BUGS = FETCH_STATES_LIST.filter((item) => item.is_to_alx);
             for (const S3_GET_ITEM of GET_LIST_OF_BUGS) {
                 let continuationToken: string | undefined = undefined;
-                const folderName = "80_system/Attach/11_alx/40_バグ管理";
-                const _prefix_path = folderName + '/' + S3_GET_ITEM.path + '/' + S3_GET_ITEM.subscribe + '/';
-                // let _prefix_path = this.config.folderName + '/' + S3_GET_ITEM.path + '/' + S3_GET_ITEM.subscribe + '/';
+                let _prefix_path = this.config.folderName + '/' + S3_GET_ITEM.path + '/' + S3_GET_ITEM.subscribe + '/';
 
                 let folders: string[] = [];
                 do {
@@ -210,9 +208,8 @@ export class S3Service {
                 let continuationToken: string | undefined = undefined;
 
                 // prefix path of bugs
-                const folderName = "80_system/Attach/11_alx/40_バグ管理";
-                const _prefix_path = folderName + '/' + bug_path_info.path + '/' + bug_path_info.subscribe + '/';
-                // let _prefix_path = this.config.folderName + '/' + bug_path_info.path + '/' + bug_path_info.subscribe + '/';
+                let _prefix_path = this.config.folderName + '/' + bug_path_info.path + '/' + bug_path_info.subscribe + '/';
+
                 do {
                     const params = {
                         Bucket: this.config.bucketName,
@@ -428,10 +425,6 @@ export class S3Service {
                 return response.Contents || [];
             }
 
-            // const folderName = "80_system/Attach/11_alx/40_バグ管理";
-            // const _source_path = folderName + '/' + formData.source + '/';
-            // const _destination_path = folderName + '/' + formData.destination + '/';
-
             const _source_path = this.config.folderName + '/' + formData.source + '/';
             const _destination_path = this.config.folderName + '/' + formData.destination + '/';
 
@@ -489,10 +482,7 @@ export class S3Service {
                 return response.Contents || [];
             }
 
-            const folderName = "80_system/Attach/11_alx/40_バグ管理";
-            const _source_path = folderName + '/' + formData.source + '/';
-
-            // const _source_path = this.config.folderName + '/' + formData.source + '/';
+            const _source_path = this.config.folderName + '/' + formData.source + '/';
 
             for (const objectKey of formData.objectData) {
                 let _source_bug_path = _source_path + objectKey + '/';

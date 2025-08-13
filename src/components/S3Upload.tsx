@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import Button from './ui/Button';
-import { ArchiveBoxXMarkIcon, ArrowUpTrayIcon, FolderMinusIcon, FolderPlusIcon, NewspaperIcon, TruckIcon } from '@heroicons/react/24/outline';
+import { ArrowUpTrayIcon, FolderMinusIcon, FolderPlusIcon, NewspaperIcon, TruckIcon } from '@heroicons/react/24/outline';
 import { showNotification } from "../components/notification";
 import { fsController } from '../controller/fs-controller';
 import { FileItem } from '../types/FileItem';
-import TreeView, { flattenTree, ITreeViewOnNodeSelectProps, ITreeViewOnSelectProps, NodeId } from 'react-accessible-treeview';
-import { FaCheckSquare, FaMinusSquare, FaSquare } from 'react-icons/fa';
+import TreeView, { flattenTree, ITreeViewOnNodeSelectProps, NodeId } from 'react-accessible-treeview';
+import { FaCheckSquare, FaMinusSquare, FaRegSquare } from 'react-icons/fa';
+import { IFlatMetadata } from 'react-accessible-treeview/dist/TreeView/utils';
 
 export interface S3UploadProps {
     key_code?: string,
@@ -20,7 +21,7 @@ const CheckBoxIcon: React.FC<{variant: string}> = ({variant, ...rest}) => {
         case "all":
             return <FaCheckSquare {...rest} className='text-primary-600'/>;
         case "none":
-            return <FaSquare {...rest} className='text-primary-600'/>;
+            return <FaRegSquare {...rest} className='text-primary-600'/>;
         case "some":
             return <FaMinusSquare {...rest} className='text-primary-600'/>;
         default:
@@ -48,8 +49,8 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
         }
 
         if (items && items.length > 0) {
+            treeview.children.push({name: "Danh sách thư mục đã chọn", children: []} as never)
             const grouped = items.reduce((acc: { [key: string]: FileItem[] }, item) => {
-                // If the category doesn't exist yet, create an array for it
                 if (!acc[item.parent_folder]) {
                     acc[item.parent_folder] = [];
                 }
@@ -67,7 +68,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                     })
                 }
                 setCount(_count++);
-                treeview.children.push(child as never)
+                (treeview.children[0] as any).children.push(child as never)
             }
         }
 
@@ -102,7 +103,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
     return (
         <React.Fragment key={key_code}>
             <div className="shadow rounded grid grid-cols-1 bg-white" >
-                <div className="border-b px-4 py-1 border-gray-200 flex flex-col">
+                <div className="border-b px-4 py-2 border-gray-200 flex flex-col">
                     <div className="flex items-center justify-between hover:cursor-pointer" >
                         <div className='flex flex-row gap-2 flex-1' onClick={toggle}>
                             <button onClick={toggle}>
@@ -128,7 +129,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                         </div>
                     </div>
                 </div>
-                <div className={`${modalOpen ? 'max-h-[300px] overflow-y-auto py-2' : 'h-0 hidden'}`}>
+                <div className={`${modalOpen ? 'overflow-y-auto py-2' : 'hidden'}`}>
                     <TreeView
                         className='px-4'
                         data={dataTree}

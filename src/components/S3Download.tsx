@@ -107,7 +107,7 @@ const S3Download: React.FC<S3UploadProps> = ({ key_code = "", title = "", items 
                     </div>
                 </div>
 
-                <div className={`${modalOpen ? 'max-h-[300px] overflow-y-auto py-4' : 'h-0 hidden'}`}>
+                <div className={`${modalOpen ? 'overflow-y-auto py-4' : 'h-0 hidden'}`}>
                     <div className="bg-white rounded-lg grid grid-cols-1 gap-2">
                         <DataTable className='px-2'
                             columns={[

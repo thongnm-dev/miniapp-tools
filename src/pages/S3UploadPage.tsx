@@ -9,16 +9,12 @@ import okIcon from "../assets/okIcon.png";
 import { FETCH_STATES_LIST } from '../config/constants';
 import S3Upload from '../components/S3Upload';
 import { DocumentIcon, LinkIcon, TrashIcon } from '@heroicons/react/24/outline';
-import Explore from '../components/Explore';
 import { fsController } from '../controller/fs-controller';
 import { FileItem } from '../types/FileItem';
 
 const S3UploadPage: React.FC = () => {
-
     const [modalTitle, setModalTitle] = useState<string>("");
     const [openModal, setOpenModal] = useState(false);
-    const [attachFlg, setAttachFlg] = useState<boolean>(false);
-    const [uploadFlg, setUploadFlg] = useState<boolean>(false);
     const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
     const { showLoading, hideLoading } = useLoading();
     const [uploadFileItems, setUploadFileItems] = useState<FileItem[]>([]);
@@ -38,7 +34,7 @@ const S3UploadPage: React.FC = () => {
     const actions03 = useCallback((code: string) => {
         return (
             <>
-                <Button onClick={() => addAttachment(code)} className="flex items-center space-x-2 text-red-500 border-red-500">
+                <Button onClick={() => trashList(code)} className="flex items-center space-x-2 text-red-500 border-red-500">
                     <TrashIcon className="h-5 w-5 font-bold" />
                     <span>Dọn sạch</span>
                 </Button>
@@ -49,6 +45,14 @@ const S3UploadPage: React.FC = () => {
             </>
         )
     }, []);
+
+    const trashList = async (code: string) => {
+        if (S3_FOLDER_UPLOAD_03?.code === code) {
+            setS303UploadItems([]);
+        } else if (S3_FOLDER_UPLOAD_05?.code === code) {
+            setS305UploadItems([]);
+        }
+    }
 
     const actions05 = useCallback((code: string) => {
         return (
@@ -117,10 +121,9 @@ const S3UploadPage: React.FC = () => {
 
         //     return;
         // }
+        setModalTitle("Thực hiện tải tập tin lên S3 AWS")
         setUploadFileItems(rows);
         setOpenModal(true);
-        setAttachFlg(false);
-        setUploadFlg(true);
     }
 
     const uploadAction05 = async (keyCode: string, rows: FileItem[]) => {
@@ -132,8 +135,6 @@ const S3UploadPage: React.FC = () => {
 
         setUploadFileItems(rows);
         setOpenModal(true);
-        setAttachFlg(false);
-        setUploadFlg(true);
     }
 
     const handleConfirmUpload = async () => {
@@ -213,7 +214,7 @@ const S3UploadPage: React.FC = () => {
         progress: (row: Record<string, any>) => {
             const progress = uploadProgress[row.path] || 0;
             return (
-                <div className="w-full">
+                <div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
                             className="bg-blue-600 h-2 rounded-full transition-all duration-300"
@@ -223,6 +224,11 @@ const S3UploadPage: React.FC = () => {
                     <span className="text-xs text-gray-500">{progress}%</span>
                 </div>
             );
+        },
+        actions: (row: Record<string, any>) => {
+            return (
+                <div></div>
+            )
         }
     };
 
@@ -240,29 +246,26 @@ const S3UploadPage: React.FC = () => {
             </div>
 
             {/* Modal */}
-            <Modal open={openModal} onClose={() => setOpenModal(false)} title={modalTitle} size="full">
-                <div className='grid grid-cols-1 gap-1 h-[calc(100% - 80px)]'>
-
-                    {attachFlg && !uploadFlg && <Explore />}
-                    {!attachFlg && uploadFlg &&
-                        <div className="bg-white rounded-lg shadow min-h-[calc(100% - 80px)]">
-                            <DataTable
-                                columns={columns}
-                                data={uploadFileItems.map(file => ({
-                                    name: file.file_name,
-                                    path: file.full_path,
-                                    size: 0,
-                                    progress: 0,
-                                    file: file, // Include the original file object for reference
-                                }))}
-                                showFilter={false}
-                                showCheckboxes={false}
-                                customCellRender={customCellRender}
-                                onRowSelectionChange={handleFileSelection}
-                                rowKey="path"
-                            />
-                        </div>
-                    }
+            <Modal open={openModal} onClose={() => setOpenModal(false)} title={modalTitle} size="xl">
+                <div className='grid grid-cols-1 gap-1'>
+                    <div className="rounded-lg shadow">
+                        <DataTable
+                            className='h-full'
+                            columns={columns}
+                            data={uploadFileItems.map(file => ({
+                                name: file.file_name,
+                                size: 0,
+                                progress: 0,
+                                file: file, // Include the original file object for reference
+                                actions: file.full_path
+                            }))}
+                            showFilter={false}
+                            showCheckboxes={false}
+                            customCellRender={customCellRender}
+                            onRowSelectionChange={handleFileSelection}
+                            rowKey="path"
+                        />
+                    </div>
 
                     <div className="bg-white flex justify-end bottom-0 gap-2 p-2">
                         <Button onClick={hanldeCloseModal}

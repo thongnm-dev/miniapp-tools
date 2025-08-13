@@ -2,6 +2,8 @@ import React from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 interface ModalProps {
+  className?: string;
+  contentClassName?: string,
   open: boolean;
   onClose: () => void;
   title: string;
@@ -9,7 +11,7 @@ interface ModalProps {
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
 }
 
-const Modal: React.FC<ModalProps> = ({ open, onClose, title, children, size = 'md' }) => {
+const Modal: React.FC<ModalProps> = ({ className, contentClassName, open, onClose, title, children, size = 'md' }) => {
   if (!open) return null;
 
   const sizeClasses = {
@@ -28,9 +30,9 @@ const Modal: React.FC<ModalProps> = ({ open, onClose, title, children, size = 'm
       />
       
       {/* Modal */}
-      <div className={`relative bg-white rounded-lg shadow-xl w-full mx-4 max-h-[90vh] ${sizeClasses[size]} overflow-hidden`}>
+      <div className={`relative rounded-lg shadow-xl w-full mx-4 max-h-[90vh] ${sizeClasses[size]} overflow-hidden ${className}`}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
           <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
           <button
             onClick={onClose}
@@ -42,7 +44,7 @@ const Modal: React.FC<ModalProps> = ({ open, onClose, title, children, size = 'm
         </div>
         
         {/* Content */}
-        <div className="overflow-y-auto bg-gray-100 h-auto">
+        <div className={`overflow-y-auto bg-gray-100 h-auto ${contentClassName}`}>
           {children}
         </div>
       </div>
