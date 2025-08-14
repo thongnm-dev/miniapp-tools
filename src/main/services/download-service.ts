@@ -2,20 +2,7 @@ import { DatabaseService } from "./database-service";
 import { getDatabaseConfig } from "../_/main-config";
 import { ServiceReturn } from "../@types/service-return";
 import * as path from 'path';
-
-export interface download_item {
-    id: number, 
-    download_ymd: string, 
-    download_hm?: string, 
-    sync_path: string, 
-    download_count?: number, 
-    s3_state: string,
-    bug_no?: string,
-    fileName?: string,
-    file_path?: string,
-    last_modified?: string,
-    path_copied?: string
-}
+import { download_item } from "../../types/download_item";
 
 export class DownloadService {
     private db: DatabaseService;
@@ -102,9 +89,9 @@ export class DownloadService {
                             ORDER BY 
                                 (t1.download_ymd || t1.download_hm) desc `, [user_id]);
 
-            const fetchTrans: {id: number, download_ymd: string, download_hm: string, sync_path: string, download_count: number, s3_state: string}[] = [];
+            const download_items: download_item [] = [];
             for (const row of result?.rows || []) {
-                fetchTrans.push({
+                download_items.push({
                     id: row.id,
                     download_ymd: row.download_ymd,
                     download_hm: row.download_hm,
@@ -113,14 +100,14 @@ export class DownloadService {
                     s3_state: row.s3_state
                 });
             }
-            return { success: true, data: fetchTrans };
+            return { success: true, data: download_items };
         } catch (error) {
             return { success: false, message: (error as Error).message };
         }
     }
 
     // fetch
-    async get_download_dtls(fetchId: string): Promise<ServiceReturn<download_item[]>> {
+    async get_download_dtls(download_id: string): Promise<ServiceReturn<download_item[]>> {
         if (!this.db) {
             return { success: false };
         }
@@ -129,6 +116,7 @@ export class DownloadService {
             const result = await client.query(`
                         SELECT
                             t1.id,
+                            t2.id AS download_dtl_id,
                             t1.download_ymd,
                             t2.bug_no,
                             to_char(t2.last_modified, 'yyyy/MM/dd HH24:mm:ss') AS last_modified,
@@ -140,25 +128,27 @@ export class DownloadService {
                             ON t1.id = t2.download_id
                         WHERE 1 = 1
                             AND t1.id = $1
-                            AND ((t2.path_copied = '' OR t2.path_copied IS NULL))
+                            AND COALESCE(TRIM(t2.path_copied), '') = ''
                         GROUP BY
                             t2.s3_state,
                             t1.download_ymd,
                             t2.bug_no,
                             t2.last_modified,
                             t2.sync_path,
-                            t2.path_copied
+                            t2.path_copied,
+                            t1.id,
+                            t2.id
                         ORDER BY 
                             t2.s3_state,
                             t2.bug_no,
-                            t2.last_modified`, [fetchId]);
+                            t2.last_modified`, [download_id]);
             const download_items: download_item[] = [];
             for (const row of result?.rows || []) {
 
                 const fileName = path.basename(row.sync_path);
                 const file_path = path.dirname(row.sync_path);
                 download_items.push({
-                    id:  row.id,
+                    id:  row.download_dtl_id,
                     download_ymd: row.download_ymd,
                     bug_no: row.bug_no,
                     fileName: fileName,
@@ -167,6 +157,48 @@ export class DownloadService {
                     sync_path: row.sync_path,
                     path_copied: row.path_copied,
                     s3_state: row.s3_state
+                });
+            }
+            return { success: true, data: download_items };
+        } catch (error) {
+            return { success: false, message: (error as Error).message };
+        }
+    }
+
+    // Get download detail item
+    async get_download_dtl_items(download_id: string, download_dtl_ids: string[]): Promise<ServiceReturn<download_item[]>> {
+        if (!this.db) {
+            return { success: false };
+        }
+        try {
+            const client = await this.db.getClient();
+            const result = await client.query(`
+                        SELECT
+                            t1.id,
+                            t2.id AS download_dtl_id,
+                            t2.bug_no,
+                            t1.sync_path,
+                            t2.sync_path AS full_file_path,
+                            t2.path_copied
+                        FROM download_hdr t1
+                        INNER JOIN download_dtl t2
+                            ON t1.id = t2.download_id
+                        WHERE 1 = 1
+                            AND t1.id = $1
+                            AND t2.id = ANY($2)`, [download_id, download_dtl_ids]);
+            const download_items: download_item[] = [];
+            for (const row of result?.rows || []) {
+
+                const fileName = path.basename(row.full_file_path);
+                const file_path = path.dirname(row.full_file_path);
+                download_items.push({
+                    id:  row.id,
+                    download_dtl_id:  row.download_dtl_id,
+                    bug_no: row.bug_no,
+                    fileName: fileName,
+                    file_path: file_path,
+                    sync_path: row.sync_path,
+                    full_file_path: row.full_file_path
                 });
             }
             return { success: true, data: download_items };
@@ -255,15 +287,50 @@ export class DownloadService {
 
         try {
             const client = await this.db.getClient();
+            await client.query(`BEGIN`);
             await client.query(`
                 UPDATE download_dtl SET 
                     is_moved_at_s3 = true
                 WHERE 1 = 1
                     AND is_moved_at_s3 = false 
                     AND bug_no = ANY($1::text[]) `, [bugs]);
+            await client.query(`COMMIT`);
+            return { success: true, data: true};
+        } catch (error) {
+            (await this.db.getClient()).query("ROLLBACK")
+            return { success: false, message: (error as Error).message };
+        }
+    }
+
+    // update path
+    async update_path_after_copied(download_id: string, download_dtl_id: string, path_copied: string): Promise<ServiceReturn<boolean>> {
+        if (!this.db) {
+            return { success: false };
+        }
+
+        try {
+            const client = await this.db.getClient();
+            await client.query(`BEGIN`);
+            await client.query(`
+                UPDATE download_dtl SET 
+                    path_copied = $1
+                WHERE 1 = 1
+                    AND id = $2
+                    AND download_id = $3
+                    `, [path_copied, download_dtl_id, download_id]);
+
+            await client.query(`
+                UPDATE download_hdr SET 
+                    is_moved_at_local = true
+                WHERE 1 = 1
+                    AND download_count = (SELECT COUNT(1) FROM download_dtl WHERE download_id = $1 AND COALESCE(TRIM(path_copied), '') <> '' )
+                    AND id = $1
+                    `, [download_id]);
+            await client.query(`COMMIT`);
 
             return { success: true, data: true};
         } catch (error) {
+            (await this.db.getClient()).query("ROLLBACK")
             return { success: false, message: (error as Error).message };
         }
     }

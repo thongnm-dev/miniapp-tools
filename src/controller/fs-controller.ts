@@ -24,9 +24,9 @@ export class FSController {
         return await window.systemAPI.openFile(path);
     }
 
-    async copyFiles(filePaths: string[], destinationPath: string) {
-        return await window.systemAPI.copyFiles(filePaths, destinationPath);
-    }
+    // async copyFiles(filePaths: string[], destinationPath: string) {
+    //     return await window.systemAPI.copyFiles(filePaths, destinationPath);
+    // }
 
     async watchFolder(folderPath: string) {
         return await window.systemAPI.watchFolder(folderPath);

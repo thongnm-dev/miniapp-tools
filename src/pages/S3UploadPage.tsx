@@ -79,6 +79,7 @@ const S3UploadPage: React.FC = () => {
 
                 if (results.success && results.data) {
                     if (S3_FOLDER_UPLOAD_03?.code === code) {
+                        console.log(results.data)
                         setS303UploadItems(results.data as []);
                     } else if (S3_FOLDER_UPLOAD_05?.code === code) {
                         setS305UploadItems(results.data as []);
@@ -96,7 +97,6 @@ const S3UploadPage: React.FC = () => {
     const refreshData = async () => {
 
     }
-
 
     // handle file selection
     const handleFileSelection = (filePath: string, checked: boolean) => {
@@ -253,10 +253,10 @@ const S3UploadPage: React.FC = () => {
                             className='h-full'
                             columns={columns}
                             data={uploadFileItems.map(file => ({
-                                name: file.file_name,
-                                size: 0,
+                                name: file.name,
+                                size: file.file_size,
                                 progress: 0,
-                                file: file, // Include the original file object for reference
+                                file: file,
                                 actions: file.full_path
                             }))}
                             showFilter={false}

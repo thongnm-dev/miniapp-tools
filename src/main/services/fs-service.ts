@@ -7,7 +7,7 @@ import { FileItem } from "../../types/FileItem";
 export class FSService {
 
     // read directory
-    async readDirectory(dirPath: string, options?: {onlyExcel?: boolean, fileExtension?: string }): Promise<ServiceReturn<FileItem[]>> {
+    async readDirectory(dirPath: string, options?: { onlyExcel?: boolean, fileExtension?: string }): Promise<ServiceReturn<FileItem[]>> {
         try {
             let files: FileItem[] = [];
 
@@ -16,9 +16,9 @@ export class FSService {
             }
 
             // Helper function to recursively collect Excel files
-            function getAllFilesRecursively(directory: string, options?: {onlyExcel?: boolean, fileExtension?: string }): string[] {
+            function getAllFilesRecursively(directory: string, options?: { onlyExcel?: boolean, fileExtension?: string }): string[] {
                 let results: string[] = [];
-                const list = fs.readdirSync(directory, { withFileTypes: true});
+                const list = fs.readdirSync(directory, { withFileTypes: true });
                 for (const item of list) {
                     const fullPath = path.join(directory, item.name);
                     if (item.isDirectory()) {
@@ -41,18 +41,21 @@ export class FSService {
 
             const excelFiles = getAllFilesRecursively(dirPath, options);
 
+            let counter = 1;
             for (const filePath of excelFiles) {
                 files.push({
-                    parent_folder: path.basename(dirPath),
-                    file_name: path.basename(filePath),
+                    file_id: counter++,
+                    parent_name: path.basename(dirPath),
+                    name: path.basename(filePath),
                     file_path: path.dirname(filePath),
-                    full_path: filePath
+                    full_path: filePath,
+                    file_size: await fs.statSync(filePath).size
                 });
             }
 
             return {
                 success: true,
-                data: files.sort((a, b) => a.file_name.localeCompare(b.file_name))
+                data: files.sort((a, b) => a.name.localeCompare(b.name))
             };
         } catch (error) {
             return { success: false, message: (error as Error).message };
@@ -60,7 +63,7 @@ export class FSService {
     }
 
     // read multi path
-    async readMultiDir(dirPaths: string[], options?: {onlyExcel?: boolean, fileExtension?: string }): Promise<ServiceReturn<FileItem[]>> {
+    async readMultiDir(dirPaths: string[], options?: { onlyExcel?: boolean, fileExtension?: string }): Promise<ServiceReturn<FileItem[]>> {
         try {
 
             let resultPromise = [];
@@ -70,36 +73,81 @@ export class FSService {
 
             const results_promise = await Promise.all(resultPromise);
 
-            let results: FileItem [] = [];
+            let results: FileItem[] = [];
 
             for (const item of results_promise.flat()) {
                 results.push(...item?.data as []);
             }
 
-            return { success: true, data: results};
+            return { success: true, data: results };
         } catch (error) {
             return { success: false, message: (error as Error).message };
         }
     }
 
     // perform copy
-    async copy(filePaths: string[], destinationPath: string):
-        Promise<ServiceReturn<Array<{ path: string; destination: string }>>> {
+    async copy(filePath: string, fileSubPath: string, destinationPath: string, destinationHis: string): Promise<ServiceReturn<Array<{ path: string; destination: string }>>> {
         try {
 
             if (!fs.existsSync(destinationPath)) {
                 return { success: false, message: 'Đường dẫn không tồn tại.' };
             }
 
-            let yyyyMMdd = DateUtils.getNow('yyyyMMdd');
+            if (!fs.existsSync(destinationPath)) {
+                destinationHis = "";
+            }
 
-            const path_his = path.join(destinationPath, yyyyMMdd);
+            const results: Array<{ path: string; destination: string }> = [];
+
+            if (fs.statSync(filePath).isDirectory()) {
+                const result = await this.copyFolder(filePath, destinationPath);
+
+                for (const path of result.data || []) {
+                    results.push(...results, { path: path.path, destination: path.destination });
+                }
+
+                if (destinationHis) {
+                    // store history
+                    await this.copyFolder(filePath, destinationHis);
+                }
+
+            } else {
+                const result = await this.copyFile(filePath, path.join(destinationPath, fileSubPath));
+                results.push({
+                    path: result.data?.path || "",
+                    destination: result.data?.destination || ""
+                });
+
+                if (destinationHis) {
+                    // store history
+                    await this.copyFile(filePath, path.join(destinationHis, fileSubPath));
+                }
+            }
+
+            return { success: true, data: results };
+        } catch (error) {
+            return { success: false, message: (error as Error).message };
+        }
+    }
+
+    // make folder
+    async makeFolder(destinationPath: string): Promise<ServiceReturn<string>> {
+
+        try {
+
+            if (!fs.existsSync(destinationPath)) {
+                return { success: false, message: 'Đường dẫn không tồn tại.' };
+            }
+
+            let yyyyMM = DateUtils.getNow('yyyyMM');
+            let yyyyMMdd = DateUtils.getNow('yyyyMMdd');
+            const path_his = path.join(destinationPath, yyyyMM, yyyyMMdd);
 
             let path_his_cnt = path_his;
             if (!fs.existsSync(path_his)) {
-                fs.mkdirSync(path_his);
+                fs.mkdirSync(path_his, { recursive: true });
             } else {
-                let count = 0;
+                let count = 1;
                 while (true) {
                     count++;
                     path_his_cnt = path.join(path_his + "_" + "0" + count);
@@ -109,78 +157,57 @@ export class FSService {
                     }
                 }
             }
+            return { success: true, data: path_his_cnt };
+        } catch (error) {
+            return { success: false, message: (error as Error).message };
+        }
+    }
 
-            function copyFolder(filePath: string, destinationPath: string): 
-                { success: boolean; path: string; destination: string; message?: string } {
-                try {
-                    const items = fs.readdirSync(filePath);
+    // copied folder
+    private async copyFolder(filePath: string, destinationPath: string): Promise<ServiceReturn<{ path: string; destination: string }[]>> {
+        try {
+            const items = fs.readdirSync(filePath);
 
-                    for (const item of items) {
-                        const fullPath = path.join(filePath, item);
-                        const destinationFullPath = path.join(destinationPath, item);
+            let result: { path: string; destination: string }[] = [];
 
-                        if (fs.statSync(fullPath).isDirectory()) {
-                            if (!fs.existsSync(destinationFullPath)) {
-                                fs.mkdirSync(destinationFullPath, { recursive: true });
-                            }
-                            copyFolder(fullPath, destinationFullPath);
-                        } else {
-                            copyFile(fullPath, destinationFullPath);
-                        }
-                    }
-                    return { success: true, path: filePath, destination: destinationPath };
-                } catch (error) {
-                    return { success: false, path: filePath, destination: destinationPath, message: (error as Error).message };
-                }
-            }
+            for (const item of items) {
+                const fullPath = path.join(filePath, item);
+                const destinationFullPath = path.join(destinationPath, item);
 
-            async function copyFile(filePath: string, destinationPath: string): 
-                Promise<{ success: boolean; path: string; destination: string; message?: string }> {
-                try {
-                    const dir = path.dirname(destinationPath);
-                    await fs.mkdirSync(dir, { recursive: true });
-                    fs.copyFileSync(filePath, destinationPath);
-                    return { success: true, path: filePath, destination: destinationPath };
-                } catch (error) {
-                    return { success: false, path: filePath, destination: destinationPath, message: (error as Error).message };
-                }
-            }
-
-            const results: Array<{ path: string; destination: string }> = [];
-            for (const filePath of filePaths) {
-                let fullPath = filePath;
-
-                let sub_file_path = "";
-
-                if (fullPath.includes("##")) {
-                    const concat_path = fullPath.split("##");
-                    if (concat_path.length == 2) {
-                        sub_file_path =  concat_path[1];
-                        fullPath = path.join(concat_path[0], concat_path[1]);
-                    }
-                }
-                
                 if (fs.statSync(fullPath).isDirectory()) {
-                    const result = copyFolder(fullPath, destinationPath);
+                    if (!fs.existsSync(destinationFullPath)) {
+                        fs.mkdirSync(destinationFullPath, { recursive: true });
+                    }
+                    const resCopied = await this.copyFolder(fullPath, destinationFullPath);
 
-                    // store history
-                    copyFolder(fullPath, path_his_cnt);
-                    results.push({
-                        path: result.path,
-                        destination: result.destination
-                    });
+                    for (const path of resCopied.data || []) {
+                        result.push(...result, { path: path.path, destination: path.destination });
+                    }
+
                 } else {
-                    const result = await copyFile(fullPath, path.join(destinationPath, sub_file_path));
-                    // store history
-                    await copyFile(fullPath, path.join(path_his_cnt, sub_file_path));
-                    results.push({
-                        path: result.path,
-                        destination: result.destination
-                    });
+                    const resCopied = await this.copyFile(fullPath, destinationFullPath);
+
+                    const pathCopied = resCopied.data || {} as { path: string; destination: string };
+                    result.push(...result, { path: pathCopied.path, destination: pathCopied.destination });
                 }
             }
+            return { success: true, data: result };
+        } catch (error) {
+            return { success: false, message: (error as Error).message };
+        }
+    }
 
-            return { success: true, data: results };
+    // copied file
+    async copyFile(filePath: string, destinationPath: string): Promise<ServiceReturn<{ path: string; destination: string }>> {
+        try {
+            const dir = path.dirname(destinationPath);
+            await fs.mkdirSync(dir, { recursive: true });
+
+            fs.copyFileSync(filePath, destinationPath);
+            return {
+                success: true,
+                data: { path: filePath, destination: destinationPath }
+            };
         } catch (error) {
             return { success: false, message: (error as Error).message };
         }

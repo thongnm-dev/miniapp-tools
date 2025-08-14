@@ -8,26 +8,16 @@ import { showNotification } from "../components/notification";
 import { useLoading } from "../stores/LoadingContext";
 import Modal from "../components/ui/Modal";
 import { downloadController } from "../controller/download-controller";
-
-export interface download_dtl {
-    download_ymd: string,
-    bug_no: string,
-    fileName: string,
-    file_path: string,
-    last_modified: string,
-    sync_path: string,
-    path_copied: string,
-    s3_state: string
-}
+import { download_item } from "../types/download_item";
 
 const S3DownloadDetailPage: React.FC = () => {
     const { id } = useParams() || "";
     const { sync_path } = useLocation().state as { sync_path: string };
     const { showLoading, hideLoading } = useLoading();
     const [displayModal, setDisplayModal] = useState(false);
-    const [download_dtl_items, setDownloadItems] = useState<download_dtl[]>([]);
+    const [download_dtl_items, setDownloadItems] = useState<download_item[]>([]);
     const [selectDestinationPath, setSelectDestinationPath] = useState<string | null>(null);
-    const [selectedItems, setSelectedItems] = useState<Set<download_dtl>>(new Set());
+    const [selectedItems, setSelectedItems] = useState<Set<download_item>>(new Set());
 
     useEffect(() => {
         if (id) {
@@ -35,7 +25,7 @@ const S3DownloadDetailPage: React.FC = () => {
             downloadController.get_download_dtls(id)
                 .then(result => {
                     if (result.success)
-                        setDownloadItems(result.data as download_dtl[]);
+                        setDownloadItems(result.data as download_item[]);
                 }).finally(() => hideLoading());
         }
     }, [id]);
@@ -103,16 +93,20 @@ const S3DownloadDetailPage: React.FC = () => {
 
         try {
             showLoading('Đang thực hiện sao chép...');
-            let filesToCopy: string[] = [];
+            const download_dtl_ids = Array.from(selectedItems).map((item) => item.id.toString());
 
-            for (const selectItem of selectedItems) {
-                const path_copy = sync_path + "##" + selectItem.bug_no + "/" + selectItem.fileName;
-                filesToCopy.push(path_copy);
-            }
-            const result = await fsController.copyFiles(filesToCopy, selectDestinationPath);
+            const params = {
+                  download_id: id
+                , download_dtl_ids: download_dtl_ids
+                , destination: selectDestinationPath} as {download_id: string, download_dtl_ids: string[], destination: string};
+            const result = await downloadController.copy_and_update_path_download(params);
+
             if (result.success) {
                 showNotification('Sao chép tập tin thành công.', 'success');
                 setDisplayModal(false);
+                const result = await downloadController.get_download_dtls(id || "");
+                if (result.success)
+                    setDownloadItems(result.data as download_item[]);
             } else {
                 showNotification(result.message || 'Sao chép tập tin thất bại.!', 'error');
             }
@@ -184,7 +178,7 @@ const S3DownloadDetailPage: React.FC = () => {
                                 showFilter={true}
                                 showCheckboxes={true}
                                 scrollHeight={500}
-                                selectedRows={new Set(Array.from(selectedItems).map(f => f.fileName))}
+                                selectedRows={new Set(Array.from(selectedItems).map(f => f.fileName || ""))}
                                 onRowSelectionChange={handleFileCheckboxChange}
                                 rowKey="name"
                                 customCellRender={{
@@ -221,7 +215,7 @@ const S3DownloadDetailPage: React.FC = () => {
                     <div className="separator p-4">
                         <h2 className="text-lg font-semibold text-gray-900 mb-2">Danh sách file đã chọn:</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                            {Array.from(selectedItems).slice(0, 6).map((file: download_dtl, index: number) => (
+                            {Array.from(selectedItems).slice(0, 6).map((file: download_item, index: number) => (
                                 <div key={index} className="text-sm text-gray-600 bg-gray-100 px-3 py-2 rounded truncate">
                                     {file.fileName}
                                 </div>

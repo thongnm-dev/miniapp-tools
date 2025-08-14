@@ -90,10 +90,10 @@ export const setupFSHandlers = () => {
         }
     });
 
-    // File copy/move operations
-    ipcMain.handle(IPC_CHANNEL_HANDLERS.COPY_FILES, async (_event, filePaths: string[], destinationPath: string) => {
-        return await fsService.copy(filePaths, destinationPath);
-    });
+    // // File copy/move operations
+    // ipcMain.handle(IPC_CHANNEL_HANDLERS.COPY_FILES, async (_event, filePaths: string[], destinationPath: string) => {
+    //     return await fsService.copy(filePaths, destinationPath);
+    // });
 
     // Move files
     ipcMain.handle(IPC_CHANNEL_HANDLERS.MOVE_FILES, async (_event, filePaths: string[], destinationPath: string) => {

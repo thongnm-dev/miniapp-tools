@@ -3,7 +3,7 @@ import { RegisterCredentials } from '../types/user';
 import { LoginCredentials, User } from '../types/auth';
 import { ServiceReturn } from './@types/service-return';
 import { FileItem } from '../types/FileItem';
-import { download_item } from './services/download-service';
+import { download_item } from '../types/download_item';
 
 // IPC Channel Constants - Inlined to avoid module resolution issues
 // These match the constants in src/config/ipcChannels.ts
@@ -54,6 +54,7 @@ const IPC_CHANNELS = {
     GET_DOWNLOAD_DLTS: 'GET_DOWNLOAD_DLTS',
     ALLOW_DOWNLOAD_OBJECT_S3: 'ALLOW_DOWNLOAD_OBJECT_S3',
     ALLOW_MOVE_OBJECT_S3: 'ALLOW_MOVE_OBJECT_S3',
+    COPY_AND_UPDATE_PATH_DOWNLOAD: 'COPY_AND_UPDATE_PATH_DOWNLOAD'
 
 } as const;
 
@@ -119,9 +120,10 @@ contextBridge.exposeInMainWorld('s3API', {
 // Fetch Tran API
 contextBridge.exposeInMainWorld('downloadAPI', {
     get_downloads: (user_id: string) => ipcRenderer.invoke(IPC_CHANNELS.GET_DONWLOADS, user_id),
-    get_download_dtls: (fetchId: string) => ipcRenderer.invoke(IPC_CHANNELS.GET_DOWNLOAD_DLTS, fetchId),
+    get_download_dtls: (download_id: string) => ipcRenderer.invoke(IPC_CHANNELS.GET_DOWNLOAD_DLTS, download_id),
     allow_download: (bugs: string[]) => ipcRenderer.invoke(IPC_CHANNELS.ALLOW_DOWNLOAD_OBJECT_S3, bugs),
     allow_remove: (bugs: string[]) => ipcRenderer.invoke(IPC_CHANNELS.ALLOW_MOVE_OBJECT_S3, bugs),
+    copy_and_update_path_download: (params: {download_id: string, download_dtl_ids: string[], destination: string}) => ipcRenderer.invoke(IPC_CHANNELS.COPY_AND_UPDATE_PATH_DOWNLOAD, params),
 });
 
 // Type declaration for the exposed API
@@ -166,6 +168,7 @@ declare global {
             get_download_dtls: (fetchId: string) => Promise<ServiceReturn<download_item[]>>;
             allow_download: (bugs: string[]) => Promise<ServiceReturn<boolean>>;
             allow_remove: (bugs: string[]) => Promise<ServiceReturn<boolean>>;
+            copy_and_update_path_download: (params: {download_id: string, download_dtl_ids: string[], destination: string}) => Promise<ServiceReturn<boolean>>,
         };
     }
 } 

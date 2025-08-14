@@ -14,6 +14,10 @@ export class DownloadController {
     async allow_remove(bugs: string[]) {
         return await window.downloadAPI.allow_remove(bugs);
     }
+
+    async copy_and_update_path_download(params: {download_id: string, download_dtl_ids: string[], destination: string}) {
+        return await window.downloadAPI.copy_and_update_path_download(params);
+    }
 }
 
 export const downloadController = new DownloadController();

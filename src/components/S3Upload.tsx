@@ -4,8 +4,9 @@ import { ArrowUpTrayIcon, FolderMinusIcon, FolderPlusIcon, NewspaperIcon, TruckI
 import { showNotification } from "../components/notification";
 import { fsController } from '../controller/fs-controller';
 import { FileItem } from '../types/FileItem';
-import TreeView, { flattenTree, ITreeViewOnNodeSelectProps, ITreeViewOnSelectProps, NodeId } from 'react-accessible-treeview';
+import TreeView, { flattenTree, INode, ITreeViewOnNodeSelectProps, ITreeViewOnSelectProps, NodeId } from 'react-accessible-treeview';
 import { FaCheckSquare, FaMinusSquare, FaRegSquare } from 'react-icons/fa';
+import { IFlatMetadata } from 'react-accessible-treeview/dist/TreeView/utils';
 
 export interface S3UploadProps {
     key_code?: string,
@@ -68,13 +69,16 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
         }
 
         if (items && items.length > 0) {
-            treeview.children.push({name: "Danh sách thư mục đã chọn", children: []} as never)
+            treeview.children.push({
+                id: "#999999999",
+                name: "Danh sách thư mục đã chọn", 
+                children: []} as never)
             const grouped = items.reduce((acc: { [key: string]: FileItem[] }, item) => {
-                if (!acc[item.parent_folder]) {
-                    acc[item.parent_folder] = [];
+                if (!acc[item.parent_name]) {
+                    acc[item.parent_name] = [];
                 }
                 // Push the current item into its category array
-                acc[item.parent_folder].push(item);
+                acc[item.parent_name].push(item);
 
                 return acc;
             }, {});
@@ -83,7 +87,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
             for (const [folder, children] of Object.entries(grouped)) {
                 const child = {
                     name: folder, children: children.map((item) => {
-                        return { ...item, name: item.file_name }
+                        return { ...item, name: item.name }
                     })
                 }
                 setCount(_count++);
@@ -99,27 +103,55 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
         return nodes;
     }, [items]);
 
-
-    const handleNodeOnCheckbox = (node : ITreeViewOnNodeSelectProps) => {
-        const fileName = node.element.name;
-        const checked = node.isSelected;
-        console.log(node)
-        setSelectedItems(prev => {
-            const newSet = new Set(prev);
-            const file = items.find(f => f.file_name === fileName);
-            if (file) {
-                if (checked) {
-                    console.log(checked)
-                    newSet.add(file);
-                } else {
-                    newSet.delete(file);
+    const findItem = (item: INode<IFlatMetadata>, datas: INode<IFlatMetadata>[]): FileItem[] => {
+        let files: FileItem[] = [];
+        
+        for (const id of item.children) {
+            const findedNode = datas.find(f => f.id === id);
+            if (findedNode?.children && findedNode?.children.length > 0) {
+                files.push(...findItem(findedNode, datas))
+            } else {
+                const file = items.find(f => f.name === findedNode?.name);
+                if (file) {
+                    files.push(file);
                 }
             }
-            return newSet;
-        });
+        }
+        return files;
+    }
 
-        console.log(selectedItems);
+    const handleNodeOnCheckbox = (node : ITreeViewOnNodeSelectProps) => {
 
+        if (node.element.id == "#999999999" && node.isSelected === false) {
+            setSelectedItems(new Set());
+        } else if (node.element.id == "#999999999") {
+            setSelectedItems(new Set(findItem(node.element, dataTree)));
+        } else {
+            setSelectedItems(prev => {
+                const newSet = new Set(prev);
+                console.log("start:  " + node.isSelected)
+                if (node.isBranch == true && node.isSelected == false) {
+                    console.log(findItem(node.element, dataTree));
+                    for (const file of findItem(node.element, dataTree)) {
+                        newSet.delete(file);
+                    }
+                } else if (node.isBranch == true) {
+                    for (const file of findItem(node.element, dataTree)) {
+                        newSet.add(file);
+                    }
+                } else {
+                    const file = items.find(f => f.name === node.element?.name);
+                    if (file) {
+                        if (node.isSelected) {
+                            newSet.add(file);
+                        } else {
+                            newSet.delete(file);
+                        }
+                    }
+                }
+                return newSet;
+            });
+        }
     }
 
     // Handle file checkbox change
@@ -185,7 +217,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                                 <TruckIcon className="h-4 w-4 font-bold" />
                                 <span>Di chuyển trên S3</span>
                             </Button>}
-                            {items.length > 0 && <Button className="flex items-center space-x-2"
+                            {(items.length > 0 && selectedItems.size > 0) && <Button className="flex items-center space-x-2"
                                 disabled={selectedItems.size === 0}
                                 onClick={handleUpload}>
                                 <ArrowUpTrayIcon className="h-5 w-5 font-bold" />
