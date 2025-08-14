@@ -128,7 +128,6 @@ export class DownloadService {
                             ON t1.id = t2.download_id
                         WHERE 1 = 1
                             AND t1.id = $1
-                            AND COALESCE(TRIM(t2.path_copied), '') = ''
                         GROUP BY
                             t2.s3_state,
                             t1.download_ymd,

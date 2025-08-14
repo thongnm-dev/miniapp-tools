@@ -4,7 +4,7 @@ import { ArrowUpTrayIcon, FolderMinusIcon, FolderPlusIcon, NewspaperIcon, TruckI
 import { showNotification } from "../components/notification";
 import { fsController } from '../controller/fs-controller';
 import { FileItem } from '../types/FileItem';
-import TreeView, { flattenTree, INode, ITreeViewOnNodeSelectProps, ITreeViewOnSelectProps, NodeId } from 'react-accessible-treeview';
+import TreeView, { flattenTree, INode, ITreeViewOnNodeSelectProps, NodeId } from 'react-accessible-treeview';
 import { FaCheckSquare, FaMinusSquare, FaRegSquare } from 'react-icons/fa';
 import { IFlatMetadata } from 'react-accessible-treeview/dist/TreeView/utils';
 
@@ -36,6 +36,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
     const [selectedIds, setSelectedIds] = useState<NodeId[]>([]);
     const [expandedIds, setExpandedIds] = useState<NodeId[]>([]);
     const [count, setCount] = useState<number>(0);
+    const [bugList, setBugList] = useState<string[]>([]);
 
     const toggle = () => {
         setModalOpen(!modalOpen);
@@ -84,6 +85,8 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
             }, {});
 
             let _count = 1;
+            let bugs: string[] = [];
+
             for (const [folder, children] of Object.entries(grouped)) {
                 const child = {
                     name: folder, children: children.map((item) => {
@@ -91,8 +94,10 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                     })
                 }
                 setCount(_count++);
+                bugs.push(folder);
                 (treeview.children[0] as any).children.push(child as never)
             }
+            setBugList(bugs);
         }
 
         const nodes = flattenTree(treeview);
@@ -154,41 +159,6 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
         }
     }
 
-    // Handle file checkbox change
-    const handleOnCheckbox = (ids: ITreeViewOnSelectProps) => {
-        
-        // const fileName = ids.element.name;
-        // const checked = ids.isSelected;
-        // console.log(ids)
-        // setSelectedItems(prev => {
-        //     const newSet = new Set(prev);
-        //     const file = items.find(f => f.file_name === fileName);
-        //     if (file) {
-        //         if (checked) {
-        //             console.log(checked)
-        //             newSet.add(file);
-        //         } else {
-        //             newSet.delete(file);
-        //         }
-        //     }
-        //     return newSet;
-        // });
-
-        // console.log(selectedItems);
-    };
-
-    // Open file
-    const handleOpenFile = async (filePath: string) => {
-        try {
-            const result = await fsController.openFile(filePath);
-            if (!result.success) {
-                showNotification('Không thể mở file', 'error');
-            }
-        } catch (err) {
-            showNotification('Lỗi mở file', 'error');
-        }
-    };
-
     const handleUpload = async () => {
         await uploadAction(key_code || "", Array.from(selectedItems));
     }
@@ -226,7 +196,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                         </div>
                     </div>
                 </div>
-                <div className={`${modalOpen ? 'overflow-y-auto py-2' : 'hidden'}`}>
+                <div className={`${modalOpen ? 'max-h-[280px] overflow-y-auto py-2' : 'hidden'}`}>
                     {items.length > 0 && <TreeView
                         className='px-4'
                         data={dataTree}
@@ -238,7 +208,6 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                         propagateSelectUpwards
                         togglableSelect
                         onNodeSelect={handleNodeOnCheckbox}
-                        onSelect={handleOnCheckbox}
                         nodeRenderer={({
                             element,
                             isBranch,

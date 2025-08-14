@@ -8,9 +8,11 @@ import closeBtn from "../assets/close.png";
 import okIcon from "../assets/okIcon.png";
 import { FETCH_STATES_LIST } from '../config/constants';
 import S3Upload from '../components/S3Upload';
-import { DocumentIcon, LinkIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { LinkIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { fsController } from '../controller/fs-controller';
 import { FileItem } from '../types/FileItem';
+import { FaFileExcel } from 'react-icons/fa';
+import { s3Controller } from '../controller/s3-controller';
 
 const S3UploadPage: React.FC = () => {
     const [modalTitle, setModalTitle] = useState<string>("");
@@ -18,7 +20,6 @@ const S3UploadPage: React.FC = () => {
     const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
     const { showLoading, hideLoading } = useLoading();
     const [uploadFileItems, setUploadFileItems] = useState<FileItem[]>([]);
-    const [selectedFilesUpload, setSelectedFilesUpload] = useState<Set<FileItem>>(new Set());
 
     const [S303UploadItems, setS303UploadItems] = useState<FileItem[]>([]);
     const [S305UploadItems, setS305UploadItems] = useState<FileItem[]>([]);
@@ -93,34 +94,13 @@ const S3UploadPage: React.FC = () => {
         }
     };
 
-
-    const refreshData = async () => {
-
-    }
-
-    // handle file selection
-    const handleFileSelection = (filePath: string, checked: boolean) => {
-        setSelectedFilesUpload(prev => {
-            const newSet = new Set(prev);
-            const file = uploadFileItems.find(f => f.full_path === filePath);
-            if (file) {
-                if (checked) {
-                    newSet.add(file);
-                } else {
-                    newSet.delete(file);
-                }
-            }
-            return newSet;
-        });
-    };
-
     const uploadAction03 = async (keyCode: string, rows: FileItem[]) => {
 
-        // if (rows.length === 0) {
-        //     showNotification("Chưa chọn tập tin để tải lên.", "error");
+        if (rows.length === 0) {
+            showNotification("Chưa chọn tập tin để tải lên.", "error");
 
-        //     return;
-        // }
+            return;
+        }
         setModalTitle("Thực hiện tải tập tin lên S3 AWS")
         setUploadFileItems(rows);
         setOpenModal(true);
@@ -128,10 +108,10 @@ const S3UploadPage: React.FC = () => {
 
     const uploadAction05 = async (keyCode: string, rows: FileItem[]) => {
 
-        // if (rows.length === 0) {
-        //     showNotification("Chưa chọn tập tin để tải lên.", "error");
-        //     return;
-        // }
+        if (rows.length === 0) {
+            showNotification("Chưa chọn tập tin để tải lên.", "error");
+            return;
+        }
 
         setUploadFileItems(rows);
         setOpenModal(true);
@@ -139,43 +119,45 @@ const S3UploadPage: React.FC = () => {
 
     const handleConfirmUpload = async () => {
         try {
-            // setShowConfirmModal(false);
-            // showLoading('Uploading files to S3...');
+            showLoading('Đang thực hiện tải tập tin lên S3. Vui lòng không tắt màn hình...');
 
-            // const filesToUpload = Array.from(selectedFiles);
-            // const totalFiles = filesToUpload.length;
-            // let uploadedCount = 0;
+            const filesToUpload = Array.from(uploadFileItems);
+            const totalFiles = filesToUpload.length;
+            let uploadedCount = 0;
 
-            // for (const file of filesToUpload) {
-            //     try {
-            //         // Update progress for this file
-            //         setUploadProgress(prev => ({ ...prev, [file.path]: 0 }));
+            for (const file of filesToUpload) {
+                try {
+                    // Update progress for this file
+                    setUploadProgress(prev => ({ ...prev, [file.full_path]: 0 }));
 
-            //         // Simulate upload progress (replace with actual upload logic)
-            //         for (let i = 0; i <= 100; i += 10) {
-            //             setUploadProgress(prev => ({ ...prev, [file.path]: i }));
-            //             await new Promise(resolve => setTimeout(resolve, 100));
-            //         }
+                    // Simulate upload progress (replace with actual upload logic)
+                    for (let i = 0; i <= 100; i += 10) {
+                        setUploadProgress(prev => ({ ...prev, [file.full_path]: i }));
+                        await new Promise(resolve => setTimeout(resolve, 100));
 
-            //         // TODO: Implement actual S3 upload here
-            //         // const result = await electronAPI.s3UploadFile(file.name, file.path);
+                    }
+                    console.log(file.full_path)
 
-            //         uploadedCount++;
-            //         showNotification(`Uploaded: ${file.name}`, 'success');
-            //     } catch (error) {
-            //         showNotification(`Failed to upload: ${file.name}`, 'error');
-            //     }
-            // }
+                    const params = {
+                        
+                    } as { destination: string, fileUploads: {file_path: string, sub_bucket: string}}
+                    // TODO: Implement actual S3 upload here
+                    // await s3Controller.handleUploadFile(params);
 
-            // if (uploadedCount === totalFiles) {
-            //     showNotification(`Successfully uploaded ${uploadedCount} files to S3`, 'success');
-            //     setSelectedFiles(new Set());
-            //     setUploadProgress({});
-            // } else {
-            //     showNotification(`Uploaded ${uploadedCount}/${totalFiles} files`, 'info');
-            // }
+                    uploadedCount++;
+                    showNotification(`Đã tải tập tin: ${file.name}`, 'success');
+                } catch (error) {
+                    showNotification(`Tập tin tải thất bại: ${file.name}`, 'error');
+                }
+            }
+
+            if (uploadedCount === totalFiles) {
+                showNotification(`Đã thực hiện tải thành công ${uploadedCount} tập tin lên S3`, 'success');
+            } else {
+                showNotification(`Đã tải ${uploadedCount}/${totalFiles} tập tin.`, 'info');
+            }
         } catch (error) {
-            showNotification('Failed to upload files to S3', 'error');
+            showNotification('Tải tập tin lên S3 thất bại', 'error');
         } finally {
             hideLoading();
         }
@@ -195,16 +177,15 @@ const S3UploadPage: React.FC = () => {
     };
 
     const columns = [
-        { key: 'name', label: 'File Name' },
-        { key: 'size', label: 'Size' },
-        { key: 'progress', label: 'Upload Progress' },
-        { key: 'actions', label: 'Actions' },
+        { key: 'name', label: 'Tên tập tin' },
+        { key: 'size', label: 'Kích thước' },
+        { key: 'progress', label: 'Tiến trình (%)' }
     ];
 
     const customCellRender = {
         name: (row: Record<string, any>) => (
             <div className="flex items-center space-x-2">
-                <DocumentIcon className="w-5 h-5 text-gray-500" />
+                <FaFileExcel className="w-5 h-5 text-green-600" />
                 <span className="font-medium text-gray-900">{row.name}</span>
             </div>
         ),
@@ -212,23 +193,18 @@ const S3UploadPage: React.FC = () => {
             <span className="text-gray-600">{formatFileSize(row.size)}</span>
         ),
         progress: (row: Record<string, any>) => {
-            const progress = uploadProgress[row.path] || 0;
+            const prog = uploadProgress[row.file_path] || 0;
             return (
                 <div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
                             className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${progress}%` }}
+                            style={{ width: `${prog}%` }}
                         ></div>
                     </div>
-                    <span className="text-xs text-gray-500">{progress}%</span>
+                    <span className="text-xs text-gray-500">{prog}%</span>
                 </div>
             );
-        },
-        actions: (row: Record<string, any>) => {
-            return (
-                <div></div>
-            )
         }
     };
 
@@ -255,15 +231,12 @@ const S3UploadPage: React.FC = () => {
                             data={uploadFileItems.map(file => ({
                                 name: file.name,
                                 size: file.file_size,
-                                progress: 0,
-                                file: file,
-                                actions: file.full_path
+                                progress: file.file_path
                             }))}
                             showFilter={false}
                             showCheckboxes={false}
                             customCellRender={customCellRender}
-                            onRowSelectionChange={handleFileSelection}
-                            rowKey="path"
+                            rowKey="file_path"
                         />
                     </div>
 
@@ -275,7 +248,7 @@ const S3UploadPage: React.FC = () => {
                         </Button>
                         <Button className="flex items-center space-x-2" onClick={handleConfirmUpload}>
                             <img src={okIcon} className="h-5 w-5 animate-bounce" />
-                            <span>Chọn</span>
+                            <span>Bắt đầu...</span>
                         </Button>
                     </div>
                 </div>

@@ -105,8 +105,10 @@ const S3DownloadDetailPage: React.FC = () => {
                 showNotification('Sao chép tập tin thành công.', 'success');
                 setDisplayModal(false);
                 const result = await downloadController.get_download_dtls(id || "");
-                if (result.success)
+                if (result.success) {
                     setDownloadItems(result.data as download_item[]);
+                }
+                setSelectedItems(new Set());
             } else {
                 showNotification(result.message || 'Sao chép tập tin thất bại.!', 'error');
             }
@@ -140,7 +142,7 @@ const S3DownloadDetailPage: React.FC = () => {
                                     <FolderOpenIcon className="w-4 h-4" />
                                     <span>Hiển thị folder</span>
                                 </Button>
-                                <Button
+                                {selectedItems.size > 0 && <Button
                                     onClick={handleCopyFolders}
                                     disabled={selectedItems.size == 0}
                                     className="flex items-center space-x-2"
@@ -148,6 +150,7 @@ const S3DownloadDetailPage: React.FC = () => {
                                     <DocumentDuplicateIcon className="w-4 h-4" />
                                     <span>Sao chép ({selectedItems.size})</span>
                                 </Button>
+}
                             </div>
                         </div>
                     </div>

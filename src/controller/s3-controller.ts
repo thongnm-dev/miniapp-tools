@@ -21,6 +21,10 @@ export class S3Controller {
     async handleMoveObjectS3(formData: {source: string, destination: string, objectData: string[]}) {
         return await window.s3API.moveObjectS3(formData);
     }
+
+    async handleUploadFile(params: { destination: string, fileUploads: {file_path: string, sub_bucket: string}}) {
+        return await window.s3API.uploadFile(params);
+    }
 }
 
 export const s3Controller = new S3Controller();

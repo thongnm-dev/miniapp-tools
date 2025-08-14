@@ -120,7 +120,7 @@ const S3Download: React.FC<S3UploadProps> = ({ key_code = "", title = "", items 
                             showPagination={false}
                             showFilter={false}
                             showCheckboxes={false}
-                            scrollHeight={500}
+                            scrollHeight={280}
                             rowKey="bug_no"
                         />
                     </div>

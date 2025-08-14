@@ -114,7 +114,9 @@ contextBridge.exposeInMainWorld('s3API', {
     getDownloadList: () => ipcRenderer.invoke(IPC_CHANNELS.S3_GET_DOWNLOAD_LIST),
     getLocalPathSyncDir: () => ipcRenderer.invoke(IPC_CHANNELS.GET_S3_LOCAL_SYNC_WORKDIR),
     downloadFile: (user_id: string, keys: string[], localPath: string) => ipcRenderer.invoke(IPC_CHANNELS.S3_DOWNLOAD_FILES, user_id, keys, localPath),
-    moveObjectS3: (formData: { source: string, destination: string, objectData: string[] }) => ipcRenderer.invoke(IPC_CHANNELS.S3_MOVE_OBJECT, formData),
+    moveObjectS3: (params: { source: string, destination: string, objectData: string[] }) => ipcRenderer.invoke(IPC_CHANNELS.S3_MOVE_OBJECT, params),
+    uploadFile: (params: { destination: string, fileUploads: {file_path: string, sub_bucket: string} }) => ipcRenderer.invoke(IPC_CHANNELS.S3_UPLOAD_OBJECTS, params),
+    deleteObjectS3: (params: { destination: string, objectData: string[] }) => ipcRenderer.invoke(IPC_CHANNELS.S3_DELETE_OBJECTS, params),
 });
 
 // Fetch Tran API
@@ -140,7 +142,9 @@ declare global {
             getDownloadList: () => Promise<ServiceReturn<{ [key: string]: { bugs: string[] } }>>;
             getLocalPathSyncDir: () => Promise<ServiceReturn<string>>;
             downloadFile: (user_id: string, keys: string[], localPath: string) => Promise<ServiceReturn<boolean>>;
-            moveObjectS3: (formData: { source: string, destination: string, objectData: string[] }) => Promise<ServiceReturn<boolean>>;
+            moveObjectS3: (params: { source: string, destination: string, objectData: string[] }) => Promise<ServiceReturn<boolean>>;
+            deleteObjectS3: (params: { source: string, objectData: string[] }) => Promise<ServiceReturn<boolean>>;
+            uploadFile: (params: { destination: string, fileUploads: {file_path: string, sub_bucket: string}}) => Promise<ServiceReturn<boolean>>;
         };
 
         systemAPI: {
