@@ -20,7 +20,6 @@ const S3UploadPage: React.FC = () => {
     const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
     const { showLoading, hideLoading } = useLoading();
     const [uploadFileItems, setUploadFileItems] = useState<FileItem[]>([]);
-
     const [S303UploadItems, setS303UploadItems] = useState<FileItem[]>([]);
     const [S305UploadItems, setS305UploadItems] = useState<FileItem[]>([]);
 

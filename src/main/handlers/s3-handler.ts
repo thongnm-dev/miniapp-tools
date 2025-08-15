@@ -34,7 +34,13 @@ export const setupS3Handlers = () => {
   });
 
   // handle move object s3
-  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_MOVE_OBJECT, async (_event, formData: {source: string, destination: string, objectData: string[]}) => {
-    return await s3Service.moveObjectS3(formData);
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_MOVE_OBJECT, async (_event, params: {source: string, destination: string, objectData: string[]}) => {
+    return await s3Service.moveObjectS3(params);
+  });
+
+  
+  // handle move object s3
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_UPLOAD_OBJECTS, async (_event, params: { destination: string, fileUploads: {file_path: string, sub_bucket: string} }) => {
+    return await s3Service.uploadFile(params);
   });
 }; 

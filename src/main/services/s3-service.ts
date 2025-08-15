@@ -365,19 +365,19 @@ export class S3Service {
     }
 
     // upload file to s3
-    async uploadFile(formData: { destination: string, objectData: {bug_no: string, file_path: string}[]}): Promise<ServiceReturn<string>> {
+    async uploadFile(params: { destination: string, fileUploads: {file_path: string, sub_bucket: string} }): Promise<ServiceReturn<string>> {
         try {
-            let _destination_path = this.config.folderName + '/' + formData.destination + '/';
+            let _destination_path = this.config.folderName + '/' + params.destination + '/';
 
-            for (const objectKey of formData.objectData) {
-                _destination_path = _destination_path + objectKey.bug_no + "/"
-                const params: PutObjectRequest = {
-                    Bucket: this.config.bucketName,
-                    Key: _destination_path
-                };
+            // for (const objectKey of formData.objectData) {
+            //     _destination_path = _destination_path + objectKey.bug_no + "/"
+            //     const params: PutObjectRequest = {
+            //         Bucket: this.config.bucketName,
+            //         Key: _destination_path
+            //     };
 
-                // await this.s3.send(params);
-            }
+            //     // await this.s3.send(params);
+            // }
             return { success: true };
         } catch (error) {
             return { success: false, message: (error as Error).message };
