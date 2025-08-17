@@ -15,6 +15,8 @@ import { FETCH_STATES_LIST } from '../config/constants';
 import { s3_state } from '../types/s3_state';
 import { upload_item } from '../types/upload_item';
 
+const list_code_items = ["01", "03", "05"];
+
 const S3UploadPage: React.FC = () => {
     const { user } = useAuth();
     const { showLoading, hideLoading } = useLoading();
@@ -30,9 +32,9 @@ const S3UploadPage: React.FC = () => {
 
     const S3_OBJECT_TO_DELETE = useMemo(() => {
         if (destination) {
-            return FETCH_STATES_LIST.find((item) => item.link_available === destination && item.is_to_alx === true) || {} as s3_state;
+            return FETCH_STATES_LIST.filter((item) => item.link_available.includes(destination) && item.is_to_alx === true) || [] as s3_state[];
         }
-        return {} as s3_state;
+        return [] as s3_state[];
     }, [destination]);
     
     const uploadAction = async (params: {keyCode: string, title: string, is_folder_same_name: boolean, selected_items: file_item[]}) => {
@@ -87,12 +89,13 @@ const S3UploadPage: React.FC = () => {
             } else {
                 showLoading('Đang thực hiện xoá tập tin lên S3. Vui lòng không tắt màn hình...');
 
-                const delete_items = Array.from(deleteItems.map((item) => item.bug_no)) as string[];
+                const delete_items = Array.from(deleteItems.map((item) => {
+                    return {source: item.state_cd, target: item.bug_no}
+                })) as [];
                 const params = {
                     user_id: user?.username || "",
                     upload_id: uploaded_id,
                     relative_source: destination,
-                    source: S3_OBJECT_TO_DELETE.code,
                     delete_items: delete_items
                 }
 
@@ -157,9 +160,13 @@ const S3UploadPage: React.FC = () => {
         <React.Fragment>
             <div className="space-y-4">
                 <div className="grid grid-cols-1 space-y-3">
-                    <S3Upload key_code="01" uploadAction={uploadAction} />
-                    <S3Upload key_code="03" uploadAction={uploadAction}/>
-                    <S3Upload key_code="05" uploadAction={uploadAction}/>
+                    {list_code_items.map((code, index) => {
+                        return (
+                            <>
+                                <S3Upload key_code={code} uploadAction={uploadAction} key={index}/>
+                            </>
+                        )
+                    })}
                 </div>
             </div>
 
@@ -169,9 +176,10 @@ const S3UploadPage: React.FC = () => {
                     <span className='font-bold'>Bạn đang thực hiện tải các tập tin lên đường dẫn sau:</span>
                     <span className='text-red-600 font-bold'>{modalHeaderTitle}</span>
                 </div>}
-                {is_updating === false && <div className='flex flex-row bg-white p-4 gap-2 border border-b-2'>
+                {is_updating === false && S3_OBJECT_TO_DELETE.length === 1 &&<div className='flex flex-row bg-white p-4 gap-2 border border-b-2'>
                     <span className='font-bold'>Bạn đang thực hiện xoá các tập tin lên đường dẫn sau:</span>
-                    <span className='text-red-600 font-bold'>{S3_OBJECT_TO_DELETE.path}</span>
+                    <span className='text-red-600 font-bold'>{S3_OBJECT_TO_DELETE[0].path}</span>
+                    
                 </div>}
                 {destination === "01" && <div className='flex flex-row bg-white p-2 gap-2'>
                     <div className="flex items-center text-red-600">
@@ -201,13 +209,40 @@ const S3UploadPage: React.FC = () => {
                         <DataTable
                             className='h-full'
                             columns={[
-                                { key: 'name', label: 'Đối tượng xoá' }
+                                { key: 'option_select', label: 'Đích nơi xoá' },
+                                { key: 'bug_no', label: 'Đối tượng xoá' }
                             ]}
                             data={deleteItems.map(file => ({
-                                name: file.bug_no
+                                bug_no: file.bug_no,
+                                state_cd: file.state_cd
                             }))}
                             showFilter={false}
                             showCheckboxes={false}
+                            customCellRender={{
+                                option_select: (row: Record<string, any>) => (
+                                    <div className="flex items-center space-x-2">
+                                        <select value={row.state_cd} onChange={(event) => {
+                                            const newValue = event.target.value;
+
+                                            // update deleteItems state properly instead of mutating directly
+                                            setDeleteItems((prev) =>
+                                            prev.map((item) =>
+                                                item.bug_no === row.bug_no
+                                                ? { ...item, state_cd: newValue }
+                                                : item
+                                            )
+                                            );
+
+                                            console.log(newValue);
+
+                                        }} disabled={row.state_cd === '05'}>
+                                            {S3_OBJECT_TO_DELETE.map((item, index) => {
+                                                return <option value={item.code} key={index}>{item.path}</option>
+                                            })}
+                                        </select>
+                                    </div>
+                                )
+                            }}
                             rowKey="bug_no"
                         />
                     </div>}

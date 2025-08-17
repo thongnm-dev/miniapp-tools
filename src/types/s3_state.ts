@@ -3,5 +3,5 @@ export interface s3_state {
     path: string,
     subscribe: string,
     is_to_alx: boolean,
-    link_available: string
+    link_available: string[]
 }

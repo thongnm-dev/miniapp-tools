@@ -139,14 +139,50 @@ export class UploadService {
                 `, [params.upload_id, params.state, params.user_id]);
 
             const upload_items: upload_item [] = [];
+
+            const state_cd = params.state === "03_対応確認中（エネコム確認）" ? "02" : "05";
             for (const row of result?.rows || []) {
                 upload_items.push({
-                    bug_no: row.bug_no
+                    bug_no: row.bug_no,
+                    state_cd: state_cd
                 });
             }
             return { success: true, data: upload_items };
         } catch (err) {
             return {success: false, message: "Không thể lấy dữ liệu tập tin đã tải lên."}
+        }
+    }
+
+    async display_upload_button(params: { user_id: string, state: string, upload_id: string, select_items: string[] }) : Promise<ServiceReturn<boolean>> {
+        if (!this.db) return { success: false, message: "", data: false};
+
+        try {
+            const client = await this.db.getClient();
+            const result = await client.query(`
+                    SELECT
+                        COUNT(*)
+                    FROM 
+                        upload_hdr t1
+                    INNER JOIN upload_dtl t2
+                        ON t1.id = t2.upload_id 
+                    WHERE 1 = 1
+                        AND t1.id = $1
+                        AND t1.s3_state = $2
+                        AND t1.created_by = $3
+                        AND t2.bug_no = ANY($4::text[])
+                `, [params.upload_id, params.state, params.user_id, params.select_items]);
+
+                const rowCount = parseInt(result.rows[0].count, 10);
+
+            if (rowCount === params.select_items.length) {
+                return { success: true, data: false};
+            } else if (rowCount !== params.select_items.length) {
+                return { success: true, data: true};
+            }
+
+            return { success: true, data: false};
+        } catch (err) {
+            return {success: false, data: false}
         }
     }
 }

@@ -28,7 +28,7 @@ export class S3Controller {
         return await window.s3API.uploadFile(params);
     }
 
-    async handleDeleteObjects(params: { user_id: string, upload_id: string, relative_source: string, source: string, delete_items: string[]}) {
+    async handleDeleteObjects(params: { user_id: string, upload_id: string, relative_source: string, delete_items: {source: string, target: string}[]}) {
         return await window.s3API.deleteObjectS3(params);
     }
 }

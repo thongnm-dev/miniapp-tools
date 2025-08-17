@@ -152,7 +152,7 @@ contextBridge.exposeInMainWorld('s3API', {
         return ipcRenderer.invoke(IPC_CHANNELS.S3_UPLOAD_OBJECTS, params) as Promise<ServiceReturn<{ upload_id: string, uploaded_items: upload_item[]}>>
     },
 
-    deleteObjectS3: (params: { user_id: string, upload_id: string, relative_source: string, source: string, delete_items: string[]}) => {
+    deleteObjectS3: (params: { user_id: string, upload_id: string, relative_source: string, delete_items: {source: string, target: string}[]}) => {
         return ipcRenderer.invoke(IPC_CHANNELS.S3_DELETE_OBJECTS, params) as Promise<ServiceReturn<string[]>>
     },
 });
@@ -197,7 +197,7 @@ declare global {
             moveObjectS3: (params: { source: string, file_items: string[] }) => Promise<ServiceReturn<boolean>>;
 
             // delete object at S3 storage
-            deleteObjectS3: (params: {user_id: string, upload_id: string, relative_source: string, source: string, delete_items: string[]}) => Promise<ServiceReturn<string[]>>;
+            deleteObjectS3: (params: {user_id: string, upload_id: string, relative_source: string, delete_items: {source: string, target: string}[]}) => Promise<ServiceReturn<string[]>>;
 
             // upload file to S3 storage
             uploadFile: (params: { user_id: string, destination: string, is_folder_same_name: boolean, file_items: file_item[]}) => Promise<ServiceReturn<{upload_id: string, uploaded_items: upload_item[]}>>;

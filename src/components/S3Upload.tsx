@@ -207,7 +207,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploadAction, action
     };
 
     return (
-        <React.Fragment key={key_code}>
+        <React.Fragment>
             <div className="shadow rounded grid grid-cols-1 bg-white" >
                 <div className="border-b px-4 py-2 border-gray-200 flex flex-col">
                     <div className="flex items-center justify-between hover:cursor-pointer" >

@@ -40,11 +40,13 @@ export const setupS3Handlers = () => {
   });
 
   // handle move object s3
-  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_UPLOAD_OBJECTS, async (_event, params: { user_id: string, destination: string, is_folder_same_name: boolean, file_items: file_item []}) => {
-    return await s3Service.uploadFile(params);
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_UPLOAD_OBJECTS, 
+      async (_event, params: { user_id: string, destination: string, is_folder_same_name: boolean, file_items: file_item[]}) => {
+      return await s3Service.uploadFile(params);
   });
 
-  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_DELETE_OBJECTS, async (_event, params: { user_id: string, upload_id: string, relative_source: string, source: string, delete_items: string[]}) => {
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_DELETE_OBJECTS, 
+      async (_event, params: { user_id: string, upload_id: string, relative_source: string, delete_items: {source: string, target: string}[]}) => {
     return await s3Service.deleteObjectS3(params);
   });
 }; 

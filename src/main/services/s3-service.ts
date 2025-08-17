@@ -545,19 +545,21 @@ export class S3Service {
     }
 
     // delete object
-    public async deleteObjectS3(params: { user_id: string, upload_id: string, relative_source: string, source: string, delete_items: string[] }):
+    public async deleteObjectS3(params: { user_id: string, upload_id: string, relative_source: string, delete_items: {source: string, target: string}[] }):
         Promise<ServiceReturn<string[]>> {
 
         try {
 
-            const S3_OBJECT_TARGET = FETCH_STATES_LIST.find((item) => item.link_available === params.relative_source && item.is_to_alx === true) || {} as s3_state;
+            const S3_OBJECT_TARGET = FETCH_STATES_LIST.filter((item) => item.link_available.includes(params.relative_source) && item.is_to_alx === true) || {} as s3_state;
 
-            if (!S3_OBJECT_TARGET) {
+            if (S3_OBJECT_TARGET.length === 0) {
                 return { success: false, message: "Thông tin nơi lưu trữ trên S3 không tồn tại." };
             }
 
-            if (params.source !== S3_OBJECT_TARGET.code) {
-                return { success: false, message: "Thông tin thiết lập đích xoá trên S3 không khớp." };
+            for (const delete_item of params.delete_items) {
+                if (!S3_OBJECT_TARGET.find((item) => item.code === delete_item.source)) {
+                    return { success: false, message: "Thông tin thiết lập đích xoá trên S3 không khớp." };
+                }
             }
 
             const s3client = this.s3;
@@ -571,11 +573,12 @@ export class S3Service {
                 return response.Contents || [];
             }
 
-            const _source_path = this.config.folderName + '/' + S3_OBJECT_TARGET.path + '/';
             let results = [];
             let deleted_items: Set<string> = new Set();
             for (const delete_item of params.delete_items) {
-                let _source_bug_path = _source_path + delete_item + '/';
+                const TARGET_DELETE = S3_OBJECT_TARGET.find((item) => item.code === delete_item.source) as s3_state;
+                const _source_path = this.config.folderName + '/' + TARGET_DELETE.path + '/';
+                let _source_bug_path = _source_path + delete_item.target + '/';
                 const objectDatas = await listObjects(this.config.bucketName, _source_bug_path) || [];
                 const _objectTarget = objectDatas.filter((item) => item.Key !== _source_path);
 
@@ -591,7 +594,7 @@ export class S3Service {
                     } catch {}
                 }
                 await Promise.all(results);
-                deleted_items.add(delete_item);
+                deleted_items.add(delete_item.target);
             }
 
             return { success: true, message: "Đã xoá thành công.", data: Array.from(deleted_items) }

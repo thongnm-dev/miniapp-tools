@@ -38,7 +38,7 @@ const columns = [
     }
 ];
 
-const S3_FOLDER_DOWNLOAD = FETCH_STATES_LIST.filter((item) => item.is_to_alx);
+const S3_FOLDER_DOWNLOAD = FETCH_STATES_LIST.filter((item) => item.is_to_alx === true);
 
 const S3_FOLDER_DOWNLOAD_02 = S3_FOLDER_DOWNLOAD.find((item) => item.code === "02");
 const S3_FOLDER_DOWNLOAD_04 = S3_FOLDER_DOWNLOAD.find((item) => item.code === "04");
