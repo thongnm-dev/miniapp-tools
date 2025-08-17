@@ -597,6 +597,13 @@ export class S3Service {
                 deleted_items.add(delete_item.target);
             }
 
+            const OBJECT_TARGET = FETCH_STATES_LIST.filter((item) => item.code === params.relative_source && item.is_to_alx === false)[0];
+            const param_upd = {
+                state: OBJECT_TARGET.path,
+                upload_id: params.upload_id,
+                selected_items: Array.from(deleted_items)
+            }
+            await uploadService.update_state_after_move(param_upd);
             return { success: true, message: "Đã xoá thành công.", data: Array.from(deleted_items) }
         } catch (error) {
             return { success: false, message: (error as Error).message };

@@ -185,6 +185,31 @@ export class UploadService {
             return {success: false, data: false}
         }
     }
+
+    async update_state_after_move(params: {state: string, upload_id: string, selected_items: string[] }): Promise<ServiceReturn<boolean>> {
+        if (!this.db) {
+            return { success: false };
+        }
+
+        try {
+            const client = await this.db.getClient();
+            await client.query(`BEGIN`);
+            await client.query(`
+                UPDATE upload_hdr SET 
+                    is_moved_at_s3 = true
+                WHERE 1 = 1
+                    AND id = $1
+                    AND s3_state = $2
+                    AND upload_count = (SELECT COUNT(1) FROM upload_dtl WHERE upload_id = $1 AND bug_no = ANY($3::text[]));
+                    `, [params.upload_id, params.state, params.selected_items]);
+            await client.query(`COMMIT`);
+
+            return { success: true, data: true};
+        } catch (error) {
+            (await this.db.getClient()).query("ROLLBACK")
+            return { success: false, message: (error as Error).message };
+        }
+    }
 }
 
 export const uploadService = new UploadService(new DatabaseService(getDatabaseConfig()));
