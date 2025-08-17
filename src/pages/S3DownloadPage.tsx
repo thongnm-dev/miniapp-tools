@@ -7,8 +7,6 @@ import { useLoading } from "../stores/LoadingContext";
 import { showNotification } from '../components/notification';
 import Modal from "../components/ui/Modal";
 import { fsController } from "../controller/fs-controller";
-import closeBtn from "../assets/close.png";
-import okIcon from "../assets/okIcon.png";
 import emptyList from "../assets/empty.gif";
 import DataTable from "../components/ui/DataTable";
 import { Link } from "react-router-dom";
@@ -17,6 +15,9 @@ import { StringUtils } from "../core/utils/string-utils";
 import S3Download from "../components/S3Download";
 import Fieldset from "../components/ui/Fieldset";
 import { useAuth } from "../stores/AuthContext";
+import { download_item } from "../types/download_item";
+import { GiExitDoor } from "react-icons/gi";
+import { FcOk } from "react-icons/fc";
 
 const columns = [
     {
@@ -37,15 +38,6 @@ const columns = [
     }
 ];
 
-export interface download_inf {
-    id: number,
-    download_ymd: string,
-    download_hm: string,
-    sync_path: string,
-    download_count: number,
-    s3_state: string
-}
-
 const S3_FOLDER_DOWNLOAD = FETCH_STATES_LIST.filter((item) => item.is_to_alx);
 
 const S3_FOLDER_DOWNLOAD_02 = S3_FOLDER_DOWNLOAD.find((item) => item.code === "02");
@@ -53,14 +45,14 @@ const S3_FOLDER_DOWNLOAD_04 = S3_FOLDER_DOWNLOAD.find((item) => item.code === "0
 
 export const S3DownloadPage: React.FC = () => {
     const { showLoading, hideLoading } = useLoading();
-    const {user} = useAuth();
+    const { user } = useAuth();
     const [displayModal, setDisplayModal] = useState(false);
     const [moving, setMoving] = useState<boolean>(false);
     const [selectDestinationPath, setSelectDestinationPath] = useState<string>("");
     const [errorCheck, setErrorCheck] = useState<string>("");
     const [modalTitle, setModalTitle] = useState<string>("");
-    const [currentExec, setCurrentExec] = useState<string>("");
-    const [download_items, setDownloadItems] = useState<download_inf[]>([]);
+    const [destination, setDestination] = useState<string>("");
+    const [download_items, setDownloadItems] = useState<download_item[]>([]);
     const [selectedBugs, setSelectedBugs] = useState<Set<string>>(new Set());
     const [S3_FOLDER_BUGS_02, setS3_FOLDER_BUGS_02] = useState<string[]>([]);
     const [S3_FOLDER_BUGS_04, setS3_FOLDER_BUGS_04] = useState<string[]>([]);
@@ -174,95 +166,75 @@ export const S3DownloadPage: React.FC = () => {
 
     // accept
     const handleConfirm = async () => {
-        if (!await fsController.isExitDirectory(selectDestinationPath)) {
-            setErrorCheck("Đường dẫn không tồn tại.!");
-        } else {
-            setDisplayModal(false);
-            const keyDownloads = [currentExec];
-            
-            await handleDownloadFile(keyDownloads, selectDestinationPath);
+        try {
+            let resultFlg = false;
+            if (!moving) {
+                showLoading('Đang thực hiện tải tập tin. Vui lòng không tắt màn hình...');
+                if (!await fsController.isExitDirectory(selectDestinationPath)) {
+                    setErrorCheck("Đường dẫn không tồn tại.!");
 
-            await handleRefresh();
+                } else {
+                    const result = await s3Controller.handleDownloadFile(user?.username || "", [destination], selectDestinationPath);
+                    if (result.success) {
+                        showNotification('Tải về thành công.', 'success');
+                    } else {
+                        showNotification(result.message || 'Tải về thất bại.', 'error');
+                    }
+
+                    await handleRefresh();
+                    resultFlg = true;
+                }
+            } else {
+                const params = {
+                    source: destination,
+                    file_items: Array.from(selectedBugs)
+                }
+                const result = await s3Controller.handleMoveObjectS3(params);
+                if (result.success) {
+                    showNotification('Đã di chuyển file S3 thành công.', 'success');
+                    resultFlg = true;
+                } else {
+                    showNotification(result.message || 'Di chuyển file S3 thất bại!', 'error');
+                }
+
+                const resultReload = await s3Controller.handleGetDownloadList();
+
+                if (resultReload.success && resultReload.data) {
+                    setS3_FOLDER_BUGS_02(resultReload.data[S3_FOLDER_DOWNLOAD_02?.code || ""]?.bugs || []);
+                    setS3_FOLDER_BUGS_04(resultReload.data[S3_FOLDER_DOWNLOAD_04?.code || ""]?.bugs || []);
+                }
+            }
+
+            resultFlg && setDisplayModal(false);
+        } catch (error) {
+            !moving && showNotification('Tải tập tin thất bại', 'error');
+            moving && showNotification('Di chuyển file S3 thất bại!', 'error');
+        } finally {
+            hideLoading();
         }
     }
 
     // handle download each group at s3 store.
-    const hanldeDownloadByGroup = async (code: string) => {
-        setCurrentExec(code);
-
+    const hanldeDownload = async (code: string) => {
         if (StringUtils.isBlank(selectDestinationPath)) {
             const result = await s3Controller.handleGetLocalPathSync();
             if (result.success) {
                 setSelectDestinationPath(result.data || "");
             }
         }
-
+        setDestination(code);
         setModalTitle("Chọn đường dẫn nơi lưu");
         setMoving(false);
         setDisplayModal(true);
     }
 
-    // handle download file
-    const handleDownloadFile = async (keys: string[], localPath: string) => {
-        try {
-            showLoading();
-            const result = await s3Controller.handleDownloadFile(user?.username || "", keys, localPath);
-            if (result.success) {
-                showNotification('Tải về thành công.', 'success');
-            } else {
-                showNotification(result.message || 'Tải về thất bại.', 'error');
-            }
-        } catch (error) {
-            showNotification('Tải về thất bại.', 'error');
-        } finally {
-            hideLoading();
-        }
-    }
-
     // handle move objects
-    const hanldeMoveS3ByGroup = async (code: string) => {
-
-        if (S3_FOLDER_DOWNLOAD_02?.code === code) {
-            setSelectedBugs(new Set(Array.from(S3_FOLDER_BUGS_02)));
-        } else if (S3_FOLDER_DOWNLOAD_04?.code === code) {
-            setSelectedBugs(new Set(Array.from(S3_FOLDER_BUGS_04)));
-        }
-        setCurrentExec(code);
+    const hanldeMoveObject = async (code: string, selected_items: string[]) => {
+        setSelectedBugs(new Set(Array.from(selected_items)));
+        setDestination(code);
         setModalTitle("Di chuyển file S3");
         setMoving(true);
         setDisplayModal(true);
-    }
-
-    // start move
-    const startingMove = async () => {
-
-        try {
-            setDisplayModal(false);
-            showLoading();
-
-            let formData: {} = {};
-            if (S3_FOLDER_DOWNLOAD_02?.code === currentExec) {
-                formData = { ...formData, source: S3_FOLDER_DOWNLOAD_02?.path + "/" + S3_FOLDER_DOWNLOAD_02?.subscribe, destination: S3_FOLDER_DOWNLOAD_02?.path }
-            } else if (S3_FOLDER_DOWNLOAD_04?.code === currentExec) {
-                formData = { ...formData, source: S3_FOLDER_DOWNLOAD_04?.path + "/" + S3_FOLDER_DOWNLOAD_04?.subscribe, destination: S3_FOLDER_DOWNLOAD_04?.path }
-            }
-
-            formData = { ...formData, objectData: Array.from(selectedBugs) }
-
-            const result = await s3Controller.handleMoveObjectS3(formData as { source: string, destination: string, objectData: string[] });
-            if (result.success) {
-                showNotification('Đã di chuyển file S3 thành công.', 'success');
-                setDisplayModal(false);
-                await handleRefresh();
-            } else {
-                setDisplayModal(true);
-                showNotification(result.message || 'Di chuyển file S3 thất bại!', 'error');
-            }
-        } catch (error) {
-            showNotification('Di chuyển file S3 thất bại!', 'error');
-        } finally {
-            hideLoading();
-        }
     }
 
     const customCellRender = {
@@ -296,14 +268,14 @@ export const S3DownloadPage: React.FC = () => {
                             <S3Download key_code={S3_FOLDER_DOWNLOAD_02?.code || ""} key="S3_FOLDER_DOWNLOAD_02"
                                 title={S3_FOLDER_DOWNLOAD_02?.path || ""}
                                 items={S3_FOLDER_BUGS_02}
-                                downloadAction={hanldeDownloadByGroup}
-                                moveAction={hanldeMoveS3ByGroup} />
+                                downloadAction={hanldeDownload}
+                                moveAction={hanldeMoveObject} />
                             {/*  */}
                             <S3Download key_code={S3_FOLDER_DOWNLOAD_04?.code || ""} key="S3_FOLDER_DOWNLOAD_04"
                                 title={S3_FOLDER_DOWNLOAD_04?.path || ""}
                                 items={S3_FOLDER_BUGS_04}
-                                downloadAction={hanldeDownloadByGroup}
-                                moveAction={hanldeMoveS3ByGroup} />
+                                downloadAction={hanldeDownload}
+                                moveAction={hanldeMoveObject} />
                         </React.Fragment>
                     ) :
                         <div className="bg-white rounded text-center text-gray-500 h-full flex flex-col items-center justify-center text-lg">
@@ -339,7 +311,7 @@ export const S3DownloadPage: React.FC = () => {
                         </h2>
                         <div className="flex items-center gap-1 flex-1">
                             <span className="flex-1 rounded-lg px-3 py-3 text-sm font-mono break-all flex items-center border border-red-300">
-                                {S3_FOLDER_DOWNLOAD_02?.code === currentExec
+                                {S3_FOLDER_DOWNLOAD_02?.code === destination
                                     ? S3_FOLDER_DOWNLOAD_02?.path : S3_FOLDER_DOWNLOAD_04?.path}
                             </span>
                         </div>
@@ -365,14 +337,14 @@ export const S3DownloadPage: React.FC = () => {
                         <Button
                             onClick={handleCancelModal}
                             className="flex items-center space-x-2">
-                            <img src={closeBtn} className="h-10 w-10 animate-bounce" />
+                            <GiExitDoor className="h-5 w-5" />
                             <span>Đóng</span>
                         </Button>
                         <Button
-                            onClick={() => moving ? startingMove() : handleConfirm()}
+                            onClick={handleConfirm}
                             disabled={moving ? false : !selectDestinationPath || errorCheck.length !== 0}
                             className="flex items-center space-x-2">
-                            <img src={okIcon} className="h-10 w-10 animate-bounce" />
+                            <FcOk className="h-5 w-5" />
                             <span>Bắt đầu...</span>
                         </Button>
                     </div>

@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../stores/AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { APP_CONFIG } from '../config/config';
-import { ArrowRightEndOnRectangleIcon, EyeIcon, EyeSlashIcon, LockClosedIcon, UserIcon } from '@heroicons/react/24/outline';
+import { ArrowRightEndOnRectangleIcon, EyeIcon, EyeSlashIcon} from '@heroicons/react/24/outline';
 import Button from '../components/ui/Button';
+import { FcKey, FcManager } from 'react-icons/fc';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -91,7 +92,7 @@ const Login: React.FC = () => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <UserIcon className='h-5 w-5'/>
+                  <FcManager className='h-5 w-5'/>
                 </div>
                 <input
                   id="username"
@@ -114,7 +115,7 @@ const Login: React.FC = () => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <LockClosedIcon className='h-5 w-5'/>
+                  <FcKey className='h-5 w-5'/>
                 </div>
                 <input
                   id="password"

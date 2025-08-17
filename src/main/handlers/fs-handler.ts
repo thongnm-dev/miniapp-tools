@@ -109,7 +109,7 @@ export const setupFSHandlers = () => {
                     results.push({
                         success: false,
                         path: filePath,
-                        message: `File ${fileName} already exists in destination`
+                        message: `Tập tin ${fileName} đã tồn tại ở đường dẫn đích.`
                     });
                     continue;
                 }

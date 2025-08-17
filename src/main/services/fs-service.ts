@@ -2,14 +2,15 @@ import { ServiceReturn } from "../@types/service-return";
 import * as path from 'path';
 import * as fs from 'fs';
 import { DateUtils } from "../../core/utils/date-utils";
-import { FileItem } from "../../types/FileItem";
+import { file_item } from "../../types/file_item";
 
 export class FSService {
 
     // read directory
-    async readDirectory(dirPath: string, options?: { onlyExcel?: boolean, fileExtension?: string }): Promise<ServiceReturn<FileItem[]>> {
+    async readDirectory(dirPath: string, options?: { onlyExcel?: boolean, fileExtension?: string }): 
+        Promise<ServiceReturn<file_item[]>> {   
         try {
-            let files: FileItem[] = [];
+            let files: file_item[] = [];
 
             if (!fs.existsSync(dirPath)) {
                 return { success: false, message: 'Đường dẫn không tồn tại.' };
@@ -63,7 +64,8 @@ export class FSService {
     }
 
     // read multi path
-    async readMultiDir(dirPaths: string[], options?: { onlyExcel?: boolean, fileExtension?: string }): Promise<ServiceReturn<FileItem[]>> {
+    async readMultiDir(dirPaths: string[], options?: { onlyExcel?: boolean, fileExtension?: string }): 
+        Promise<ServiceReturn<file_item[]>> {
         try {
 
             let resultPromise = [];
@@ -73,7 +75,7 @@ export class FSService {
 
             const results_promise = await Promise.all(resultPromise);
 
-            let results: FileItem[] = [];
+            let results: file_item[] = [];
 
             for (const item of results_promise.flat()) {
                 results.push(...item?.data as []);
@@ -86,7 +88,8 @@ export class FSService {
     }
 
     // perform copy
-    async copy(filePath: string, fileSubPath: string, destinationPath: string, destinationHis: string): Promise<ServiceReturn<Array<{ path: string; destination: string }>>> {
+    async copy(filePath: string, fileSubPath: string, destinationPath: string, destinationHis: string): 
+        Promise<ServiceReturn<Array<{ path: string; destination: string }>>> {
         try {
 
             if (!fs.existsSync(destinationPath)) {
@@ -164,7 +167,8 @@ export class FSService {
     }
 
     // copied folder
-    private async copyFolder(filePath: string, destinationPath: string): Promise<ServiceReturn<{ path: string; destination: string }[]>> {
+    private async copyFolder(filePath: string, destinationPath: string): 
+        Promise<ServiceReturn<{ path: string; destination: string }[]>> {
         try {
             const items = fs.readdirSync(filePath);
 
@@ -198,7 +202,8 @@ export class FSService {
     }
 
     // copied file
-    async copyFile(filePath: string, destinationPath: string): Promise<ServiceReturn<{ path: string; destination: string }>> {
+    async copyFile(filePath: string, destinationPath: string): 
+        Promise<ServiceReturn<{ path: string; destination: string }>> {
         try {
             const dir = path.dirname(destinationPath);
             await fs.mkdirSync(dir, { recursive: true });
@@ -208,6 +213,18 @@ export class FSService {
                 success: true,
                 data: { path: filePath, destination: destinationPath }
             };
+        } catch (error) {
+            return { success: false, message: (error as Error).message };
+        }
+    }
+
+
+    // read file
+    async readFileToStream(path: string) : Promise<ServiceReturn<fs.ReadStream>> {
+        try {
+            const result = fs.createReadStream(path);
+
+            return {success: true, data: result};
         } catch (error) {
             return { success: false, message: (error as Error).message };
         }

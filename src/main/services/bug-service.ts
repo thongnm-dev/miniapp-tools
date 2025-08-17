@@ -91,4 +91,4 @@ export class BugService {
     }
 }
 
-export const uploadService = new BugService(new DatabaseService(getDatabaseConfig()));
+export const bugService = new BugService(new DatabaseService(getDatabaseConfig()));

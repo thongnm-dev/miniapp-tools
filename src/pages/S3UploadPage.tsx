@@ -1,162 +1,123 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useMemo, useState } from 'react';
 import Button from '../components/ui/Button';
 import DataTable from '../components/ui/DataTable';
 import Modal from '../components/ui/Modal';
 import { showNotification } from '../components/notification';
 import { useLoading } from '../stores/LoadingContext';
-import closeBtn from "../assets/close.png";
-import okIcon from "../assets/okIcon.png";
-import { FETCH_STATES_LIST } from '../config/constants';
 import S3Upload from '../components/S3Upload';
-import { LinkIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { fsController } from '../controller/fs-controller';
-import { FileItem } from '../types/FileItem';
+import { file_item } from '../types/file_item';
 import { FaFileExcel } from 'react-icons/fa';
 import { s3Controller } from '../controller/s3-controller';
+import { useAuth } from '../stores/AuthContext';
+import { FcOk } from 'react-icons/fc';
+import { GiExitDoor } from 'react-icons/gi';
+import { FETCH_STATES_LIST } from '../config/constants';
+import { s3_state } from '../types/s3_state';
+import { upload_item } from '../types/upload_item';
 
 const S3UploadPage: React.FC = () => {
-    const [modalTitle, setModalTitle] = useState<string>("");
-    const [openModal, setOpenModal] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+    const { user } = useAuth();
     const { showLoading, hideLoading } = useLoading();
-    const [uploadFileItems, setUploadFileItems] = useState<FileItem[]>([]);
-    const [S303UploadItems, setS303UploadItems] = useState<FileItem[]>([]);
-    const [S305UploadItems, setS305UploadItems] = useState<FileItem[]>([]);
+    const [modalTitle, setModalTitle] = useState<string>("");
+    const [destination, setDestination] = useState<string>("");
+    const [uploaded_id, setUploadedId] = useState<string>("");
+    const [modalHeaderTitle, setModalHeaderTitle] = useState<string>("");
+    const [openModal, setOpenModal] = useState(false);
+    const [is_updating, setIsUpdating] = useState(false);
+    const [creatFolderSameName, setCreatFolderSameName] = useState(false);
+    const [uploadFileItems, setUploadFileItems] = useState<file_item[]>([]);
+    const [deleteItems, setDeleteItems] = useState<upload_item[]>([]);
 
-    const S3_FOLDER_UPLOAD = useMemo(() => {
-        return FETCH_STATES_LIST.
-            filter((item) => item.is_to_alx === false);
-    }, []);
-
-    const S3_FOLDER_UPLOAD_03 = S3_FOLDER_UPLOAD.find((item) => item.code === "03");
-    const S3_FOLDER_UPLOAD_05 = S3_FOLDER_UPLOAD.find((item) => item.code === "05");
-
-    const actions03 = useCallback((code: string) => {
-        return (
-            <>
-                {S303UploadItems.length > 0 && <Button onClick={() => trashList(code)} className="flex items-center space-x-2 text-red-500 border-red-500">
-                    <TrashIcon className="h-5 w-5 font-bold" />
-                    <span>Dọn sạch</span>
-                </Button>}
-                <Button onClick={() => addAttachment(code)} className="flex items-center space-x-2">
-                    <LinkIcon className="h-5 w-5 font-bold" />
-                    <span>Chọn tập tin</span>
-                </Button>
-            </>
-        )
-    }, [S303UploadItems]);
-
-    const trashList = async (code: string) => {
-        if (S3_FOLDER_UPLOAD_03?.code === code) {
-            setS303UploadItems([]);
-        } else if (S3_FOLDER_UPLOAD_05?.code === code) {
-            setS305UploadItems([]);
+    const S3_OBJECT_TO_DELETE = useMemo(() => {
+        if (destination) {
+            return FETCH_STATES_LIST.find((item) => item.link_available === destination && item.is_to_alx === true) || {} as s3_state;
         }
-    }
-
-    const actions05 = useCallback((code: string) => {
-        return (
-            <React.Fragment>
-                {S305UploadItems.length > 0 && <Button onClick={() => trashList(code)} className="flex items-center space-x-2 text-red-500 border-red-500">
-                    <TrashIcon className="h-5 w-5 font-bold" />
-                    <span>Dọn sạch</span>
-                </Button>}
-                <Button onClick={() => addAttachment(code)} className="flex items-center space-x-2">
-                    <LinkIcon className="h-5 w-5 font-bold" />
-                    <span>Chọn tập tin</span>
-                </Button>
-            </React.Fragment>
-        )
-    }, [S305UploadItems]);
-
-    const addAttachment = async (code: string) => {
-
-        try {
-            const result = await fsController.selectMultiDir();
-
-            if (result.success && result.data) {
-                const results = await fsController.readMultiDir(result.data);
-
-                if (results.success && results.data) {
-                    if (S3_FOLDER_UPLOAD_03?.code === code) {
-                        console.log(results.data)
-                        setS303UploadItems(results.data as []);
-                    } else if (S3_FOLDER_UPLOAD_05?.code === code) {
-                        setS305UploadItems(results.data as []);
-                    }
-                }
-            }
-        } catch (err) {
-            showNotification('Không thể chọn thư mục để tải lên.', 'error');
-        } finally {
-            hideLoading();
-        }
-    };
-
-    const uploadAction03 = async (keyCode: string, rows: FileItem[]) => {
-
-        if (rows.length === 0) {
-            showNotification("Chưa chọn tập tin để tải lên.", "error");
-
-            return;
-        }
-        setModalTitle("Thực hiện tải tập tin lên S3 AWS")
-        setUploadFileItems(rows);
+        return {} as s3_state;
+    }, [destination]);
+    
+    const uploadAction = async (params: {keyCode: string, title: string, is_folder_same_name: boolean, selected_items: file_item[]}) => {
+        setModalHeaderTitle(params.title);
+        setCreatFolderSameName(params.is_folder_same_name);
+        setDestination(params.keyCode);
+        setModalTitle("Tải lên S3 AWS")
+        setUploadFileItems(params.selected_items);
         setOpenModal(true);
+        setIsUpdating(true);
     }
 
-    const uploadAction05 = async (keyCode: string, rows: FileItem[]) => {
-
-        if (rows.length === 0) {
-            showNotification("Chưa chọn tập tin để tải lên.", "error");
-            return;
-        }
-
-        setUploadFileItems(rows);
-        setOpenModal(true);
-    }
-
-    const handleConfirmUpload = async () => {
+    // starting upload selected file to S3 storage
+    const handleConfirm = async () => {
         try {
-            showLoading('Đang thực hiện tải tập tin lên S3. Vui lòng không tắt màn hình...');
+            if (is_updating) {
+                showLoading('Đang thực hiện tải tập tin lên S3. Vui lòng không tắt màn hình...');
 
-            const filesToUpload = Array.from(uploadFileItems);
-            const totalFiles = filesToUpload.length;
-            let uploadedCount = 0;
-
-            for (const file of filesToUpload) {
-                try {
-                    // Update progress for this file
-                    setUploadProgress(prev => ({ ...prev, [file.full_path]: 0 }));
-
-                    // Simulate upload progress (replace with actual upload logic)
-                    for (let i = 0; i <= 100; i += 10) {
-                        setUploadProgress(prev => ({ ...prev, [file.full_path]: i }));
-                        await new Promise(resolve => setTimeout(resolve, 100));
-
-                    }
-                    console.log(file.full_path)
-
-                    const params = {
-                        
-                    } as { destination: string, fileUploads: {file_path: string, sub_bucket: string}}
-                    // TODO: Implement actual S3 upload here
-                    // await s3Controller.handleUploadFile(params);
-
-                    uploadedCount++;
-                    showNotification(`Đã tải tập tin: ${file.name}`, 'success');
-                } catch (error) {
-                    showNotification(`Tập tin tải thất bại: ${file.name}`, 'error');
+                const filesToUpload = Array.from(uploadFileItems);
+                const totalFiles = filesToUpload.length;
+                const params = {
+                    user_id: user?.username || "",
+                    destination: destination,
+                    file_items: filesToUpload,
+                    is_folder_same_name: creatFolderSameName
                 }
-            }
 
-            if (uploadedCount === totalFiles) {
-                showNotification(`Đã thực hiện tải thành công ${uploadedCount} tập tin lên S3`, 'success');
+                const result = await s3Controller.handleUploadFile(params);
+
+                if (!result.success) {
+                    showNotification('Tập tin tải thất bại', 'error');
+                } else {
+                    const uploadedCount = result.data?.uploaded_items.length || 0;
+                    if (uploadedCount === totalFiles) {
+                        showNotification(`Đã thực hiện tải thành công ${uploadedCount} tập tin lên S3`, 'success');
+                    } else {
+                        showNotification(`Đã tải ${uploadedCount}/${totalFiles} tập tin.`, 'info');
+                    }
+
+                    if (result.data && result.data.uploaded_items.length > 0) {
+                        setModalTitle("Thực hiện xoá tập tin S3");
+                        setUploadedId(result.data.upload_id);
+                        setDeleteItems(result.data.uploaded_items);
+                        setIsUpdating(false);
+                        setOpenModal(true);
+                    } else {
+                        setModalTitle("");
+                        setOpenModal(false);
+                    }
+                    setUploadFileItems([]);
+                }
             } else {
-                showNotification(`Đã tải ${uploadedCount}/${totalFiles} tập tin.`, 'info');
+                showLoading('Đang thực hiện xoá tập tin lên S3. Vui lòng không tắt màn hình...');
+
+                const delete_items = Array.from(deleteItems.map((item) => item.bug_no)) as string[];
+                const params = {
+                    user_id: user?.username || "",
+                    upload_id: uploaded_id,
+                    relative_source: destination,
+                    source: S3_OBJECT_TO_DELETE.code,
+                    delete_items: delete_items
+                }
+
+                const result = await s3Controller.handleDeleteObjects(params);
+
+                if (!result.success) {
+                    showNotification('Xoá tập tin S3 thất bại', 'error')
+                    return;
+                }
+
+                const deletedCnt = result.data?.length;
+                const totalFiles = delete_items.length;
+                
+                if (deletedCnt === totalFiles) {
+                    showNotification(`Đã thực hiện xoá thành công ${deletedCnt} tập tin.`, 'success');
+                } else {
+                    showNotification(`Đã xoá ${deletedCnt}/${totalFiles} tập tin.`, 'info');
+                }
+                setOpenModal(false);
+                setModalTitle("");
+                setDeleteItems([]);
             }
         } catch (error) {
-            showNotification('Tải tập tin lên S3 thất bại', 'error');
+            is_updating === true && showNotification('Tải tập tin lên S3 thất bại', 'error');
+            is_updating === false && showNotification('Xoá tập tin S3 thất bại', 'error');
         } finally {
             hideLoading();
         }
@@ -177,8 +138,7 @@ const S3UploadPage: React.FC = () => {
 
     const columns = [
         { key: 'name', label: 'Tên tập tin' },
-        { key: 'size', label: 'Kích thước' },
-        { key: 'progress', label: 'Tiến trình (%)' }
+        { key: 'size', label: 'Kích thước' }
     ];
 
     const customCellRender = {
@@ -190,40 +150,39 @@ const S3UploadPage: React.FC = () => {
         ),
         size: (row: Record<string, any>) => (
             <span className="text-gray-600">{formatFileSize(row.size)}</span>
-        ),
-        progress: (row: Record<string, any>) => {
-            const prog = uploadProgress[row.file_path] || 0;
-            return (
-                <div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${prog}%` }}
-                        ></div>
-                    </div>
-                    <span className="text-xs text-gray-500">{prog}%</span>
-                </div>
-            );
-        }
+        )
     };
 
     return (
         <React.Fragment>
             <div className="space-y-4">
                 <div className="grid grid-cols-1 space-y-3">
-                    <S3Upload key_code={S3_FOLDER_UPLOAD_03?.code} title={S3_FOLDER_UPLOAD_03?.path}
-                        uploadAction={uploadAction03} actions={actions03(S3_FOLDER_UPLOAD_03?.code || "03")}
-                        items={S303UploadItems} />
-                    <S3Upload key_code={S3_FOLDER_UPLOAD_05?.code} title={S3_FOLDER_UPLOAD_05?.path}
-                        uploadAction={uploadAction05} actions={actions05(S3_FOLDER_UPLOAD_05?.code || "05")}
-                        items={S305UploadItems} />
+                    <S3Upload key_code="01" uploadAction={uploadAction} />
+                    <S3Upload key_code="03" uploadAction={uploadAction}/>
+                    <S3Upload key_code="05" uploadAction={uploadAction}/>
                 </div>
             </div>
 
             {/* Modal */}
             <Modal open={openModal} onClose={() => setOpenModal(false)} title={modalTitle} size="xl">
+                {is_updating === true && <div className='flex flex-row bg-white p-4 gap-2 border border-b-2'>
+                    <span className='font-bold'>Bạn đang thực hiện tải các tập tin lên đường dẫn sau:</span>
+                    <span className='text-red-600 font-bold'>{modalHeaderTitle}</span>
+                </div>}
+                {is_updating === false && <div className='flex flex-row bg-white p-4 gap-2 border border-b-2'>
+                    <span className='font-bold'>Bạn đang thực hiện xoá các tập tin lên đường dẫn sau:</span>
+                    <span className='text-red-600 font-bold'>{S3_OBJECT_TO_DELETE.path}</span>
+                </div>}
+                {destination === "01" && <div className='flex flex-row bg-white p-2 gap-2'>
+                    <div className="flex items-center text-red-600">
+                        <input id="chkCreatFolderSameName" type="checkbox" disabled={true}
+                            checked={creatFolderSameName} onChange={(event) => setCreatFolderSameName(event.target.checked)}
+                            className="w-4 h-4 rounded-sm bg-red-400 disable:text-red-600" />
+                        <label htmlFor='chkCreatFolderSameName' className="ms-2 text-sm font-bold">Tạo thư mục tương ứng với tên tập tin</label>
+                    </div>
+                </div>}
                 <div className='grid grid-cols-1 gap-1'>
-                    <div className="rounded-lg shadow">
+                    {is_updating === true && <div className="rounded-lg shadow">
                         <DataTable
                             className='h-full'
                             columns={columns}
@@ -237,16 +196,30 @@ const S3UploadPage: React.FC = () => {
                             customCellRender={customCellRender}
                             rowKey="file_path"
                         />
-                    </div>
+                    </div>}
+                    {is_updating === false && <div className="rounded-lg shadow">
+                        <DataTable
+                            className='h-full'
+                            columns={[
+                                { key: 'name', label: 'Đối tượng xoá' }
+                            ]}
+                            data={deleteItems.map(file => ({
+                                name: file.bug_no
+                            }))}
+                            showFilter={false}
+                            showCheckboxes={false}
+                            rowKey="bug_no"
+                        />
+                    </div>}
 
                     <div className="bg-white flex justify-end bottom-0 gap-2 p-2">
                         <Button onClick={hanldeCloseModal}
                             className="flex items-center space-x-2">
-                            <img src={closeBtn} className="h-5 w-5 animate-bounce" />
+                            <GiExitDoor className="h-5 w-5" />
                             <span>Đóng</span>
                         </Button>
-                        <Button className="flex items-center space-x-2" onClick={handleConfirmUpload}>
-                            <img src={okIcon} className="h-5 w-5 animate-bounce" />
+                        <Button className="flex items-center space-x-2" onClick={handleConfirm}>
+                            <FcOk className="h-5 w-5" />
                             <span>Bắt đầu...</span>
                         </Button>
                     </div>

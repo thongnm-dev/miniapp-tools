@@ -2,8 +2,9 @@ import { contextBridge, ipcRenderer, MenuItem } from 'electron';
 import { RegisterCredentials } from '../types/user';
 import { LoginCredentials, User } from '../types/auth';
 import { ServiceReturn } from './@types/service-return';
-import { FileItem } from '../types/FileItem';
+import { file_item } from '../types/file_item';
 import { download_item } from '../types/download_item';
+import { upload_item } from '../types/upload_item';
 
 // IPC Channel Constants - Inlined to avoid module resolution issues
 // These match the constants in src/config/ipcChannels.ts
@@ -61,8 +62,12 @@ const IPC_CHANNELS = {
 // Expose protected methods that allow the renderer process to use
 contextBridge.exposeInMainWorld('loginAPI', {
     // Login methods
-    login: (credentials: LoginCredentials) => ipcRenderer.invoke(IPC_CHANNELS.LOGIN, credentials),
-    register: (credentials: RegisterCredentials) => ipcRenderer.invoke(IPC_CHANNELS.REGISTER, credentials),
+    login: (credentials: LoginCredentials) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.LOGIN, credentials)
+    },
+    register: (credentials: RegisterCredentials) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.REGISTER, credentials)
+    },
 });
 
 // System API
@@ -73,30 +78,44 @@ contextBridge.exposeInMainWorld('systemAPI', {
     selectMultiDir: () => ipcRenderer.invoke(IPC_CHANNELS.SELECT_MULTI_DIR),
 
     // READ DIRECTORY FOLDER
-    readDirectory: (path: string, options?: {onlyExcel?: boolean, fileExtension?: string }) =>
-        ipcRenderer.invoke(IPC_CHANNELS.READ_DIRECTORY, path, options),
+    readDirectory: (path: string, options?: {onlyExcel?: boolean, fileExtension?: string }) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.READ_DIRECTORY, path, options)
+    },
 
     // READ TREE NODE
-    readMultiDir: (path: string, options?: { isHistory?: boolean, onlyExcel?: boolean, fileExtension?: string }) => 
-        ipcRenderer.invoke(IPC_CHANNELS.READ_MULTI_DIR, path, options),
+    readMultiDir: (path: string, options?: { isHistory?: boolean, onlyExcel?: boolean, fileExtension?: string }) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.READ_MULTI_DIR, path, options)
+    },
 
     // OPEN FILE
-    openFile: (path: string) => ipcRenderer.invoke(IPC_CHANNELS.OPEN_FILE, path),
+    openFile: (path: string) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.OPEN_FILE, path)
+    },
 
     // COPY FILE
-    copyFiles: (filePaths: string[], destinationPath: string) => ipcRenderer.invoke(IPC_CHANNELS.COPY_FILES, filePaths, destinationPath),
+    copyFiles: (filePaths: string[], destinationPath: string) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.COPY_FILES, filePaths, destinationPath)
+    },
 
     // MOVE FILE
-    moveFiles: (filePaths: string[], destinationPath: string) => ipcRenderer.invoke(IPC_CHANNELS.MOVE_FILES, filePaths, destinationPath),
+    moveFiles: (filePaths: string[], destinationPath: string) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.MOVE_FILES, filePaths, destinationPath)
+    },
 
     // DELETE FILE
-    deleteFile: (path: string) => ipcRenderer.invoke(IPC_CHANNELS.DELETE_FILE, path),
+    deleteFile: (path: string) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.DELETE_FILE, path)
+    },
 
     // CHECK EXIST DIR
-    isExitDirectory: (path: string) => ipcRenderer.invoke(IPC_CHANNELS.IS_EXIST_DIR, path),
+    isExitDirectory: (path: string) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.IS_EXIST_DIR, path)
+    },
 
     // Immediate folder watching methods when any file is changed in the folder
-    watchFolder: (folderPath: string) => ipcRenderer.send(IPC_CHANNELS.WATCH_FOLDER, folderPath),
+    watchFolder: (folderPath: string) => {
+        return ipcRenderer.send(IPC_CHANNELS.WATCH_FOLDER, folderPath)
+    },
     unwatchFolder: () => ipcRenderer.send(IPC_CHANNELS.UNWATCH_FOLDER),
     onFolderChanged: (callback: () => void) => {
         ipcRenderer.removeAllListeners(IPC_CHANNELS.FOLDER_CHANGED);
@@ -110,22 +129,51 @@ contextBridge.exposeInMainWorld('systemAPI', {
 
 // S3 API 
 contextBridge.exposeInMainWorld('s3API', {
-    getAllStates: () => ipcRenderer.invoke(IPC_CHANNELS.S3_GET_ALL_STATES),
-    getDownloadList: () => ipcRenderer.invoke(IPC_CHANNELS.S3_GET_DOWNLOAD_LIST),
-    getLocalPathSyncDir: () => ipcRenderer.invoke(IPC_CHANNELS.GET_S3_LOCAL_SYNC_WORKDIR),
-    downloadFile: (user_id: string, keys: string[], localPath: string) => ipcRenderer.invoke(IPC_CHANNELS.S3_DOWNLOAD_FILES, user_id, keys, localPath),
-    moveObjectS3: (params: { source: string, destination: string, objectData: string[] }) => ipcRenderer.invoke(IPC_CHANNELS.S3_MOVE_OBJECT, params),
-    uploadFile: (params: { destination: string, fileUploads: {file_path: string, sub_bucket: string} }) => ipcRenderer.invoke(IPC_CHANNELS.S3_UPLOAD_OBJECTS, params),
-    deleteObjectS3: (params: { destination: string, objectData: string[] }) => ipcRenderer.invoke(IPC_CHANNELS.S3_DELETE_OBJECTS, params),
+    getAllStates: () => {
+        return ipcRenderer.invoke(IPC_CHANNELS.S3_GET_ALL_STATES)
+    },
+    getDownloadList: () => {
+        return ipcRenderer.invoke(IPC_CHANNELS.S3_GET_DOWNLOAD_LIST)
+    },
+    getLocalPathSyncDir: () => {
+        return ipcRenderer.invoke(IPC_CHANNELS.GET_S3_LOCAL_SYNC_WORKDIR)
+    },
+    downloadFile: (user_id: string, keys: string[], localPath: string) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.S3_DOWNLOAD_FILES, user_id, keys, localPath)
+    },
+
+    // move object to another object
+    moveObjectS3: (params: { source: string, file_items: string[] }) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.S3_MOVE_OBJECT, params)
+    },
+
+    // upload to S3
+    uploadFile: (params: { user_id: string, destination: string, is_folder_same_name: boolean, file_items: file_item []}) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.S3_UPLOAD_OBJECTS, params) as Promise<ServiceReturn<{ upload_id: string, uploaded_items: upload_item[]}>>
+    },
+
+    deleteObjectS3: (params: { user_id: string, upload_id: string, relative_source: string, source: string, delete_items: string[]}) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.S3_DELETE_OBJECTS, params) as Promise<ServiceReturn<string[]>>
+    },
 });
 
 // Fetch Tran API
 contextBridge.exposeInMainWorld('downloadAPI', {
-    get_downloads: (user_id: string) => ipcRenderer.invoke(IPC_CHANNELS.GET_DONWLOADS, user_id),
-    get_download_dtls: (download_id: string) => ipcRenderer.invoke(IPC_CHANNELS.GET_DOWNLOAD_DLTS, download_id),
-    allow_download: (bugs: string[]) => ipcRenderer.invoke(IPC_CHANNELS.ALLOW_DOWNLOAD_OBJECT_S3, bugs),
-    allow_remove: (bugs: string[]) => ipcRenderer.invoke(IPC_CHANNELS.ALLOW_MOVE_OBJECT_S3, bugs),
-    copy_and_update_path_download: (params: {download_id: string, download_dtl_ids: string[], destination: string}) => ipcRenderer.invoke(IPC_CHANNELS.COPY_AND_UPDATE_PATH_DOWNLOAD, params),
+    get_downloads: (user_id: string) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.GET_DONWLOADS, user_id)
+    },
+    get_download_dtls: (download_id: string) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.GET_DOWNLOAD_DLTS, download_id)
+    },
+    allow_download: (bugs: string[]) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.ALLOW_DOWNLOAD_OBJECT_S3, bugs)
+    },
+    allow_remove: (bugs: string[]) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.ALLOW_MOVE_OBJECT_S3, bugs)
+    },
+    copy_and_update_path_download: (params: {download_id: string, download_dtl_ids: string[], destination: string}) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.COPY_AND_UPDATE_PATH_DOWNLOAD, params)
+    },
 });
 
 // Type declaration for the exposed API
@@ -141,17 +189,25 @@ declare global {
             getAllStates: () => Promise<ServiceReturn<{ [key: string]: { bugs: { bug_no: string; message: string }[] } }>>;
             getDownloadList: () => Promise<ServiceReturn<{ [key: string]: { bugs: string[] } }>>;
             getLocalPathSyncDir: () => Promise<ServiceReturn<string>>;
+
+            // download object at S3 storage
             downloadFile: (user_id: string, keys: string[], localPath: string) => Promise<ServiceReturn<boolean>>;
-            moveObjectS3: (params: { source: string, destination: string, objectData: string[] }) => Promise<ServiceReturn<boolean>>;
-            deleteObjectS3: (params: { source: string, objectData: string[] }) => Promise<ServiceReturn<boolean>>;
-            uploadFile: (params: { destination: string, fileUploads: {file_path: string, sub_bucket: string}}) => Promise<ServiceReturn<boolean>>;
+
+            // move object to another at S3 storage
+            moveObjectS3: (params: { source: string, file_items: string[] }) => Promise<ServiceReturn<boolean>>;
+
+            // delete object at S3 storage
+            deleteObjectS3: (params: {user_id: string, upload_id: string, relative_source: string, source: string, delete_items: string[]}) => Promise<ServiceReturn<string[]>>;
+
+            // upload file to S3 storage
+            uploadFile: (params: { user_id: string, destination: string, is_folder_same_name: boolean, file_items: file_item[]}) => Promise<ServiceReturn<{upload_id: string, uploaded_items: upload_item[]}>>;
         };
 
         systemAPI: {
             selectDirectory: () => Promise<ServiceReturn<string>>;
             selectMultiDir: () => Promise<ServiceReturn<string[]>>;
-            readDirectory: (path: string, options?: {onlyExcel?: boolean, fileExtension?: string }) => Promise<ServiceReturn<FileItem[]>>;
-            readMultiDir: (paths: string[], options?: {isHistory?: boolean, onlyExcel?: boolean, fileExtension?: string }) => Promise<ServiceReturn<FileItem[]>>;
+            readDirectory: (path: string, options?: {onlyExcel?: boolean, fileExtension?: string }) => Promise<ServiceReturn<file_item[]>>;
+            readMultiDir: (paths: string[], options?: {isHistory?: boolean, onlyExcel?: boolean, fileExtension?: string }) => Promise<ServiceReturn<file_item[]>>;
             readFile: (path: string) => Promise<{ success: boolean; data?: string; message?: string }>;
             openFile: (path: string) => Promise<{ success: boolean; message?: string }>;
             copyFiles: (filePaths: string[], destinationPath: string) =>

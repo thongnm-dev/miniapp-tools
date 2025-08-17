@@ -1,4 +1,4 @@
-import { S3Client, ListObjectsV2Command, ListObjectsV2Output, GetObjectCommand, CopyObjectCommand, DeleteObjectCommand, _Object, PutObjectRequest } from "@aws-sdk/client-s3";
+import { S3Client, ListObjectsV2Command, ListObjectsV2Output, GetObjectCommand, CopyObjectCommand, DeleteObjectCommand, _Object, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getS3Config, getWorkdir } from '../_/main-config';
 import { FETCH_STATES_LIST } from "../../config/constants";
 import { Readable } from "stream";
@@ -10,6 +10,10 @@ import { fsService } from "./fs-service";
 import { ServiceReturn } from "../@types/service-return";
 import { StringUtils } from "../../core/utils/string-utils";
 import path from "path";
+import { file_item } from "../../types/file_item";
+import { uploadService } from "./upload-service";
+import { upload_item } from "../../types/upload_item";
+import { s3_state } from "../../types/s3_state";
 
 export interface S3Config {
     region: string;
@@ -188,11 +192,11 @@ export class S3Service {
         const paths_downloaded: string[] = [];
         try {
             if (StringUtils.isBlank(localPath)) {
-                return { success: false, message: "The local path is blank." };
+                return { success: false, message: "Đường dẫn nơi lưu chưa được thiết lập." };
             }
 
             if (!await fsService.isExitDirectory(localPath)) {
-                return { success: false, message: "The local path is not exist." };
+                return { success: false, message: "Đường dẫn nơi lưu không tồn tại." };
             }
 
             const bugs_info: { [key: string]: { state: string, parent: string, bugs: string[] } } = {};
@@ -365,20 +369,87 @@ export class S3Service {
     }
 
     // upload file to s3
-    async uploadFile(params: { destination: string, fileUploads: {file_path: string, sub_bucket: string} }): Promise<ServiceReturn<string>> {
+    async uploadFile(params: { user_id: string, destination: string, is_folder_same_name: boolean, file_items: file_item[] }):
+        Promise<ServiceReturn<{ upload_id: string, uploaded_items: upload_item[] }>> {
         try {
-            let _destination_path = this.config.folderName + '/' + params.destination + '/';
 
-            // for (const objectKey of formData.objectData) {
-            //     _destination_path = _destination_path + objectKey.bug_no + "/"
-            //     const params: PutObjectRequest = {
-            //         Bucket: this.config.bucketName,
-            //         Key: _destination_path
-            //     };
+            const S3_OBJECT_TARGET = FETCH_STATES_LIST.filter((item) => item.code === params.destination && item.is_to_alx === false)[0];
 
-            //     // await this.s3.send(params);
-            // }
-            return { success: true };
+            if (!S3_OBJECT_TARGET) {
+                return { success: false, message: "Thông tin nơi lưu trữ trên S3 không tồn tại." };
+            }
+
+            let _destination_path = this.config.folderName + '/' + S3_OBJECT_TARGET.path + '/' + S3_OBJECT_TARGET.subscribe + "/";
+
+            let results = [];
+            let uploaded_items: file_item[] = [];
+
+            for (const item of params.file_items) {
+                const result = await fsService.readFileToStream(item.full_path);
+                if (!result.success) {
+                    continue
+                }
+
+                let destination_path = _destination_path + item.parent_name + "/" + item.name;
+
+                if (S3_OBJECT_TARGET.code === "01" && params.is_folder_same_name) {
+                    let parent_name = path.basename(item.full_path, path.extname(item.full_path));;
+                    destination_path = _destination_path + parent_name + "/" + item.name;
+                    item.parent_name = parent_name;
+                }
+                try {
+                    const params = new PutObjectCommand({
+                        Bucket: this.config.bucketName,
+                        Key: destination_path,
+                        Body: result.data
+                    });
+                    results.push(this.s3.send(params));
+                    uploaded_items.push(item);
+                } catch { }
+            }
+
+            await Promise.all(results);
+
+            const param_ins = {
+                user_id: params.user_id,
+                state: S3_OBJECT_TARGET.path,
+                file_items: uploaded_items,
+                is_folder_same_name: params.is_folder_same_name
+            }
+
+            const resultIns = await uploadService.ins_upload(param_ins);
+
+            if (!resultIns.success) {
+                return { success: false, message: resultIns.message };
+            }
+
+            const params_getuploaded = {
+                user_id: params.user_id,
+                state: S3_OBJECT_TARGET.path,
+                upload_id: resultIns.data || "",
+            };
+
+            if (params.is_folder_same_name) {
+                return { success: true, message: "Đã thực hiện tải tập thành công" };
+            }
+
+            const result_uploaded = await uploadService.get_uploaded_items(params_getuploaded);
+
+            if (!result_uploaded.success) {
+                const listData = uploaded_items.map((file) => { return { bug_no: file.parent_name, file_name: file.name } as upload_item; });
+
+                const result_data = {
+                    upload_id: params_getuploaded.upload_id,
+                    uploaded_items: listData
+                }
+                return { success: true, message: result_uploaded.message, data: result_data };
+            }
+
+            const result_data = {
+                upload_id: params_getuploaded.upload_id,
+                uploaded_items: result_uploaded.data || []
+            }
+            return { success: true, data: result_data };
         } catch (error) {
             return { success: false, message: (error as Error).message };
         }
@@ -411,9 +482,15 @@ export class S3Service {
     }
 
     // move object from the folder to another folder
-    public async moveObjectS3(formData: { source: string, destination: string, objectData: string[] }): Promise<ServiceReturn<string>> {
+    public async moveObjectS3(params: { source: string, file_items: string[] }): Promise<ServiceReturn<string>> {
 
         try {
+
+            const S3_OBJECT_TARGET = FETCH_STATES_LIST.find((item) => item.code === params.source && item.is_to_alx === true) || {} as s3_state;
+
+            if (!S3_OBJECT_TARGET) {
+                return { success: false, message: "Thông tin nơi lưu trữ trên S3 không tồn tại." };
+            }
             const s3client = this.s3;
 
             async function listObjects(bucketName: string, prefix: string): Promise<_Object[]> {
@@ -425,11 +502,11 @@ export class S3Service {
                 return response.Contents || [];
             }
 
-            const _source_path = this.config.folderName + '/' + formData.source + '/';
-            const _destination_path = this.config.folderName + '/' + formData.destination + '/';
+            const _source_path = this.config.folderName + '/' + S3_OBJECT_TARGET.path + '/' + S3_OBJECT_TARGET.subscribe + "/";
+            const _destination_path = this.config.folderName + '/' + S3_OBJECT_TARGET.path + '/';
 
-            for (const objectKey of formData.objectData) {
-                let _source_bug_path = _source_path + objectKey + '/';
+            for (const item of params.file_items) {
+                let _source_bug_path = _source_path + item + '/';
                 const objectDatas = await listObjects(this.config.bucketName, _source_bug_path) || [];
 
                 const _objectTarget = objectDatas.filter((item) => item.Key !== _source_path);
@@ -456,7 +533,7 @@ export class S3Service {
                 }
             }
 
-            const result = await downloadService.updateAfterMoveAtS3(formData.objectData);
+            const result = await downloadService.updateAfterMoveAtS3(params.file_items);
 
             return {
                 success: result.success,
@@ -468,9 +545,21 @@ export class S3Service {
     }
 
     // delete object
-    public async deletObjectS3(formData: { source: string, objectData: string[] }): Promise<ServiceReturn<string>> {
+    public async deleteObjectS3(params: { user_id: string, upload_id: string, relative_source: string, source: string, delete_items: string[] }):
+        Promise<ServiceReturn<string[]>> {
 
         try {
+
+            const S3_OBJECT_TARGET = FETCH_STATES_LIST.find((item) => item.link_available === params.relative_source && item.is_to_alx === true) || {} as s3_state;
+
+            if (!S3_OBJECT_TARGET) {
+                return { success: false, message: "Thông tin nơi lưu trữ trên S3 không tồn tại." };
+            }
+
+            if (params.source !== S3_OBJECT_TARGET.code) {
+                return { success: false, message: "Thông tin thiết lập đích xoá trên S3 không khớp." };
+            }
+
             const s3client = this.s3;
 
             async function listObjects(bucketName: string, prefix: string): Promise<_Object[]> {
@@ -482,26 +571,30 @@ export class S3Service {
                 return response.Contents || [];
             }
 
-            const _source_path = this.config.folderName + '/' + formData.source + '/';
-
-            for (const objectKey of formData.objectData) {
-                let _source_bug_path = _source_path + objectKey + '/';
+            const _source_path = this.config.folderName + '/' + S3_OBJECT_TARGET.path + '/';
+            let results = [];
+            let deleted_items: Set<string> = new Set();
+            for (const delete_item of params.delete_items) {
+                let _source_bug_path = _source_path + delete_item + '/';
                 const objectDatas = await listObjects(this.config.bucketName, _source_bug_path) || [];
-
                 const _objectTarget = objectDatas.filter((item) => item.Key !== _source_path);
-                for (const objectData of _objectTarget) {
-                    const oldKey = objectData.Key || "";
-                    // perform delete object
-                    const commandDelete = new DeleteObjectCommand({
-                        Bucket: this.config.bucketName,
-                        Key: oldKey
-                    })
 
-                    await this.s3.send(commandDelete);
+                for (const objectData of _objectTarget) {
+                    try {
+                        const oldKey = objectData.Key || "";
+                        // perform delete object
+                        const commandDelete = new DeleteObjectCommand({
+                            Bucket: this.config.bucketName,
+                            Key: oldKey
+                        })
+                        results.push(this.s3.send(commandDelete));
+                    } catch {}
                 }
+                await Promise.all(results);
+                deleted_items.add(delete_item);
             }
 
-            return { success: true, message: "Đã xoá thành công."}
+            return { success: true, message: "Đã xoá thành công.", data: Array.from(deleted_items) }
         } catch (error) {
             return { success: false, message: (error as Error).message };
         }

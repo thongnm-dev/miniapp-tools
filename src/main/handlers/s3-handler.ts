@@ -4,6 +4,7 @@ import { IPC_CHANNEL_HANDLERS } from '../_/ipc-channel-handlers';
 import * as fs from 'fs';
 import { getWorkdir } from '../_/main-config';
 import { StringUtils } from '../../core/utils/string-utils';
+import { file_item } from '../../types/file_item';
 
 export const setupS3Handlers = () => {
   ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_GET_ALL_STATES, async (_event) => {
@@ -34,13 +35,16 @@ export const setupS3Handlers = () => {
   });
 
   // handle move object s3
-  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_MOVE_OBJECT, async (_event, params: {source: string, destination: string, objectData: string[]}) => {
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_MOVE_OBJECT, async (_event, params: {source: string, file_items: string[]}) => {
     return await s3Service.moveObjectS3(params);
   });
 
-  
   // handle move object s3
-  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_UPLOAD_OBJECTS, async (_event, params: { destination: string, fileUploads: {file_path: string, sub_bucket: string} }) => {
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_UPLOAD_OBJECTS, async (_event, params: { user_id: string, destination: string, is_folder_same_name: boolean, file_items: file_item []}) => {
     return await s3Service.uploadFile(params);
+  });
+
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_DELETE_OBJECTS, async (_event, params: { user_id: string, upload_id: string, relative_source: string, source: string, delete_items: string[]}) => {
+    return await s3Service.deleteObjectS3(params);
   });
 }; 

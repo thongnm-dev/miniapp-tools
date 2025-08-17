@@ -11,7 +11,7 @@ export class DownloadService {
         this.db = db;
     }
 
-    // insert tran logs
+    // insert download logs
     async ins_download(dataObjects: {
         state: string,
         date: string,
@@ -56,7 +56,7 @@ export class DownloadService {
         }
     }
 
-    // get fetch trans
+    // get download logs
     async get_downloads(user_id: string): Promise<ServiceReturn<download_item[]>> {
 
         if (!this.db) {
@@ -102,11 +102,11 @@ export class DownloadService {
             }
             return { success: true, data: download_items };
         } catch (error) {
-            return { success: false, message: (error as Error).message };
+            return { success: false, message: "Đăng ký dữ liệu upload tập tin thất bại." };
         }
     }
 
-    // fetch
+    // get detail of download logs
     async get_download_dtls(download_id: string): Promise<ServiceReturn<download_item[]>> {
         if (!this.db) {
             return { success: false };

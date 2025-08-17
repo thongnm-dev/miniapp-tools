@@ -9,7 +9,7 @@ export interface S3UploadProps {
     title?: string,
     items?: string[],
     downloadAction: (keyCode: string) => void,
-    moveAction: (keyCode: string) => void,
+    moveAction: (keyCode: string, selected_items: string[]) => void,
 }
 
 const S3Download: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = [], downloadAction, moveAction }) => {
@@ -74,7 +74,7 @@ const S3Download: React.FC<S3UploadProps> = ({ key_code = "", title = "", items 
     }
 
     const hanldeMove = async () => {
-        await moveAction(key_code);
+        await moveAction(key_code, items);
     }
 
     return (

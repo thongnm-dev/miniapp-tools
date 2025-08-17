@@ -139,11 +139,13 @@ export class DatabaseService {
           upload_ymd VARCHAR(8) NOT NULL,
           upload_hm VARCHAR(4) NOT NULL,
           s3_state VARCHAR(100) NOT NULL DEFAULT '',
+          is_moved_at_s3 BOOLEAN DEFAULT FALSE,
           upload_count INT NOT NULL DEFAULT 0,
           created_by VARCHAR(100) DEFAULT '',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+        CREATE INDEX IF NOT EXISTS idx_upload_one ON upload_hdr (upload_ymd, upload_hm, s3_state);
       `);
 
       await client.query(`

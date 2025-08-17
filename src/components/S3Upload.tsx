@@ -1,60 +1,58 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Button from './ui/Button';
-import { ArrowUpTrayIcon, FolderMinusIcon, FolderPlusIcon, NewspaperIcon, TruckIcon } from '@heroicons/react/24/outline';
-import { showNotification } from "../components/notification";
-import { fsController } from '../controller/fs-controller';
-import { FileItem } from '../types/FileItem';
+import { file_item } from '../types/file_item';
 import TreeView, { flattenTree, INode, ITreeViewOnNodeSelectProps, NodeId } from 'react-accessible-treeview';
-import { FaCheckSquare, FaMinusSquare, FaRegSquare } from 'react-icons/fa';
+import { FaCheckSquare, FaFolderMinus, FaFolderPlus, FaMinusSquare, FaRegSquare } from 'react-icons/fa';
 import { IFlatMetadata } from 'react-accessible-treeview/dist/TreeView/utils';
+import { FETCH_STATES_LIST } from '../config/constants';
+import { s3_state } from '../types/s3_state';
+import { TfiBrushAlt } from 'react-icons/tfi';
+import { showNotification } from './notification';
+import { fsController } from '../controller/fs-controller';
+import { FcBiohazard, FcDataSheet, FcReuse } from 'react-icons/fc';
 
 export interface S3UploadProps {
     key_code?: string,
-    title?: string,
-    items?: FileItem[],
     actions?: React.ReactNode,
-    uploadAction: (keyCode: string, rows: FileItem[]) => void
+    uploadAction: (params: {keyCode: string, title: string, is_folder_same_name: boolean, selected_items: file_item[]}) => void
+    moveAction?: (params: {keyCode: string, title: string, selected_items: file_item[]}) => void
 }
 
-const CheckBoxIcon: React.FC<{variant: string}> = ({variant, ...rest}) => {
+const CheckBoxIcon: React.FC<{ variant: string }> = ({ variant, ...rest }) => {
     switch (variant) {
         case "all":
-            return <FaCheckSquare {...rest} className='text-primary-600'/>;
+            return <FaCheckSquare {...rest} className='text-primary-600' />;
         case "none":
-            return <FaRegSquare {...rest} className='text-primary-600'/>;
+            return <FaRegSquare {...rest} className='text-primary-600' />;
         case "some":
-            return <FaMinusSquare {...rest} className='text-primary-600'/>;
+            return <FaMinusSquare {...rest} className='text-primary-600' />;
         default:
             return null;
     }
 };
 
-const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = [], uploadAction, actions }) => {
+const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploadAction, actions }) => {
     const [modalOpen, setModalOpen] = useState<boolean>(true);
-    const [selectedItems, setSelectedItems] = useState<Set<FileItem>>(new Set());
-    const [moveableMap, setMoveableMap] = useState<Record<string, boolean>>({});
+    const [selectedItems, setSelectedItems] = useState<Set<file_item>>(new Set());
     const [selectedIds, setSelectedIds] = useState<NodeId[]>([]);
     const [expandedIds, setExpandedIds] = useState<NodeId[]>([]);
+    const [items, setItems] = useState<file_item[]>([]);
     const [count, setCount] = useState<number>(0);
-    const [bugList, setBugList] = useState<string[]>([]);
+
+    const S3_FOLDER_UPLOAD = useMemo(() => {
+        return FETCH_STATES_LIST.filter((item) => item.is_to_alx === false);
+    }, []);
+
+    const S3_FOLDER_UPLOAD_OBJECT = useMemo(() => {
+        if (key_code) {
+            return S3_FOLDER_UPLOAD.find((item) => item.code === key_code) || {} as s3_state;
+        }
+        return {} as s3_state;
+    }, [key_code]);
 
     const toggle = () => {
         setModalOpen(!modalOpen);
     }
-
-    useEffect(() => {
-        if (items.length > 0 && key_code.length > 0) {
-            const checkAll = async () => {
-                const moveMap: Record<string, boolean> = {};
-
-                // const resultMove = await displayMoveObject();    
-                // moveMap[key_code] = !!resultMove;
-                setMoveableMap(moveMap);
-            };
-    
-            checkAll();
-        }
-        }, [items]);
 
     useEffect(() => {
         if (items.length > 0) {
@@ -69,12 +67,16 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
             children: []
         }
 
+        setCount(0);
+        setSelectedIds([]);
+        setSelectedItems(new Set());
         if (items && items.length > 0) {
             treeview.children.push({
                 id: "#999999999",
-                name: "Danh sách thư mục đã chọn", 
-                children: []} as never)
-            const grouped = items.reduce((acc: { [key: string]: FileItem[] }, item) => {
+                name: "Danh sách thư mục đã chọn",
+                children: []
+            } as never)
+            const grouped = items.reduce((acc: { [key: string]: file_item[] }, item) => {
                 if (!acc[item.parent_name]) {
                     acc[item.parent_name] = [];
                 }
@@ -97,7 +99,6 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                 bugs.push(folder);
                 (treeview.children[0] as any).children.push(child as never)
             }
-            setBugList(bugs);
         }
 
         const nodes = flattenTree(treeview);
@@ -108,9 +109,9 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
         return nodes;
     }, [items]);
 
-    const findItem = (item: INode<IFlatMetadata>, datas: INode<IFlatMetadata>[]): FileItem[] => {
-        let files: FileItem[] = [];
-        
+    const findItem = (item: INode<IFlatMetadata>, datas: INode<IFlatMetadata>[]): file_item[] => {
+        let files: file_item[] = [];
+
         for (const id of item.children) {
             const findedNode = datas.find(f => f.id === id);
             if (findedNode?.children && findedNode?.children.length > 0) {
@@ -125,7 +126,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
         return files;
     }
 
-    const handleNodeOnCheckbox = (node : ITreeViewOnNodeSelectProps) => {
+    const handleNodeOnCheckbox = (node: ITreeViewOnNodeSelectProps) => {
 
         if (node.element.id == "#999999999" && node.isSelected === false) {
             setSelectedItems(new Set());
@@ -159,13 +160,51 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
         }
     }
 
+    // 
     const handleUpload = async () => {
-        await uploadAction(key_code || "", Array.from(selectedItems));
+        const S3_OBJECT_TARGET = S3_FOLDER_UPLOAD.filter((item) => item.code === key_code && item.is_to_alx === false)[0];
+        
+        if (!S3_OBJECT_TARGET) {
+            showNotification("Thông tin nơi lưu trữ trên S3 không tồn tại.", "error");
+            return;
+        }
+
+        if (Array.from(selectedItems).length === 0) {
+            showNotification("Chưa chọn tập tin để tải lên.", "error");
+            return;
+        }
+
+        const params = {
+            keyCode: key_code,
+            title: S3_OBJECT_TARGET.path,
+            is_folder_same_name: S3_OBJECT_TARGET.code === "01",
+            selected_items: Array.from(selectedItems)
+        }
+        await uploadAction(params);
     }
 
-    const hanldeMove = async () => {
-
+    // clear list
+    const cleanItems = () => {
+        setItems([]);
     }
+
+    // choose file
+    const addAttachment = async () => {
+
+        try {
+            const result = await fsController.selectMultiDir();
+
+            if (result.success && result.data) {
+                const results = await fsController.readMultiDir(result.data);
+
+                if (results.success && results.data) {
+                    setItems(results.data as []);
+                }
+            }
+        } catch (err) {
+            showNotification('Không thể chọn thư mục để tải lên.', 'error');
+        }
+    };
 
     return (
         <React.Fragment key={key_code}>
@@ -174,23 +213,26 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                     <div className="flex items-center justify-between hover:cursor-pointer" >
                         <div className='flex flex-row gap-2 flex-1' onClick={toggle}>
                             <button onClick={toggle}>
-                                {modalOpen ? <FolderMinusIcon className='h-5 w-5' /> : <FolderPlusIcon className='h-5 w-5' />}
+                                {modalOpen ? <FaFolderMinus className='h-5 w-5' /> : <FaFolderPlus className='h-5 w-5' />}
                             </button>
-                            <span className="text-lg font-bold">{title}
+                            <span className="text-lg font-bold">{S3_FOLDER_UPLOAD_OBJECT.path}
                                 <span className="text-red-600">({count})</span>
                             </span>
                         </div>
                         <div className="flex items-end space-x-2">
                             {actions}
-                            {moveableMap[key_code] && <Button className="flex items-center space-x-2 text-red-500 border-red-500"
-                                onClick={hanldeMove}>
-                                <TruckIcon className="h-4 w-4 font-bold" />
-                                <span>Di chuyển trên S3</span>
+                            {items.length > 0 && <Button onClick={() => cleanItems()} className="flex items-center space-x-2 text-red-500 border-red-500">
+                                <TfiBrushAlt className="h-5 w-5 font-bold" />
+                                <span>Dọn sạch</span>
                             </Button>}
+                            <Button onClick={() => addAttachment()} className="flex items-center space-x-2">
+                                <FcBiohazard className="h-5 w-5 font-bold" />
+                                <span>Chọn tập tin</span>
+                            </Button>
                             {(items.length > 0 && selectedItems.size > 0) && <Button className="flex items-center space-x-2"
                                 disabled={selectedItems.size === 0}
                                 onClick={handleUpload}>
-                                <ArrowUpTrayIcon className="h-5 w-5 font-bold" />
+                                <FcReuse className="h-5 w-5 font-bold" />
                                 <span>Tải lên</span>
                             </Button>}
                         </div>
@@ -221,17 +263,17 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", title = "", items = 
                         }) => (
                             <div {...getNodeProps({ onClick: handleExpand })} style={{ paddingLeft: 20 * (level - 1) }} className="flex flex-row hover:cursor-pointer gap-2">
                                 <div onClick={(e) => {
-                                        handleSelect(e);
-                                        e.stopPropagation();
-                                    }}>
-                                    <CheckBoxIcon variant={isHalfSelected ? "some" : isSelected ? "all" : "none"}/>
+                                    handleSelect(e);
+                                    e.stopPropagation();
+                                }}>
+                                    <CheckBoxIcon variant={isHalfSelected ? "some" : isSelected ? "all" : "none"} />
                                 </div>
                                 {isBranch ? (
-                                    isExpanded ? <FolderMinusIcon className='w-5 h-5 text-orange-400' /> : <FolderPlusIcon className='w-5 h-5 text-orange-400' />
+                                    isExpanded ? <FaFolderMinus className='w-5 h-5 text-orange-400' /> : <FaFolderPlus className='w-5 h-5 text-orange-400' />
                                 ) : (
-                                    <NewspaperIcon className="w-5 h-5 text-green-700" />
+                                    <FcDataSheet className="w-5 h-5 text-green-700" />
                                 )}
-                                <span className={`${isBranch? '' : 'text-green-700'}`}>{element.name}</span>
+                                <span className={`${isBranch ? '' : 'text-green-700'}`}>{element.name}</span>
                             </div>
                         )}
                     />}

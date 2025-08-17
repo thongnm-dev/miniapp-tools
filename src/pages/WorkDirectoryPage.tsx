@@ -4,13 +4,13 @@ import Button from '../components/ui/Button';
 import { FolderIcon, EyeIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import DataTable from '../components/ui/DataTable';
 import { showNotification } from '../components/notification';
-import { FileItem } from '../types/FileItem';
+import { file_item } from '../types/file_item';
 import { useLoading } from '../stores/LoadingContext';
 
 const WorkDirectoryPage: React.FC = () => {
     const [workdir, setWorkdir] = useState<string>('');
-    const [files, setFiles] = useState<FileItem[]>([]);
-    const [selectedFiles, setSelectedFiles] = useState<Set<FileItem>>(new Set());
+    const [files, setFiles] = useState<file_item[]>([]);
+    const [selectedFiles, setSelectedFiles] = useState<Set<file_item>>(new Set());
     const { showLoading, hideLoading } = useLoading();
 
     // Load saved state on component mount
@@ -60,7 +60,7 @@ const WorkDirectoryPage: React.FC = () => {
     };
 
     // handle file click
-    const handleFileClick = async (file: FileItem) => {
+    const handleFileClick = async (file: file_item) => {
         try {
             const result = await fsController.openFile(file.full_path);
 
