@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Button from './ui/Button';
 import { file_item } from '../types/file_item';
 import TreeView, { flattenTree, INode, ITreeViewOnNodeSelectProps, NodeId } from 'react-accessible-treeview';
@@ -10,12 +10,15 @@ import { TfiBrushAlt } from 'react-icons/tfi';
 import { showNotification } from './notification';
 import { fsController } from '../controller/fs-controller';
 import { FcBiohazard, FcDataSheet, FcReuse } from 'react-icons/fc';
+import { uploadController } from '../controller/upload-controller';
+import { useAuth } from '../stores/AuthContext';
 
 export interface S3UploadProps {
     key_code?: string,
     actions?: React.ReactNode,
-    uploadAction: (params: {keyCode: string, title: string, is_folder_same_name: boolean, selected_items: file_item[]}) => void
-    moveAction?: (params: {keyCode: string, title: string, selected_items: file_item[]}) => void
+    uploaded_id?: string,
+    clearAction?: () => void,
+    uploadAction: (params: { keyCode: string, title: string, is_folder_same_name: boolean, selected_items: file_item[] }) => void
 }
 
 const CheckBoxIcon: React.FC<{ variant: string }> = ({ variant, ...rest }) => {
@@ -31,34 +34,42 @@ const CheckBoxIcon: React.FC<{ variant: string }> = ({ variant, ...rest }) => {
     }
 };
 
-const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploadAction, actions }) => {
+const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploaded_id = "", uploadAction, actions, clearAction }) => {
+    const { user } = useAuth();
     const [modalOpen, setModalOpen] = useState<boolean>(true);
     const [selectedItems, setSelectedItems] = useState<Set<file_item>>(new Set());
     const [selectedIds, setSelectedIds] = useState<NodeId[]>([]);
     const [expandedIds, setExpandedIds] = useState<NodeId[]>([]);
     const [items, setItems] = useState<file_item[]>([]);
     const [count, setCount] = useState<number>(0);
+    const [uploadableMap, setUploadableMap] = useState<Record<string, boolean>>({});
 
-    const S3_FOLDER_UPLOAD = useMemo(() => {
-        return FETCH_STATES_LIST.filter((item) => item.is_to_alx === false);
-    }, []);
+    useEffect(() => {
+        const checkAll = async () => {
+            const uploadMap: Record<string, boolean> = {};
 
-    const S3_FOLDER_UPLOAD_OBJECT = useMemo(() => {
+            const result = await displayUpload();
+            uploadMap[key_code] = !!result;
+            setUploadableMap(uploadMap);
+        };
+
         if (key_code) {
-            return S3_FOLDER_UPLOAD.find((item) => item.code === key_code) || {} as s3_state;
+            checkAll();
         }
-        return {} as s3_state;
-    }, [key_code]);
-
-    const toggle = () => {
-        setModalOpen(!modalOpen);
-    }
+    }, [items, uploaded_id]);
 
     useEffect(() => {
         if (items.length > 0) {
             setExpandedIds(dataTree.map((item) => item.id));
         }
     }, [items])
+
+    const S3_FOLDER_UPLOAD_OBJECT = useMemo(() => {
+        if (key_code) {
+            return FETCH_STATES_LIST.find((item) => item.code === key_code && item.is_to_alx === false) || {} as s3_state;
+        }
+        return {} as s3_state;
+    }, [key_code]);
 
     const dataTree = useMemo(() => {
 
@@ -108,6 +119,34 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploadAction, action
         }
         return nodes;
     }, [items]);
+
+
+    const displayUpload = useCallback(async () => {
+
+        if (items.length == 0) {
+            return true;
+        }
+
+        if (!uploaded_id || uploaded_id.length === 0) {
+            return true;
+        }
+        const params = {
+            user_id: user?.username || "",
+            state: S3_FOLDER_UPLOAD_OBJECT.path,
+            upload_id: uploaded_id,
+            select_items: Array.from(selectedItems).map((item) => item.parent_name)
+        }
+        const result = await uploadController.display_upload_button(params);
+
+        if (result.success) {
+            return result.data;
+        }
+        return false;
+    }, [items, uploaded_id]);
+
+    const toggle = () => {
+        setModalOpen(!modalOpen);
+    }
 
     const findItem = (item: INode<IFlatMetadata>, datas: INode<IFlatMetadata>[]): file_item[] => {
         let files: file_item[] = [];
@@ -162,8 +201,8 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploadAction, action
 
     // 
     const handleUpload = async () => {
-        const S3_OBJECT_TARGET = S3_FOLDER_UPLOAD.filter((item) => item.code === key_code && item.is_to_alx === false)[0];
-        
+        const S3_OBJECT_TARGET = S3_FOLDER_UPLOAD_OBJECT;
+
         if (!S3_OBJECT_TARGET) {
             showNotification("Thông tin nơi lưu trữ trên S3 không tồn tại.", "error");
             return;
@@ -184,8 +223,11 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploadAction, action
     }
 
     // clear list
-    const cleanItems = () => {
+    const clearItems = () => {
         setItems([]);
+        if (clearAction) {
+            clearAction();
+        }
     }
 
     // choose file
@@ -199,6 +241,9 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploadAction, action
 
                 if (results.success && results.data) {
                     setItems(results.data as []);
+                    if (clearAction) {
+                        clearAction();
+                    }
                 }
             }
         } catch (err) {
@@ -221,7 +266,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploadAction, action
                         </div>
                         <div className="flex items-end space-x-2">
                             {actions}
-                            {items.length > 0 && <Button onClick={() => cleanItems()} className="flex items-center space-x-2 text-red-500 border-red-500">
+                            {items.length > 0 && <Button onClick={() => clearItems()} className="flex items-center space-x-2 text-red-500 border-red-500">
                                 <TfiBrushAlt className="h-5 w-5 font-bold" />
                                 <span>Dọn sạch</span>
                             </Button>}
@@ -230,7 +275,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploadAction, action
                                 <span>Chọn tập tin</span>
                             </Button>
                             {(items.length > 0 && selectedItems.size > 0) && <Button className="flex items-center space-x-2"
-                                disabled={selectedItems.size === 0}
+                                disabled={selectedItems.size === 0 || !uploadableMap[key_code]}
                                 onClick={handleUpload}>
                                 <FcReuse className="h-5 w-5 font-bold" />
                                 <span>Tải lên</span>

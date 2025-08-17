@@ -36,8 +36,8 @@ const S3UploadPage: React.FC = () => {
         }
         return [] as s3_state[];
     }, [destination]);
-    
-    const uploadAction = async (params: {keyCode: string, title: string, is_folder_same_name: boolean, selected_items: file_item[]}) => {
+
+    const uploadAction = async (params: { keyCode: string, title: string, is_folder_same_name: boolean, selected_items: file_item[] }) => {
         setModalHeaderTitle(params.title);
         setCreatFolderSameName(params.is_folder_same_name);
         setDestination(params.keyCode);
@@ -90,7 +90,7 @@ const S3UploadPage: React.FC = () => {
                 showLoading('Đang thực hiện xoá tập tin lên S3. Vui lòng không tắt màn hình...');
 
                 const delete_items = Array.from(deleteItems.map((item) => {
-                    return {source: item.state_cd, target: item.bug_no}
+                    return { source: item.state_cd, target: item.bug_no }
                 })) as [];
                 const params = {
                     user_id: user?.username || "",
@@ -108,7 +108,7 @@ const S3UploadPage: React.FC = () => {
 
                 const deletedCnt = result.data?.length;
                 const totalFiles = delete_items.length;
-                
+
                 if (deletedCnt === totalFiles) {
                     showNotification(`Đã thực hiện xoá thành công ${deletedCnt} tập tin.`, 'success');
                 } else {
@@ -157,13 +157,13 @@ const S3UploadPage: React.FC = () => {
     };
 
     return (
-        <React.Fragment>
+        <>
             <div className="space-y-4">
                 <div className="grid grid-cols-1 space-y-3">
                     {list_code_items.map((code, index) => {
                         return (
                             <>
-                                <S3Upload key_code={code} uploadAction={uploadAction} key={index}/>
+                                <S3Upload key_code={code} uploadAction={uploadAction} key={index} uploaded_id={uploaded_id} clearAction={() => setUploadedId("")} />
                             </>
                         )
                     })}
@@ -176,10 +176,10 @@ const S3UploadPage: React.FC = () => {
                     <span className='font-bold'>Bạn đang thực hiện tải các tập tin lên đường dẫn sau:</span>
                     <span className='text-red-600 font-bold'>{modalHeaderTitle}</span>
                 </div>}
-                {is_updating === false && S3_OBJECT_TO_DELETE.length === 1 &&<div className='flex flex-row bg-white p-4 gap-2 border border-b-2'>
+                {is_updating === false && S3_OBJECT_TO_DELETE.length === 1 && <div className='flex flex-row bg-white p-4 gap-2 border border-b-2'>
                     <span className='font-bold'>Bạn đang thực hiện xoá các tập tin lên đường dẫn sau:</span>
                     <span className='text-red-600 font-bold'>{S3_OBJECT_TO_DELETE[0].path}</span>
-                    
+
                 </div>}
                 {destination === "01" && <div className='flex flex-row bg-white p-2 gap-2'>
                     <div className="flex items-center text-red-600">
@@ -226,11 +226,11 @@ const S3UploadPage: React.FC = () => {
 
                                             // update deleteItems state properly instead of mutating directly
                                             setDeleteItems((prev) =>
-                                            prev.map((item) =>
-                                                item.bug_no === row.bug_no
-                                                ? { ...item, state_cd: newValue }
-                                                : item
-                                            )
+                                                prev.map((item) =>
+                                                    item.bug_no === row.bug_no
+                                                        ? { ...item, state_cd: newValue }
+                                                        : item
+                                                )
                                             );
 
                                             console.log(newValue);
@@ -260,7 +260,7 @@ const S3UploadPage: React.FC = () => {
                     </div>
                 </div>
             </Modal>
-        </React.Fragment>
+        </>
     );
 };
 

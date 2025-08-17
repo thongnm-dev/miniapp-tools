@@ -1,8 +1,10 @@
-import { ArchiveBoxXMarkIcon, ArrowDownTrayIcon, FolderMinusIcon, FolderPlusIcon } from "@heroicons/react/24/outline";
+import { FaFolderMinus, FaFolderPlus} from 'react-icons/fa';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Button from "./ui/Button";
 import DataTable from "./ui/DataTable";
 import { downloadController } from "../controller/download-controller";
+import { TfiBrushAlt } from "react-icons/tfi";
+import { FcRightDown2 } from "react-icons/fc";
 
 export interface S3UploadProps {
     key_code: string,
@@ -84,7 +86,7 @@ const S3Download: React.FC<S3UploadProps> = ({ key_code = "", title = "", items 
                     <div className="flex items-center justify-between">
                         <button className='flex flex-row gap-4 bg-transparent flex-1' onClick={toggle}>
                             <span>
-                                {modalOpen ? <FolderMinusIcon className='h-6 w-6' /> : <FolderPlusIcon className='h-6 w-6' />}
+                                {modalOpen ? <FaFolderMinus className='h-6 w-6' /> : <FaFolderPlus className='h-6 w-6' />}
                             </span>
                             <span className="text-lg font-bold">{title}
                                 <span className="text-red-600">({items.length})</span>
@@ -93,14 +95,14 @@ const S3Download: React.FC<S3UploadProps> = ({ key_code = "", title = "", items 
                         <div className="flex items-end space-x-2 py-2">
                             {moveableMap[key_code] && <Button className="flex items-center space-x-2 text-red-500 border-red-500"
                                 onClick={hanldeMove}>
-                                <ArchiveBoxXMarkIcon className="h-4 w-4 font-bold" />
+                                <TfiBrushAlt className="h-4 w-4 font-bold" />
                                 <span>Di chuyển trên S3</span>
                             </Button>}
 
                             {downloadableMap[key_code] && <Button className="flex items-center space-x-2 focus:ring-orange-400 hover:border-orange-400"
                                 onClick={hanldeDownload}
                             >
-                                <ArrowDownTrayIcon className="h-4 w-4 font-bold" />
+                                <FcRightDown2 className="h-4 w-4 font-bold" />
                                 <span>Tải về</span>
                             </Button>}
                         </div>

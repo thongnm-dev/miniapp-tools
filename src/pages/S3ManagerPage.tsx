@@ -3,8 +3,8 @@ import { s3Controller } from '../controller/s3-controller';
 import Button from '../components/ui/Button';
 import { useLoading } from '../stores/LoadingContext';
 import { FETCH_STATES_LIST } from '../config/constants';
-import { ArrowPathIcon} from '@heroicons/react/24/outline';
 import TabView, { Tab } from '../components/ui/TabView';
+import { FcProcess } from 'react-icons/fc';
 
 const S3ManagerPage: React.FC = () => {
   const [s3FetchState, setS3FetchState] = useState<{[key: string]: {bugs: {bug_no: string; message: string}[]}}>({});
@@ -74,7 +74,7 @@ const S3ManagerPage: React.FC = () => {
                 <Button
                     onClick={handleRefreshFetchState}
                     className="flex items-center gap-2">
-                    <ArrowPathIcon className="w-4 h-4 stroke-2" />
+                    <FcProcess className="w-4 h-4 stroke-2" />
                     Tải lại
                   </Button>
             </legend>

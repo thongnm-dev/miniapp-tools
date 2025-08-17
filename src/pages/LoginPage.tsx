@@ -4,7 +4,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { APP_CONFIG } from '../config/config';
 import { ArrowRightEndOnRectangleIcon, EyeIcon, EyeSlashIcon} from '@heroicons/react/24/outline';
 import Button from '../components/ui/Button';
-import { FcKey, FcManager } from 'react-icons/fc';
+import { FcKey, FcManager, FcSportsMode } from 'react-icons/fc';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -192,7 +192,7 @@ const Login: React.FC = () => {
                 </div>
               ) : (
                 <React.Fragment>
-                  <ArrowRightEndOnRectangleIcon className='h-5 w-5'/>
+                  <FcSportsMode className='h-5 w-5 animate-bounce'/>
                   Đăng nhập
                 </React.Fragment>
               )}

@@ -186,6 +186,7 @@ export class UploadService {
         }
     }
 
+    // update state after move
     async update_state_after_move(params: {state: string, upload_id: string, selected_items: string[] }): Promise<ServiceReturn<boolean>> {
         if (!this.db) {
             return { success: false };

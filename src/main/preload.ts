@@ -55,7 +55,10 @@ const IPC_CHANNELS = {
     GET_DOWNLOAD_DLTS: 'GET_DOWNLOAD_DLTS',
     ALLOW_DOWNLOAD_OBJECT_S3: 'ALLOW_DOWNLOAD_OBJECT_S3',
     ALLOW_MOVE_OBJECT_S3: 'ALLOW_MOVE_OBJECT_S3',
-    COPY_AND_UPDATE_PATH_DOWNLOAD: 'COPY_AND_UPDATE_PATH_DOWNLOAD'
+    COPY_AND_UPDATE_PATH_DOWNLOAD: 'COPY_AND_UPDATE_PATH_DOWNLOAD',
+
+    // upload
+    ALLOW_UPLOAD_OBJECT_S3: 'ALLOW_UPLOAD_OBJECT_S3',
 
 } as const;
 
@@ -176,6 +179,13 @@ contextBridge.exposeInMainWorld('downloadAPI', {
     },
 });
 
+// Fetch Tran API
+contextBridge.exposeInMainWorld('uploadAPI', {
+    display_upload_button: (params: { user_id: string, state: string, upload_id: string, select_items: string[] }) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.ALLOW_UPLOAD_OBJECT_S3, params)
+    }
+});
+
 // Type declaration for the exposed API
 declare global {
     interface Window {
@@ -230,5 +240,9 @@ declare global {
             allow_remove: (bugs: string[]) => Promise<ServiceReturn<boolean>>;
             copy_and_update_path_download: (params: {download_id: string, download_dtl_ids: string[], destination: string}) => Promise<ServiceReturn<boolean>>,
         };
+
+        uploadAPI: {
+            display_upload_button: (params: { user_id: string, state: string, upload_id: string, select_items: string[]}) => Promise<ServiceReturn<boolean>>;
+        }
     }
 } 

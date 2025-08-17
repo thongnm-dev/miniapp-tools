@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Button from "../components/ui/Button";
-import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import { FETCH_STATES_LIST } from "../config/constants";
 import { s3Controller } from "../controller/s3-controller";
 import { useLoading } from "../stores/LoadingContext";
@@ -17,7 +16,7 @@ import Fieldset from "../components/ui/Fieldset";
 import { useAuth } from "../stores/AuthContext";
 import { download_item } from "../types/download_item";
 import { GiExitDoor } from "react-icons/gi";
-import { FcOk } from "react-icons/fc";
+import { FcOk, FcProcess } from "react-icons/fc";
 
 const columns = [
     {
@@ -256,7 +255,7 @@ export const S3DownloadPage: React.FC = () => {
                         <div className="flex gap-2">
                             <Button className="flex items-center space-x-2"
                                 onClick={handleRefresh}>
-                                <ArrowPathIcon className="w-4 h-4" />
+                                <FcProcess className="w-4 h-4" />
                                 <span>Tải lại</span>
                             </Button>
                         </div>
