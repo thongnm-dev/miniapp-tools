@@ -41,9 +41,17 @@ export const setupDownloadHandlers = () => {
             copiedPaths.push(destinationHis);
 
             for (const item of result.data || []) {
+
+                const result = (await fsService.makeFolderBaseFileEno(params.destination, item.bug_no || ""));
+
+                if (!result.success || !result.data) {
+                    return { success: false, message: result.message};
+                }
+                const destination_path = result.data;
+
                 const fileSubPath = item.bug_no + "/" + item.fileName;
 
-                const copiedResult = await fsService.copy(item.full_file_path || "", fileSubPath, params.destination, destinationHis);
+                const copiedResult = await fsService.copy(item.full_file_path || "", fileSubPath, destination_path, destinationHis);
 
                 if (!copiedResult.success) {
                     await fsService.deleteFile(copiedPaths);

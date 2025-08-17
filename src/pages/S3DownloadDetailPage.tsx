@@ -3,12 +3,13 @@ import { useLocation, useParams } from "react-router-dom";
 import DataTable from "../components/ui/DataTable";
 import { fsController } from "../controller/fs-controller";
 import Button from "../components/ui/Button";
-import { DocumentDuplicateIcon, EyeIcon, FolderIcon, FolderOpenIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { DocumentDuplicateIcon, EyeIcon, FolderIcon, FolderOpenIcon } from "@heroicons/react/24/outline";
 import { showNotification } from "../components/notification";
 import { useLoading } from "../stores/LoadingContext";
 import Modal from "../components/ui/Modal";
 import { downloadController } from "../controller/download-controller";
 import { download_item } from "../types/download_item";
+import { GiExitDoor } from "react-icons/gi";
 
 const S3DownloadDetailPage: React.FC = () => {
     const { id } = useParams() || "";
@@ -254,7 +255,7 @@ const S3DownloadDetailPage: React.FC = () => {
                             }}
                             className="flex items-center space-x-2"
                         >
-                            <XMarkIcon className="w-4 h-4" />
+                            <GiExitDoor className="h-5 w-5" />
                             <span>Đóng</span>
                         </Button>
                         <Button
@@ -263,7 +264,7 @@ const S3DownloadDetailPage: React.FC = () => {
                             className="flex items-center space-x-2"
                         >
                             <DocumentDuplicateIcon className="w-4 h-4" />
-                            <span>Bắt đầu</span>
+                            <span>Bắt đầu...</span>
                         </Button>
                     </div>
                 </div>
