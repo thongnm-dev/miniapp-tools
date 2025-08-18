@@ -2,8 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from './Sidebar';
 import { APP_CONFIG } from '../../config/config';
 import { useAuth } from '../../stores/AuthContext';
-import { ArrowRightStartOnRectangleIcon, ChevronDownIcon, Cog6ToothIcon, HashtagIcon, UserIcon } from '@heroicons/react/24/outline';
+import { ArrowRightStartOnRectangleIcon, ChevronDownIcon, Cog6ToothIcon, UserIcon } from '@heroicons/react/24/outline';
 import { useAppGobal } from '../../stores/AppContext';
+import { GrUserWorker } from 'react-icons/gr';
+import { RxDividerVertical } from 'react-icons/rx';
+import { BiPurchaseTagAlt } from 'react-icons/bi';
 
 interface MainLayoutProps {
     children: React.ReactNode;
@@ -85,10 +88,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         return `${browser} | ${os}`;
     };
 
-    const handleMenuItemClick = (action: string) => {
-
-    }
-
     const handleUserMenuClick = () => {
         setUserDropdownOpen(!userDropdownOpen);
     };
@@ -103,9 +102,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 {/* Header - Fixed */}
                 <header className="bg-white dark:bg-gray-900 shadow-sm border-b border-secondary-200 dark:border-gray-800 px-4 py-1.5 flex-shrink-0">
                     <div className="flex items-center justify-end">
-                        <div className="flex items-center flex-1">
-                            <HashtagIcon className='w-7 h-7' />
+                        <div className="flex items-center flex-1 gap-2">
+                            <BiPurchaseTagAlt className='w-7 h-7' />
                             <h1 className='text-3xl font-bold'>{pageTitle}</h1>
+                            <RxDividerVertical className='w-7 h-7' />
                         </div>
                         <div className="flex items-center space-x-6 justify-end">
                             {/* User Dropdown Menu */}
@@ -115,18 +115,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                                     className="flex items-center space-x-3 p-2 rounded-lg hover:bg-secondary-100 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
                                 >
                                     <div className="flex items-center space-x-2">
-                                        {user?.avatar ? (
-                                            <img src={user.avatar} alt={user.username} className="w-8 h-8 rounded-full" />
-                                        ) : (
-                                            <div className="w-8 h-8 bg-primary-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                                                <span className="text-sm font-medium text-primary-700 dark:text-primary-200">
-                                                    {user?.username?.charAt(0) || 'U'}
-                                                </span>
-                                            </div>
-                                        )}
+                                        <div className="w-8 h-8 bg-primary-200 rounded-full flex items-center justify-center">
+                                            <span className="text-sm font-medium">
+                                                <GrUserWorker className="w-5 h-5 rounded-full" />
+                                            </span>
+                                        </div>
                                         <div className="hidden md:block text-left">
-                                            <p className="text-sm font-medium text-secondary-800 dark:text-secondary-100">{user?.username}</p>
-                                            <p className="text-xs text-secondary-500 dark:text-secondary-300">{user?.username}</p>
+                                            <p className="text-sm font-medium text-secondary-800">{user?.username}</p>
                                         </div>
                                     </div>
                                     {/* Dropdown Arrow */}
@@ -138,15 +133,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                                     <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-secondary-200 dark:border-gray-700 py-1 z-50">
                                         {/* Profile */}
                                         <button
-                                            onClick={() => handleMenuItemClick('profile')}
-                                            className="w-full flex items-center px-4 py-2 text-sm text-secondary-700 dark:text-secondary-100 hover:bg-secondary-50 dark:hover:bg-gray-800 transition-colors"
+                                            className="w-full flex items-center px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-50 dark:hover:bg-gray-800 transition-colors"
                                         >
                                             <UserIcon className="w-4 h-4 mr-3 text-secondary-400 dark:text-secondary-200" />
                                             Your Profile
                                         </button>
                                         {/* Settings */}
                                         <button
-                                            onClick={() => handleMenuItemClick('settings')}
                                             className="w-full flex items-center px-4 py-2 text-sm text-secondary-700 dark:text-secondary-100 hover:bg-secondary-50 dark:hover:bg-gray-800 transition-colors"
                                         >
                                             <Cog6ToothIcon className="w-4 h-4 mr-3 text-secondary-400 dark:text-secondary-200" />

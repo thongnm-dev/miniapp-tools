@@ -86,7 +86,7 @@ const S3Download: React.FC<S3UploadProps> = ({ key_code = "", title = "", items 
                     <div className="flex items-center justify-between">
                         <button className='flex flex-row gap-4 bg-transparent flex-1' onClick={toggle}>
                             <span>
-                                {modalOpen ? <FaFolderMinus className='h-6 w-6' /> : <FaFolderPlus className='h-6 w-6' />}
+                                {modalOpen ? <FaFolderMinus className='h-6 w-6 text-orange-500' /> : <FaFolderPlus className='h-6 w-6 text-orange-500' />}
                             </span>
                             <span className="text-lg font-bold">{title}
                                 <span className="text-red-600">({items.length})</span>

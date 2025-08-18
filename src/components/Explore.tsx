@@ -1,5 +1,5 @@
 import { FolderIcon, FolderMinusIcon, FolderPlusIcon, HomeIcon, MagnifyingGlassIcon, NewspaperIcon } from "@heroicons/react/24/outline";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fsController } from "../controller/fs-controller";
 import TreeView, { flattenTree } from "react-accessible-treeview";
 
@@ -8,47 +8,19 @@ export interface ExploreProps {
     extDir?: string;
 }
 
-const folder = {
-  name: "root",
-  children: [
-    {
-      name: "src",
-      children: [{ name: "index.js" }, { name: "styles.css" }],
-    },
-    {
-      name: "node_modules",
-      children: [
-        {
-          name: "react-accessible-treeview",
-          children: [{ name: "index.js" }],
-        },
-        { name: "react", children: [{ name: "index.js" }] },
-      ],
-    },
-    {
-      name: ".npmignore",
-    },
-    {
-      name: "package.json",
-    },
-    {
-      name: "webpack.config.js",
-    },
-  ],
-};
-
-const data = flattenTree(folder);
-
-const Explore: React.FC<ExploreProps> = ({ className = "", extDir = "" }) => {
+const Explore: React.FC<ExploreProps> = ({}) => {
 
     const [directory, setDirectory] = useState<string>("");
     const [searchText, setSearchText] = useState<string>("");
 
-    useEffect(() => {
-        if (extDir) {
+    const dataTree = useMemo(() => {
 
+        let treeview = {
+            name: "root",
+            children: []
         }
-    }, [extDir]);
+        return flattenTree(treeview);
+    }, []);
 
     const selectDirectory = async () => {
         const result = await fsController.selectDirectory();
@@ -104,7 +76,7 @@ const Explore: React.FC<ExploreProps> = ({ className = "", extDir = "" }) => {
 
                 <div className="overflow-y-auto p-4 h-[480px]">
                     <TreeView
-                        data={data}
+                        data={dataTree}
                         aria-label="directory tree"
                         togglableSelect
                         clickAction="EXCLUSIVE_SELECT"

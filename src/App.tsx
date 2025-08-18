@@ -15,6 +15,7 @@ import WelcomePage from './pages/WelcomePage';
 import BugManagePage from './pages/BugManagePage';
 import BugDetailPage from './pages/BugDetailPage';
 import CopyFilePage from './pages/CopyFilePage';
+import DownloadHistoriesPage from './pages/DownloadHistoriesPage';
 
 function App() {
     return (
@@ -76,6 +77,13 @@ function App() {
                             <ProtectedRoute>
                                 <MainLayout>
                                     <S3DownloadDetailPage />
+                                </MainLayout>
+                            </ProtectedRoute>
+                        } />
+                        <Route path="/download-histories" element={
+                            <ProtectedRoute>
+                                <MainLayout>
+                                    <DownloadHistoriesPage />
                                 </MainLayout>
                             </ProtectedRoute>
                         } />

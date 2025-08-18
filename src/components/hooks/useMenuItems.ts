@@ -1,34 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { MenuItem } from '../../types/menu';
-
-import {
-  HomeIcon,
-  WrenchScrewdriverIcon,
-  DocumentDuplicateIcon,
-  QuestionMarkCircleIcon,
-  FolderIcon,
-  AdjustmentsHorizontalIcon,
-  CloudIcon,
-  CloudArrowUpIcon,
-  CloudArrowDownIcon,
-  BugAntIcon,
-  ClipboardDocumentIcon,
-  TvIcon,
-} from '@heroicons/react/24/outline';
+import { FaCloudUploadAlt, FaHistory, FaRegCopy } from 'react-icons/fa';
+import { FcFeedIn, FcHome, FcOpenedFolder, FcRules } from 'react-icons/fc';
+import { AiTwotoneBug } from 'react-icons/ai';
 
 // Move iconMap outside the function so it's not redefined on every call
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  dashboard: HomeIcon,
-  system: WrenchScrewdriverIcon,
-  settings: AdjustmentsHorizontalIcon,
-  folder: FolderIcon,
-  cloud: CloudIcon,
-  document: DocumentDuplicateIcon,
-  s3upload: CloudArrowUpIcon,
-  workdir: TvIcon,
-  s3download: CloudArrowDownIcon,
-  bugs: BugAntIcon,
-  copy: ClipboardDocumentIcon
+  dashboard: FcHome,
+  s3upload: FaCloudUploadAlt,
+  workdir: FcOpenedFolder,
+  s3download: FcFeedIn,
+  bugs: AiTwotoneBug,
+  copy: FaRegCopy,
+  history: FaHistory
 };
 
 export const useMenuItems = () => {
@@ -48,7 +32,7 @@ export const useMenuItems = () => {
 
   // Helper function to get icon component based on icon string
   const getIconComponent = (iconName: string): React.ReactElement | null => {
-    const Icon = iconMap[iconName] || QuestionMarkCircleIcon;
+    const Icon = iconMap[iconName] || FcRules;
     return React.createElement(Icon, { className: 'w-5 h-5' });
   };
 

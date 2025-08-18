@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../stores/AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { APP_CONFIG } from '../config/config';
-import { EyeIcon, EyeSlashIcon} from '@heroicons/react/24/outline';
 import Button from '../components/ui/Button';
-import { FcKey, FcManager, FcSportsMode } from 'react-icons/fc';
+import { FcBiotech, FcHighPriority, FcKey, FcManager, FcSportsMode } from 'react-icons/fc';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -133,13 +133,11 @@ const Login: React.FC = () => {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 pr-4 flex items-center"
                 >
-                  <svg className="h-5 w-5 text-secondary-400 hover:text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     {showPassword ? (
-                      <EyeIcon className='h-3 w-4'/>
+                      <FaEye className='h-3 w-4'/>
                     ) : (
-                      <EyeSlashIcon className='h-3 w-4'/>
+                      <FaEyeSlash className='h-3 w-4'/>
                     )}
-                  </svg>
                 </button>
               </div>
             </div>
@@ -149,9 +147,7 @@ const Login: React.FC = () => {
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <div className="flex">
                   <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                    <FcHighPriority className="h-5 w-5 text-red-400" />
                   </div>
                   <div className="ml-3">
                     <p className="text-sm text-red-700">{error}</p>
@@ -165,9 +161,7 @@ const Login: React.FC = () => {
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex">
                   <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+                    <FcBiotech className="h-5 w-5 text-green-400" />
                   </div>
                   <div className="ml-3">
                     <p className="text-sm text-green-700">Đăng nhập thành công! Đang điều hướng...</p>
@@ -184,10 +178,6 @@ const Login: React.FC = () => {
                         font-medium disabled:cursor-not-allowed transition-colors gap-3">
               {isLoading ? (
                 <div className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
                   Đang đăng nhập...
                 </div>
               ) : (
