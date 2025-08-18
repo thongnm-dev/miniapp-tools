@@ -10,7 +10,7 @@
     "build": "npm run build:main && npm run build:renderer",
     "build:main": "tsc -p tsconfig.main.json",
     "build:renderer": "vite build",
-    "dist": "npm run build && electron-builder",
+    "dist": "npm run build && electron-builder --win nsis",
     "preview": "vite preview"
   },
   "keywords": [
@@ -61,7 +61,6 @@
   "build": {
     "appId": "ws.alx.app",
     "productName": "miniapp-tools",
-    "icon": "src/main/icon/ws.ico",
     "directories": {
       "output": "dist-electron"
     },
@@ -72,7 +71,8 @@
     "win": {
       "target": "nsis",
       "signAndEditExecutable": false,
-      "forceCodeSigning": false
+      "forceCodeSigning": false,
+      "icon": "build/icon.ico"
     },
     "mac": {
       "target": "dmg"

@@ -23,7 +23,7 @@ function createWindow(): void {
     frame: true,
     autoHideMenuBar: true,
     show: true,
-    icon: path.join(__dirname, '../../public/assets/ws.ico') // Optional: add an icon
+    icon: path.join(__dirname, '../../build/icon.ico') // Optional: add an icon
   });
 
   // Load the index.html file
