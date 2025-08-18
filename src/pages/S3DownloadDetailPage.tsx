@@ -3,7 +3,7 @@ import { useLocation, useParams } from "react-router-dom";
 import DataTable from "../components/ui/DataTable";
 import { fsController } from "../controller/fs-controller";
 import Button from "../components/ui/Button";
-import { DocumentDuplicateIcon, EyeIcon, FolderIcon, FolderOpenIcon } from "@heroicons/react/24/outline";
+import { DocumentDuplicateIcon, FolderOpenIcon } from "@heroicons/react/24/outline";
 import { showNotification } from "../components/notification";
 import { useLoading } from "../stores/LoadingContext";
 import Modal from "../components/ui/Modal";
@@ -49,27 +49,6 @@ const S3DownloadDetailPage: React.FC = () => {
     // Show in explorer
     const handleShowInExplorer = async () => {
         await fsController.openFile(sync_path);
-    };
-
-    // Open file
-    const openFile = async (filePath: string) => {
-        try {
-            const result = await fsController.openFile(filePath);
-
-            if (!result.success) {
-                showNotification(result.message || 'Failed to open file', 'error');
-            }
-        } catch (err) {
-            showNotification('Failed to open file', 'error');
-        }
-    };
-
-    // Show in explorer
-    const showInExplorer = async (path: string) => {
-        const result = await fsController.openFile(path);
-        if (!result.success) {
-            showNotification(result.message || 'Failed to open file', 'error');
-        }
     };
 
     // Copy folders
@@ -168,9 +147,7 @@ const S3DownloadDetailPage: React.FC = () => {
                         <div className="bg-white rounded-lg shadow grid grid-cols-1 gap-2">
                             <DataTable className='col-span-2 p-3'
                                 columns={[
-                                    { key: 'action', label: '' },
-                                    { key: 'name', label: 'Tên tập tin' },
-                                    { key: 'local', label: '' },
+                                    { key: 'name', label: 'Tên tập tin' }
                                 ]}
                                 data={download_dtl_items
                                     .map(bug_info => ({
@@ -185,28 +162,6 @@ const S3DownloadDetailPage: React.FC = () => {
                                 selectedRows={new Set(Array.from(selectedItems).map(f => f.fileName || ""))}
                                 onRowSelectionChange={handleFileCheckboxChange}
                                 rowKey="name"
-                                customCellRender={{
-                                    action: (row) => (
-                                        <Button
-                                            onClick={(e: React.MouseEvent) => {
-                                                e.stopPropagation();
-                                                openFile(row.sync_path);
-                                            }}
-                                        >
-                                            <EyeIcon className="w-5 h-5" />
-                                        </Button>
-                                    ),
-                                    local: (row) => (
-                                        <Button
-                                            onClick={(e: React.MouseEvent) => {
-                                                e.stopPropagation();
-                                                showInExplorer(row.local);
-                                            }}
-                                        >
-                                            <FolderIcon className="w-5 h-5" />
-                                        </Button>
-                                    ),
-                                }}
                             />
                         </div>
                     )}

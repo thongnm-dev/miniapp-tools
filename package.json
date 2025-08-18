@@ -70,7 +70,7 @@
       "node_modules/**/*"
     ],
     "win": {
-      "target": "portable",
+      "target": "nsis",
       "signAndEditExecutable": false,
       "forceCodeSigning": false
     },

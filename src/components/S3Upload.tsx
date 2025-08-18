@@ -174,9 +174,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploaded_id = "", up
         } else {
             setSelectedItems(prev => {
                 const newSet = new Set(prev);
-                console.log("start:  " + node.isSelected)
                 if (node.isBranch == true && node.isSelected == false) {
-                    console.log(findItem(node.element, dataTree));
                     for (const file of findItem(node.element, dataTree)) {
                         newSet.delete(file);
                     }
@@ -258,7 +256,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploaded_id = "", up
                     <div className="flex items-center justify-between hover:cursor-pointer" >
                         <div className='flex flex-row gap-2 flex-1' onClick={toggle}>
                             <button onClick={toggle}>
-                                {modalOpen ? <FaFolderMinus className='h-5 w-5' /> : <FaFolderPlus className='h-5 w-5' />}
+                                {modalOpen ? <FaFolderMinus className='h-5 w-5 text-orange-500' /> : <FaFolderPlus className='h-5 w-5 text-orange-500' />}
                             </button>
                             <span className="text-lg font-bold">{S3_FOLDER_UPLOAD_OBJECT.path}
                                 <span className="text-red-600">({count})</span>

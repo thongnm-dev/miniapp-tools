@@ -184,6 +184,7 @@ export const S3DownloadPage: React.FC = () => {
                     resultFlg = true;
                 }
             } else {
+                showLoading('Đang thực hiện di chuyển tập tin. Vui lòng không tắt màn hình...');
                 const params = {
                     source: destination,
                     file_items: Array.from(selectedBugs)

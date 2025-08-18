@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../stores/AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { APP_CONFIG } from '../config/config';
-import { ArrowRightEndOnRectangleIcon, EyeIcon, EyeSlashIcon} from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon} from '@heroicons/react/24/outline';
 import Button from '../components/ui/Button';
 import { FcKey, FcManager, FcSportsMode } from 'react-icons/fc';
 

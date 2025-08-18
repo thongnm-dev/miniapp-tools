@@ -127,7 +127,6 @@ const S3UploadPage: React.FC = () => {
     };
 
     const hanldeCloseModal = () => {
-
         setOpenModal(false);
     }
 

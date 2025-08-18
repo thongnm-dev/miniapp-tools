@@ -140,7 +140,7 @@ export class UploadService {
 
             const upload_items: upload_item [] = [];
 
-            const state_cd = params.state === "03_対応確認中（エネコム確認）" ? "02" : "05";
+            const state_cd = params.state === "03_対応確認中（エネコム確認）" ? "02" : "04";
             for (const row of result?.rows || []) {
                 upload_items.push({
                     bug_no: row.bug_no,
