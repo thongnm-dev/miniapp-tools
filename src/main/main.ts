@@ -23,14 +23,12 @@ function createWindow(): void {
     frame: true,
     autoHideMenuBar: true,
     show: true,
-    fullscreen: true,
-    icon: path.join(__dirname, '../../build/icon.ico') // Optional: add an icon
+    icon: path.join(__dirname, '../../build/icon.ico')
   });
 
   // Load the index.html file
   if (process.argv.includes('--dev')) {
     mainWindow.loadURL('http://localhost:3000');
-    // mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
@@ -51,19 +49,12 @@ app.whenReady().then(async () => {
   createWindow();
 
   try {
+    // Setup all IPC handlers
+    initHandlers();
 
-    // Initialize database
-    if (!(await databaseService.connect()).success) {
-      console.error('Không thể kết nối database...');
-    } else {
-      if (process.argv.includes('--dev')) {
-        await databaseService.initializeDatabase();
-      }
-
-      // Setup all IPC handlers
-      initHandlers();
+    if (process.argv.includes('--dev')) {
+      await databaseService.initializeDatabase();
     }
-
   } catch (error) {
     // You might want to show a dialog to the user about configuration issues
   }

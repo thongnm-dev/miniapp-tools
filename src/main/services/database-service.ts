@@ -96,6 +96,9 @@ export class DatabaseService {
           id SERIAL PRIMARY KEY,
           code VARCHAR(100) NOT NULL,
           name VARCHAR(100) NOT NULL,
+          subscribe VARCHAR(100) NOT NULL,
+          is_to_alx BOOLEAN DEFAULT FALSE,
+          link_available TEXT[],
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
@@ -340,6 +343,16 @@ export class DatabaseService {
       // `);
 
       // disconnect from the database
+
+      await client.query(`
+          TRUNCATE TABLE s3_state;
+          INSERT INTO s3_state (code,"name",subscribe,is_to_alx,link_available) VALUES
+            ('02','02_原因確認中（アレクシード確認）','to_アレクシード',true,'{03}'),
+            ('04','04_対応中（アレクシード確認）','to_アレクシード',true,'{03,05}'),
+            ('03','03_対応確認中（エネコム確認）','to_エネコム',false,'{03}'),
+            ('05','05_対応済（アレクシード確認）','to_エネコム',false,'{}'),
+            ('01','01_起票済（エネコム確認）','to_エネコム',false,'{}');
+        `)
       await this.disconnect();
       return { success: true };
     } catch (error) {

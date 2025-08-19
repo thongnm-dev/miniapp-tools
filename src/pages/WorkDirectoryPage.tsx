@@ -29,13 +29,18 @@ const WorkDirectoryPage: React.FC = () => {
         localStorage.removeItem('workdir');
         if (workdir) {
             const reload = async (path: string) => {
-                const resultFile = await fsController.readDirectory(path);
-                if (resultFile.success) {
-                    setFiles(resultFile.data || []);
+                try {
+                    showLoading();
+                    const resultFile = await fsController.readDirectory(path);
+                    if (resultFile.success) {
+                        setFiles(resultFile.data || []);
+                    }
+                } finally {
+                    hideLoading();
                 }
             };
 
-            // reload(workdir);
+            reload(workdir);
 
             const stateToSave = {
                 workdir
@@ -46,14 +51,16 @@ const WorkDirectoryPage: React.FC = () => {
 
     const selectDirectory = async () => {
         try {
-            const result = await fsController.selectDirectory();
-
-            console.log(result.data)
+            const result = await fsController.selectMultiDir();
+            
             if (result.success && result.data) {
-                setWorkdir(result.data);
+                showLoading();
+                const results = await fsController.readMultiDir(result.data);
+
+                if (results.success && results.data) {
+                    setFiles(results.data as []);
+                }
             }
-        } catch (err) {
-            showNotification('Failed to select directory', 'error');
         } finally {
             hideLoading();
         }
@@ -191,7 +198,7 @@ const WorkDirectoryPage: React.FC = () => {
                 </div>
             )}
             {/* Instructions */}
-            {!workdir && (
+            {files.length == 0 && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
                     <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <FolderIcon className="w-8 h-8 text-blue-600" />
