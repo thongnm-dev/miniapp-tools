@@ -211,6 +211,57 @@ export class UploadService {
             return { success: false, message: (error as Error).message };
         }
     }
+
+    async get_upload_histories(params: {from_date?: string, to_date?: string, state?: string, bug_no?: string, is_moved_at_s3?: boolean}):
+        Promise<ServiceReturn<upload_item[]>> {
+        try {
+
+            const client = await this.db.getClient();
+            const result = await client.query(`
+                    SELECT
+                          t1.upload_ymd
+                        , t1.s3_state
+                        , t1.is_moved_at_s3
+                        , t2.bug_no
+                        , string_agg(t3.file_name , ', ') AS att_files
+                    FROM 
+                        upload_hdr t1
+                    INNER JOIN upload_dtl t2
+                        ON t1.id = t2.upload_id 
+                    INNER JOIN upload_attach t3
+                        ON t1.id = t3.upload_id 
+                        AND t2.id = t3.upload_dtl_id 
+                    WHERE 1 = 1
+                        AND (
+                            ($1 IS NULL AND $2 IS NOT NULL AND t1.upload_ymd <= $2::TEXT)
+                            OR ($1 IS NOT NULL AND $2 IS NULL AND t1.upload_ymd >= $1::TEXT)
+                            OR ($1 IS NOT NULL AND $2 IS NOT NULL AND t1.upload_ymd BETWEEN $1::TEXT AND $2::TEXT)
+                            OR ($1 IS NULL AND $2 IS NULL))
+                        AND ($3 IS NULL OR t1.s3_state = $3)
+                        AND ($4 IS NULL OR t2.bug_no LIKE '%' ||$4|| '%')
+                        AND ($5 IS NULL OR t1.is_moved_at_s3 = $5)
+                    GROUP BY 
+                          t1.upload_ymd
+                        , t1.s3_state
+                        , t1.is_moved_at_s3
+                        , t2.bug_no
+                `, [params.from_date, params.to_date, params.state, params.bug_no, params.is_moved_at_s3]);
+            const upload_items: upload_item [] = [];
+
+            for (const row of result?.rows || []) {
+                upload_items.push({
+                    upload_ymd: row.upload_ymd,
+                    s3_state: row.s3_state,
+                    is_moved_at_s3: row.is_moved_at_s3,
+                    bug_no: row.bug_no,
+                    att_files: row.att_files,
+                });
+            }
+            return { success: true, data: upload_items };
+        } catch (err) {
+            return { success: false, message: (err as Error).message }
+        }
+    }
 }
 
 export const uploadService = new UploadService(new DatabaseService(getDatabaseConfig()));
