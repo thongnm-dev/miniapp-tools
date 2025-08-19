@@ -12,14 +12,13 @@ export class DownloadService {
     }
 
     // insert download logs
-    async ins_download(dataObjects: {
-        state: string,
+    async ins_download(params: {
+        aws_cd: string,
         date: string,
-        time: string,
         user_id: string,
         sync_path: string,
         bug_attachs: { bug_no: string, last_modified?: Date, path: string, s3_path: string }[]
-    }[]): Promise<ServiceReturn<string>> {
+    }): Promise<ServiceReturn<string>> {
 
         if (!this.db) {
             return { success: false };
@@ -27,25 +26,26 @@ export class DownloadService {
         try {
             const client = await this.db.getClient();
             await client.query(`BEGIN`);
-            for (const data of dataObjects) {
-                const result = await client.query(`
-                        INSERT INTO download_hdr 
-                            (download_ymd, download_hm, s3_state, sync_path, download_count, created_by) 
-                        VALUES
-                            ($1, $2, $3, $4, $5, $6)
-                        RETURNING id`,
-                    [data.date, data.time, data.state, data.sync_path, data.bug_attachs.length, data.user_id]);
+            
+            const result = await client.query(`
+                    INSERT INTO download_hdr 
+                        (download_ymd, download_hms, aws_cd, sync_path, download_count, created_by) 
+                    VALUES
+                        ($1, TO_CHAR(NOW() , 'HH24mmss'), $2, $3, $4, $5)
+                    RETURNING id`,
+                [params.date, params.aws_cd, params.sync_path, params.bug_attachs.length, params.user_id]);
 
-                if (result?.rows[0]?.id) {
-                    for (const detail of data.bug_attachs) {
-                        const download_id = result.rows[0].id;
-                        await client.query(`
-                            INSERT INTO download_dtl 
-                                (download_id, bug_no, last_modified, sync_path, s3_state) 
-                            VALUES
-                                ($1, $2, $3, $4, $5)`, [download_id, detail.bug_no, detail.last_modified, detail.path, data.state]);
-                    }
+            if (result?.rows[0]?.id) {
+                let promise_dtl = [];
+                for (const detail of params.bug_attachs) {
+                    const download_id = result.rows[0].id;
+                    promise_dtl.push(client.query(`
+                        INSERT INTO download_dtl 
+                            (download_id, bug_no, last_modified, sync_path) 
+                        VALUES
+                            ($1, $2, $3, $4)`, [download_id, detail.bug_no, detail.last_modified, detail.path]));
                 }
+                await Promise.all(promise_dtl);
             }
 
             await client.query(`COMMIT`);
@@ -68,36 +68,38 @@ export class DownloadService {
                             SELECT
                                 t1.id,
                                 t1.download_ymd,
-                                t1.download_hm,
+                                t1.download_hms,
                                 t1.sync_path,
                                 t1.download_count,
-                                t1.s3_state
+                                t3."name" AS aws_name
                             FROM download_hdr t1
                             INNER JOIN download_dtl t2
                                 ON t1.id = t2.download_id
+                            INNER JOIN aws_storage t3
+                                ON t1.aws_cd = t3.code 
                             WHERE 1 = 1
                                 AND t1.download_count > 0 
                                 AND t1.is_moved_at_local = false
                                 AND t1.created_by = $1
                             GROUP BY
                                 t1.id,
-                                t1.s3_state,
+                                t3."name",
                                 t1.download_ymd,
-                                t1.download_hm,
+                                t1.download_hms,
                                 t1.sync_path,
                                 t1.download_count
                             ORDER BY 
-                                (t1.download_ymd || t1.download_hm) desc `, [user_id]);
+                                (t1.download_ymd || t1.download_hms) desc `, [user_id]);
 
             const download_items: download_item [] = [];
             for (const row of result?.rows || []) {
                 download_items.push({
                     id: row.id,
                     download_ymd: row.download_ymd,
-                    download_hm: row.download_hm,
+                    download_hms: row.download_hms,
                     sync_path: row.sync_path,
                     download_count: row.download_count,
-                    s3_state: row.s3_state
+                    aws_name: row.aws_name
                 });
             }
             return { success: true, data: download_items };
@@ -122,14 +124,16 @@ export class DownloadService {
                             to_char(t2.last_modified, 'yyyy/MM/dd HH24:mm:ss') AS last_modified,
                             t2.sync_path,
                             t2.path_copied,
-                            t2.s3_state
+                            t3."name" AS aws_name
                         FROM download_hdr t1
                         INNER JOIN download_dtl t2
                             ON t1.id = t2.download_id
+                        INNER JOIN aws_storage t3
+                            ON t1.aws_cd = t3.code 
                         WHERE 1 = 1
                             AND t1.id = $1
                         GROUP BY
-                            t2.s3_state,
+                            t3."name",
                             t1.download_ymd,
                             t2.bug_no,
                             t2.last_modified,
@@ -138,7 +142,7 @@ export class DownloadService {
                             t1.id,
                             t2.id
                         ORDER BY 
-                            t2.s3_state,
+                            t3."name",
                             t2.bug_no,
                             t2.last_modified`, [download_id]);
             const download_items: download_item[] = [];
@@ -155,7 +159,7 @@ export class DownloadService {
                     last_modified: row.download_hm,
                     sync_path: row.sync_path,
                     path_copied: row.path_copied,
-                    s3_state: row.s3_state
+                    aws_name: row.s3_state
                 });
             }
             return { success: true, data: download_items };

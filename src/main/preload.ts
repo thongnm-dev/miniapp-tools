@@ -5,6 +5,7 @@ import { ServiceReturn } from './@types/service-return';
 import { file_item } from '../types/file_item';
 import { download_item } from '../types/download_item';
 import { upload_item } from '../types/upload_item';
+import { aws_storage } from '../types/aws_storage';
 
 // IPC Channel Constants - Inlined to avoid module resolution issues
 // These match the constants in src/config/ipcChannels.ts
@@ -60,6 +61,11 @@ const IPC_CHANNELS = {
     // upload
     ALLOW_UPLOAD_OBJECT_S3: 'ALLOW_UPLOAD_OBJECT_S3',
 
+    APP_API_GET_ALL_AWS_STORE: 'APP_API_GET_ALL_AWS_STORE',
+    APP_API_GET_DOWNLOAD_ITEMS: 'APP_API_GET_DOWNLOAD_ITEMS',
+    APP_API_GET_UPLOAD_ITEMS: 'APP_API_GET_UPLOAD_ITEMS',
+    APP_API_GET_DELETE_ITEMS: 'APP_API_GET_DELETE_ITEMS',
+
 } as const;
 
 // Expose protected methods that allow the renderer process to use
@@ -71,6 +77,22 @@ contextBridge.exposeInMainWorld('loginAPI', {
     register: (credentials: RegisterCredentials) => {
         return ipcRenderer.invoke(IPC_CHANNELS.REGISTER, credentials)
     },
+});
+
+// Fetch Tran API
+contextBridge.exposeInMainWorld('appAPI', {
+    get_all_items: () => {
+        return ipcRenderer.invoke(IPC_CHANNELS.APP_API_GET_ALL_AWS_STORE) as Promise<ServiceReturn<aws_storage[]>>
+    },
+    get_download_items: () => {
+        return ipcRenderer.invoke(IPC_CHANNELS.APP_API_GET_DOWNLOAD_ITEMS) as Promise<ServiceReturn<aws_storage[]>>
+    },
+    get_upload_items: () => {
+        return ipcRenderer.invoke(IPC_CHANNELS.APP_API_GET_UPLOAD_ITEMS) as Promise<ServiceReturn<aws_storage[]>>
+    },
+    get_delete_items: (aws_cd: string) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.APP_API_GET_DELETE_ITEMS, aws_cd) as Promise<ServiceReturn<aws_storage[]>>
+    }
 });
 
 // System API
@@ -135,18 +157,18 @@ contextBridge.exposeInMainWorld('s3API', {
     getAllStates: () => {
         return ipcRenderer.invoke(IPC_CHANNELS.S3_GET_ALL_STATES)
     },
-    getDownloadList: () => {
-        return ipcRenderer.invoke(IPC_CHANNELS.S3_GET_DOWNLOAD_LIST)
+    get_aws_storage_list: (aws_cd: string) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.S3_GET_DOWNLOAD_LIST, aws_cd) as Promise<ServiceReturn<string[]>>
     },
     getLocalPathSyncDir: () => {
         return ipcRenderer.invoke(IPC_CHANNELS.GET_S3_LOCAL_SYNC_WORKDIR)
     },
-    downloadFile: (user_id: string, keys: string[], localPath: string) => {
-        return ipcRenderer.invoke(IPC_CHANNELS.S3_DOWNLOAD_FILES, user_id, keys, localPath)
+    downloadFile: (params: {user_id: string, aws_cd: string, bug_list: string[], localPath: string}) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.S3_DOWNLOAD_FILES, params)
     },
 
     // move object to another object
-    moveObjectS3: (params: { source: string, file_items: string[] }) => {
+    moveObjectS3: (params: { aws_cd: string, file_items: string[] }) => {
         return ipcRenderer.invoke(IPC_CHANNELS.S3_MOVE_OBJECT, params)
     },
 
@@ -155,7 +177,7 @@ contextBridge.exposeInMainWorld('s3API', {
         return ipcRenderer.invoke(IPC_CHANNELS.S3_UPLOAD_OBJECTS, params) as Promise<ServiceReturn<{ upload_id: string, uploaded_items: upload_item[]}>>
     },
 
-    deleteObjectS3: (params: { user_id: string, upload_id: string, relative_source: string, delete_items: {source: string, target: string}[]}) => {
+    deleteObjectS3: (params: { user_id: string, upload_id: string, ref_aws_cd: string, delete_items: {aws_cd: string, target: string}[]}) => {
         return ipcRenderer.invoke(IPC_CHANNELS.S3_DELETE_OBJECTS, params) as Promise<ServiceReturn<string[]>>
     },
 });
@@ -195,19 +217,25 @@ declare global {
             register: (credentials: RegisterCredentials) =>
                 Promise<{ success: boolean; message?: string; user?: User }>;
         };
+        appAPI: {
+            get_all_items: () => Promise<ServiceReturn<aws_storage[]>>
+            get_download_items: () => Promise<ServiceReturn<aws_storage[]>>
+            get_upload_items: () => Promise<ServiceReturn<aws_storage[]>>
+            get_delete_items: (aws_cd: string) => Promise<ServiceReturn<aws_storage[]>>
+        },
         s3API: {
             getAllStates: () => Promise<ServiceReturn<{ [key: string]: { bugs: { bug_no: string; message: string }[] } }>>;
-            getDownloadList: () => Promise<ServiceReturn<{ [key: string]: { bugs: string[] } }>>;
+            get_aws_storage_list: (aws_cd: string) => Promise<ServiceReturn<string[]>>;
             getLocalPathSyncDir: () => Promise<ServiceReturn<string>>;
 
             // download object at S3 storage
-            downloadFile: (user_id: string, keys: string[], localPath: string) => Promise<ServiceReturn<boolean>>;
+            downloadFile: (params: {user_id: string, aws_cd: string, bug_list: string[], localPath: string}) => Promise<ServiceReturn<boolean>>;
 
             // move object to another at S3 storage
-            moveObjectS3: (params: { source: string, file_items: string[] }) => Promise<ServiceReturn<boolean>>;
+            moveObjectS3: (params: { aws_cd: string, file_items: string[] }) => Promise<ServiceReturn<boolean>>;
 
             // delete object at S3 storage
-            deleteObjectS3: (params: {user_id: string, upload_id: string, relative_source: string, delete_items: {source: string, target: string}[]}) => Promise<ServiceReturn<string[]>>;
+            deleteObjectS3: (params: {user_id: string, upload_id: string, ref_aws_cd: string, delete_items: {aws_cd: string, target: string}[]}) => Promise<ServiceReturn<string[]>>;
 
             // upload file to S3 storage
             uploadFile: (params: { user_id: string, destination: string, is_folder_same_name: boolean, file_items: file_item[]}) => Promise<ServiceReturn<{upload_id: string, uploaded_items: upload_item[]}>>;

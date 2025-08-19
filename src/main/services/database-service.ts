@@ -57,6 +57,7 @@ export class DatabaseService {
           id SERIAL PRIMARY KEY,
           project_id INT NOT NULL,
           bug_no VARCHAR(100) NOT NULL,
+          aws_cd VARCHAR(3) NOT NULL,
           bug_phase VARCHAR(10) NOT NULL,
           bug_status VARCHAR(10) DEFAULT '',
           bug_priority VARCHAR(10) DEFAULT '',
@@ -92,12 +93,13 @@ export class DatabaseService {
       `);
 
       await client.query(`
-        CREATE TABLE IF NOT EXISTS s3_state (
+        CREATE TABLE IF NOT EXISTS aws_storage (
           id SERIAL PRIMARY KEY,
-          code VARCHAR(100) NOT NULL,
+          code VARCHAR(3) NOT NULL,
           name VARCHAR(100) NOT NULL,
           subscribe VARCHAR(100) NOT NULL,
-          is_to_alx BOOLEAN DEFAULT FALSE,
+          is_upload BOOLEAN DEFAULT FALSE,
+          is_download BOOLEAN DEFAULT FALSE,
           link_available TEXT[],
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -108,12 +110,10 @@ export class DatabaseService {
         CREATE TABLE IF NOT EXISTS download_hdr (
           id SERIAL PRIMARY KEY,
           download_ymd VARCHAR(8) NOT NULL,
-          download_hm VARCHAR(4) NOT NULL,
-          s3_state VARCHAR(100) NOT NULL DEFAULT '',
+          download_hms VARCHAR(6) NOT NULL,
+          aws_cd VARCHAR(3) NOT NULL DEFAULT '',
           sync_path VARCHAR(255) NOT NULL DEFAULT '',
           download_count INT NOT NULL DEFAULT 0,
-          is_new_fetch BOOLEAN DEFAULT TRUE,
-          is_moved_at_s3 BOOLEAN DEFAULT FALSE,
           is_moved_at_local BOOLEAN DEFAULT FALSE,
           created_by VARCHAR(100) DEFAULT '',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -129,7 +129,6 @@ export class DatabaseService {
           last_modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           sync_path VARCHAR(255) NOT NULL DEFAULT '',
           path_copied VARCHAR(255) NOT NULL DEFAULT '',
-          s3_state VARCHAR(100) DEFAULT '',
           is_moved_at_s3 BOOLEAN DEFAULT FALSE,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -140,15 +139,15 @@ export class DatabaseService {
         CREATE TABLE IF NOT EXISTS upload_hdr (
           id SERIAL PRIMARY KEY,
           upload_ymd VARCHAR(8) NOT NULL,
-          upload_hm VARCHAR(4) NOT NULL,
-          s3_state VARCHAR(100) NOT NULL DEFAULT '',
+          upload_hms VARCHAR(6) NOT NULL,
+          aws_cd VARCHAR(3) NOT NULL DEFAULT '',
           is_moved_at_s3 BOOLEAN DEFAULT FALSE,
           upload_count INT NOT NULL DEFAULT 0,
           created_by VARCHAR(100) DEFAULT '',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
-        CREATE INDEX IF NOT EXISTS idx_upload_one ON upload_hdr (upload_ymd, upload_hm, s3_state);
+        CREATE INDEX IF NOT EXISTS idx_upload_one ON upload_hdr (upload_ymd, upload_hms, aws_cd);
       `);
 
       await client.query(`
@@ -178,7 +177,7 @@ export class DatabaseService {
           id SERIAL PRIMARY KEY,
           shipment_date DATE NOT NULL,
           shipment_time VARCHAR(14) NOT NULL,
-          s3_state VARCHAR(100) NOT NULL DEFAULT '',
+          aws_cd VARCHAR(3) NOT NULL DEFAULT '',
           is_completed BOOLEAN DEFAULT FALSE,
           is_for_dev BOOLEAN DEFAULT TRUE,
           created_by VARCHAR(100) DEFAULT '',
@@ -256,81 +255,14 @@ export class DatabaseService {
       `);
 
       // await client.query(`
-      //   CREATE TABLE IF NOT EXISTS user_roles (
-      //       id SERIAL PRIMARY KEY,
-      //       user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-      //       role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE,
-      //       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      //       UNIQUE(user_id, role_id)
-      //   );
-      // `);
-
-      // await client.query(`
-      //   CREATE TABLE IF NOT EXISTS members (
-      //       id SERIAL PRIMARY KEY,
-      //       user_id INTEGER NULL,
-      //       name VARCHAR(100) NOT NULL,
-      //       email VARCHAR(100) NOT NULL UNIQUE,
-      //       role VARCHAR(50) NOT NULL DEFAULT 'user',
-      //       avatar VARCHAR(255) DEFAULT '',
-      //       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
-      //       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      //   );
-      // `);
-
-      // await client.query(`
-      //   CREATE TABLE IF NOT EXISTS member_projects (
-      //       id SERIAL PRIMARY KEY,
-      //       member_id INTEGER NOT NULL,
-      //       project_id INTEGER NOT NULL,
-      //       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      //       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      //   );
-      // `);
-
-      // await client.query(`
-      //   CREATE TABLE IF NOT EXISTS phases (
-      //       id SERIAL PRIMARY KEY,
-      //       phase_code VARCHAR(10) NOT NULL,
-      //       name VARCHAR(100) NOT NULL,
-      //       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      //       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      //   );
-      // `);
-
-      // await client.query(`
-      //   CREATE TABLE IF NOT EXISTS quotas (
-      //       id SERIAL PRIMARY KEY,
-      //       quote_ymd VARCHAR(8) NOT NULL,
-      //       description TEXT DEFAULT '',
-      //       state VARCHAR(10) NOT NULL DEFAULT '',
-      //       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      //       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      //   );
-      // `);
-
-      // await client.query(`
-      //   CREATE TABLE IF NOT EXISTS quotas_detail (
-      //       id SERIAL PRIMARY KEY,
-      //       quote_id INTEGER NOT NULL,
-      //       description TEXT DEFAULT '',
-      //       state VARCHAR(10) NOT NULL DEFAULT '',
-      //       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      //       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      //   );
-      // `);
-
-      // disconnect from the database
-
-      await client.query(`
-          TRUNCATE TABLE s3_state;
-          INSERT INTO s3_state (code,"name",subscribe,is_to_alx,link_available) VALUES
-            ('02','02_原因確認中（アレクシード確認）','to_アレクシード',true,'{03}'),
-            ('04','04_対応中（アレクシード確認）','to_アレクシード',true,'{03,05}'),
-            ('03','03_対応確認中（エネコム確認）','to_エネコム',false,'{03}'),
-            ('05','05_対応済（アレクシード確認）','to_エネコム',false,'{}'),
-            ('01','01_起票済（エネコム確認）','to_エネコム',false,'{}');
-        `)
+      //     TRUNCATE TABLE aws_storage;
+      //     INSERT INTO aws_storage (code,"name",subscribe,link_available) VALUES
+      //       ('02','02_原因確認中（アレクシード確認）','to_アレクシード','{03}'),
+      //       ('04','04_対応中（アレクシード確認）','to_アレクシード','{03,05}'),
+      //       ('03','03_対応確認中（エネコム確認）','to_エネコム','{03}'),
+      //       ('05','05_対応済（アレクシード確認）','to_エネコム','{}'),
+      //       ('01','01_起票済（エネコム確認）','to_エネコム','{}');
+      //   `)
       await this.disconnect();
       return { success: true };
     } catch (error) {

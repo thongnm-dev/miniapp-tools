@@ -11,8 +11,8 @@ export const setupS3Handlers = () => {
     return await s3Service.getAllStates();
   });
 
-  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_GET_DOWNLOAD_LIST, async (_event) => {
-    return await s3Service.getDownloadList();
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_GET_DOWNLOAD_LIST, async (_event, aws_cd: string) => {
+    return await s3Service.get_aws_storage_list(aws_cd);
   });
 
   ipcMain.handle(IPC_CHANNEL_HANDLERS.GET_S3_LOCAL_SYNC_WORKDIR, async (_event) => {
@@ -30,12 +30,12 @@ export const setupS3Handlers = () => {
     };
   });
 
-  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_DOWNLOAD_FILES, async (_event, user_id: string, keys: string[], localPath: string) => {
-    return await s3Service.downloadFile(user_id, keys, localPath);
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_DOWNLOAD_FILES, async (_event, params: {user_id: string, aws_cd: string, bug_list: string[], localPath: string}) => {
+    return await s3Service.downloadFile(params);
   });
 
   // handle move object s3
-  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_MOVE_OBJECT, async (_event, params: {source: string, file_items: string[]}) => {
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_MOVE_OBJECT, async (_event, params: {aws_cd: string, file_items: string[]}) => {
     return await s3Service.moveObjectS3(params);
   });
 
@@ -46,7 +46,7 @@ export const setupS3Handlers = () => {
   });
 
   ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_DELETE_OBJECTS, 
-      async (_event, params: { user_id: string, upload_id: string, relative_source: string, delete_items: {source: string, target: string}[]}) => {
+      async (_event, params: { user_id: string, upload_id: string, ref_aws_cd: string, delete_items: {aws_cd: string, target: string}[]}) => {
     return await s3Service.deleteObjectS3(params);
   });
 }; 

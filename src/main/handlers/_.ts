@@ -4,6 +4,7 @@ import { setupLoginHandlers } from "./login-handler";
 import { setupS3Handlers } from "./s3-handler";
 import { setupDownloadHandlers } from "./download-handler";
 import { setupUploadHandlers } from "./upload-handler";
+import { setupAppHandlers } from "./app_handler";
 
 export const initHandlers = () => {
     // setup handlers for database, s3, file monitor, folder watch, file system
@@ -21,5 +22,7 @@ export const initHandlers = () => {
 
     // setup upload handlers
     setupUploadHandlers();
+
+    setupAppHandlers();
 
 }

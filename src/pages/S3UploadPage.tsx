@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Button from '../components/ui/Button';
 import DataTable from '../components/ui/DataTable';
 import Modal from '../components/ui/Modal';
@@ -11,11 +11,9 @@ import { s3Controller } from '../controller/s3-controller';
 import { useAuth } from '../stores/AuthContext';
 import { FcOk } from 'react-icons/fc';
 import { GiExitDoor } from 'react-icons/gi';
-import { FETCH_STATES_LIST } from '../config/constants';
-import { s3_state } from '../types/s3_state';
+import { aws_storage } from '../types/aws_storage';
 import { upload_item } from '../types/upload_item';
-
-const list_code_items = ["01", "03", "05"];
+import { appController } from '../controller/app_controller';
 
 const S3UploadPage: React.FC = () => {
     const { user } = useAuth();
@@ -29,18 +27,41 @@ const S3UploadPage: React.FC = () => {
     const [creatFolderSameName, setCreatFolderSameName] = useState(false);
     const [uploadFileItems, setUploadFileItems] = useState<file_item[]>([]);
     const [deleteItems, setDeleteItems] = useState<upload_item[]>([]);
+    const [list_upload_items, setList_upload_items] = useState<aws_storage[]>([]);
+    const [delete_options, setDelete_options] = useState<aws_storage[]>([]);
 
-    const S3_OBJECT_TO_DELETE = useMemo(() => {
-        if (destination) {
-            return FETCH_STATES_LIST.filter((item) => item.link_available.includes(destination) && item.is_to_alx === true) || [] as s3_state[];
+    useEffect(() => {
+        setList_upload_items([]);
+        const loadItems = async () => {
+            const result = await appController.get_upload_items();
+
+            if (result.success && result.data) {
+                setList_upload_items(result.data);
+            }
         }
-        return [] as s3_state[];
+
+        loadItems();
+    }, []);
+
+    useEffect(() => {
+        setDelete_options([]);
+        if (destination) {
+            const loadItems = async () => {
+                const result = await appController.get_delete_items(destination);
+
+                if (result.success && result.data) {
+                    setDelete_options(result.data);
+                }
+
+            }
+            loadItems();
+        }
     }, [destination]);
 
-    const uploadAction = async (params: { keyCode: string, title: string, is_folder_same_name: boolean, selected_items: file_item[] }) => {
-        setModalHeaderTitle(params.title);
+    const uploadAction = async (params: { aws_storage: aws_storage, is_folder_same_name: boolean, selected_items: file_item[] }) => {
+        setModalHeaderTitle(params.aws_storage.aws_name);
         setCreatFolderSameName(params.is_folder_same_name);
-        setDestination(params.keyCode);
+        setDestination(params.aws_storage.aws_cd);
         setModalTitle("Tải lên S3 AWS")
         setUploadFileItems(params.selected_items);
         setOpenModal(true);
@@ -74,7 +95,7 @@ const S3UploadPage: React.FC = () => {
                         showNotification(`Đã tải ${uploadedCount}/${totalFiles} tập tin.`, 'info');
                     }
 
-                    if (result.data && result.data.uploaded_items.length > 0) {
+                    if (!creatFolderSameName && result.data && result.data.uploaded_items.length > 0) {
                         setModalTitle("Thực hiện xoá tập tin S3");
                         setUploadedId(result.data.upload_id);
                         setDeleteItems(result.data.uploaded_items);
@@ -90,12 +111,12 @@ const S3UploadPage: React.FC = () => {
                 showLoading('Đang thực hiện xoá tập tin lên S3. Vui lòng không tắt màn hình...');
 
                 const delete_items = Array.from(deleteItems.map((item) => {
-                    return { source: item.state_cd, target: item.bug_no }
+                    return { aws_cd: item.aws_cd, target: item.bug_no }
                 })) as [];
                 const params = {
                     user_id: user?.username || "",
                     upload_id: uploaded_id,
-                    relative_source: destination,
+                    ref_aws_cd: destination,
                     delete_items: delete_items
                 }
 
@@ -159,11 +180,9 @@ const S3UploadPage: React.FC = () => {
         <>
             <div className="space-y-4">
                 <div className="grid grid-cols-1 space-y-3">
-                    {list_code_items.map((code, index) => {
+                    {list_upload_items.map((item, index) => {
                         return (
-                            <>
-                                <S3Upload key_code={code} uploadAction={uploadAction} key={index} uploaded_id={uploaded_id} clearAction={() => setUploadedId("")} />
-                            </>
+                            <S3Upload aws_storage={item} uploadAction={uploadAction} key={index} uploaded_id={uploaded_id} clearAction={() => setUploadedId("")} />
                         )
                     })}
                 </div>
@@ -175,9 +194,9 @@ const S3UploadPage: React.FC = () => {
                     <span className='font-bold'>Bạn đang thực hiện tải các tập tin lên đường dẫn sau:</span>
                     <span className='text-red-600 font-bold'>{modalHeaderTitle}</span>
                 </div>}
-                {is_updating === false && S3_OBJECT_TO_DELETE.length === 1 && <div className='flex flex-row bg-white p-4 gap-2 border border-b-2'>
+                {is_updating === false && delete_options.length === 1 && <div className='flex flex-row bg-white p-4 gap-2 border border-b-2'>
                     <span className='font-bold'>Bạn đang thực hiện xoá các tập tin lên đường dẫn sau:</span>
-                    <span className='text-red-600 font-bold'>{S3_OBJECT_TO_DELETE[0].path}</span>
+                    <span className='text-red-600 font-bold'>{delete_options[0].aws_name}</span>
 
                 </div>}
                 {destination === "01" && <div className='flex flex-row bg-white p-2 gap-2'>
@@ -213,30 +232,30 @@ const S3UploadPage: React.FC = () => {
                             ]}
                             data={deleteItems.map(file => ({
                                 bug_no: file.bug_no,
-                                state_cd: file.state_cd
+                                aws_cd: file.aws_cd
                             }))}
                             showFilter={false}
                             showCheckboxes={false}
                             customCellRender={{
                                 option_select: (row: Record<string, any>) => (
                                     <div className="flex items-center space-x-2">
-                                        <select value={row.state_cd} onChange={(event) => {
+                                        <select value={row.aws_cd} onChange={(event) => {
                                             const newValue = event.target.value;
 
                                             // update deleteItems state properly instead of mutating directly
                                             setDeleteItems((prev) =>
                                                 prev.map((item) =>
                                                     item.bug_no === row.bug_no
-                                                        ? { ...item, state_cd: newValue }
+                                                        ? { ...item, aws_cd: newValue }
                                                         : item
                                                 )
                                             );
 
                                             console.log(newValue);
 
-                                        }} disabled={row.state_cd === '05'}>
-                                            {S3_OBJECT_TO_DELETE.map((item, index) => {
-                                                return <option value={item.code} key={index}>{item.path}</option>
+                                        }} disabled={row.aws_cd !== '03'}>
+                                            {delete_options.map((item, index) => {
+                                                return <option value={item.aws_cd} key={index}>{item.aws_name}</option>
                                             })}
                                         </select>
                                     </div>

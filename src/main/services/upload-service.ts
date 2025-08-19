@@ -21,7 +21,7 @@ export class UploadService {
             const result = await client.query(`
                                 SELECT
                                     t1.shipment_time,
-                                    t1.s3_state,
+                                    t1.aws_cd,
                                     t1.is_completed,
                                     t1.is_for_dev,
                                     t3.bug_no,
@@ -39,10 +39,10 @@ export class UploadService {
                                     AND t1.shipment_date = to_char(now(), 'yyyyMMdd')
                                     AND t1.is_completed = FALSE
                                     AND t1.is_for_dev = $1
-                                    AND t1.s3_state = $2
+                                    AND t1.aws_cd = $2
                                 GROUP BY
                                     t1.shipment_time,
-                                    t1.s3_state,
+                                    t1.aws_cd,
                                     t1.is_completed,
                                     t1.is_for_dev,
                                     t3.bug_no,
@@ -84,8 +84,8 @@ export class UploadService {
             await client.query(`BEGIN`);
             const result = await client.query(`
                 INSERT INTO upload_hdr
-                    (upload_ymd, upload_hm, s3_state, upload_count, created_by, is_moved_at_s3)
-                    VALUES(TO_CHAR(NOW() , 'YYYYMMDD'), TO_CHAR(NOW() , 'HH24mm'), $1, $2, $3, $4) RETURNING id;
+                    (upload_ymd, upload_hms, aws_cd, upload_count, created_by, is_moved_at_s3)
+                    VALUES(TO_CHAR(NOW() , 'YYYYMMDD'), TO_CHAR(NOW() , 'HH24mmss'), $1, $2, $3, $4) RETURNING id;
                 `, [params.state, upload_count, params.user_id, params.is_folder_same_name]);
 
             // insert upload dtl
@@ -120,7 +120,7 @@ export class UploadService {
     }
 
     // get all uploaded list
-    async get_uploaded_items(params: {user_id: string, state: string, upload_id: string}): Promise<ServiceReturn<upload_item[]>> {
+    async get_uploaded_items(params: {user_id: string, aws_cd: string, upload_id: string}): Promise<ServiceReturn<upload_item[]>> {
         if (!this.db) return { success: false, message: ""};
         try {
 
@@ -128,23 +128,24 @@ export class UploadService {
             const result = await client.query(`
                     SELECT
                         t2.bug_no
+                        , CASE WHEN t1.aws_cd = '03' THEN '02' ELSE '04' END AS aws_cd
                     FROM 
                         upload_hdr t1
+                    INNER JOIN aws_storage t3
+                        ON t1.aws_cd = t3.code 
                     INNER JOIN upload_dtl t2
-                        ON t1.id = t2.upload_id 
+                        ON t1.id = t2.upload_id
                     WHERE 1 = 1
                         AND t1.id = $1
-                        AND t1.s3_state = $2
+                        AND t1.aws_cd = $2
                         AND t1.created_by = $3
-                `, [params.upload_id, params.state, params.user_id]);
+                `, [params.upload_id, params.aws_cd, params.user_id]);
 
             const upload_items: upload_item [] = [];
-
-            const state_cd = params.state === "03_対応確認中（エネコム確認）" ? "02" : "04";
             for (const row of result?.rows || []) {
                 upload_items.push({
                     bug_no: row.bug_no,
-                    state_cd: state_cd
+                    aws_cd: row.aws_cd,
                 });
             }
             return { success: true, data: upload_items };
@@ -167,7 +168,7 @@ export class UploadService {
                         ON t1.id = t2.upload_id 
                     WHERE 1 = 1
                         AND t1.id = $1
-                        AND t1.s3_state = $2
+                        AND t1.aws_cd = $2
                         AND t1.created_by = $3
                         AND t2.bug_no = ANY($4::text[])
                 `, [params.upload_id, params.state, params.user_id, params.select_items]);
@@ -200,7 +201,7 @@ export class UploadService {
                     is_moved_at_s3 = true
                 WHERE 1 = 1
                     AND id = $1
-                    AND s3_state = $2
+                    AND aws_cd = $2
                     AND upload_count = (SELECT COUNT(1) FROM upload_dtl WHERE upload_id = $1 AND bug_no = ANY($3::text[]));
                     `, [params.upload_id, params.state, params.selected_items]);
             await client.query(`COMMIT`);
@@ -220,7 +221,7 @@ export class UploadService {
             const result = await client.query(`
                     SELECT
                           t1.upload_ymd
-                        , t1.s3_state
+                        , t1.aws_cd
                         , t1.is_moved_at_s3
                         , t2.bug_no
                         , string_agg(t3.file_name , ', ') AS att_files
@@ -237,12 +238,12 @@ export class UploadService {
                             OR ($1 IS NOT NULL AND $2 IS NULL AND t1.upload_ymd >= $1::TEXT)
                             OR ($1 IS NOT NULL AND $2 IS NOT NULL AND t1.upload_ymd BETWEEN $1::TEXT AND $2::TEXT)
                             OR ($1 IS NULL AND $2 IS NULL))
-                        AND ($3 IS NULL OR t1.s3_state = $3)
+                        AND ($3 IS NULL OR t1.aws_cd = $3)
                         AND ($4 IS NULL OR t2.bug_no LIKE '%' ||$4|| '%')
                         AND ($5 IS NULL OR t1.is_moved_at_s3 = $5)
                     GROUP BY 
                           t1.upload_ymd
-                        , t1.s3_state
+                        , t1.aws_cd
                         , t1.is_moved_at_s3
                         , t2.bug_no
                 `, [params.from_date, params.to_date, params.state, params.bug_no, params.is_moved_at_s3]);
@@ -251,7 +252,7 @@ export class UploadService {
             for (const row of result?.rows || []) {
                 upload_items.push({
                     upload_ymd: row.upload_ymd,
-                    s3_state: row.s3_state,
+                    aws_name: row.aws_cd,
                     is_moved_at_s3: row.is_moved_at_s3,
                     bug_no: row.bug_no,
                     att_files: row.att_files,

@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Button from "../components/ui/Button";
-import { FETCH_STATES_LIST } from "../config/constants";
 import { s3Controller } from "../controller/s3-controller";
 import { useLoading } from "../stores/LoadingContext";
 import { showNotification } from '../components/notification';
@@ -16,7 +15,9 @@ import Fieldset from "../components/ui/Fieldset";
 import { useAuth } from "../stores/AuthContext";
 import { download_item } from "../types/download_item";
 import { GiExitDoor } from "react-icons/gi";
-import { FcOk, FcProcess } from "react-icons/fc";
+import { FcOk } from "react-icons/fc";
+import { aws_storage } from "../types/aws_storage";
+import { appController } from "../controller/app_controller";
 
 const columns = [
     {
@@ -28,7 +29,7 @@ const columns = [
         label: 'Thời gian',
     },
     {
-        key: 's3_state',
+        key: 'aws_name',
         label: 'Trạng thái S3',
     },
     {
@@ -37,38 +38,36 @@ const columns = [
     }
 ];
 
-const S3_FOLDER_DOWNLOAD = FETCH_STATES_LIST.filter((item) => item.is_to_alx === true);
-
-const S3_FOLDER_DOWNLOAD_02 = S3_FOLDER_DOWNLOAD.find((item) => item.code === "02");
-const S3_FOLDER_DOWNLOAD_04 = S3_FOLDER_DOWNLOAD.find((item) => item.code === "04");
-
 export const S3DownloadPage: React.FC = () => {
     const { showLoading, hideLoading } = useLoading();
     const { user } = useAuth();
     const [displayModal, setDisplayModal] = useState(false);
     const [moving, setMoving] = useState<boolean>(false);
+    const [reload, setReoad] = useState<boolean>(false);
     const [selectDestinationPath, setSelectDestinationPath] = useState<string>("");
     const [errorCheck, setErrorCheck] = useState<string>("");
     const [modalTitle, setModalTitle] = useState<string>("");
-    const [destination, setDestination] = useState<string>("");
+    const [destination, setDestination] = useState<aws_storage>({} as aws_storage);
     const [download_items, setDownloadItems] = useState<download_item[]>([]);
     const [selectedBugs, setSelectedBugs] = useState<Set<string>>(new Set());
-    const [S3_FOLDER_BUGS_02, setS3_FOLDER_BUGS_02] = useState<string[]>([]);
-    const [S3_FOLDER_BUGS_04, setS3_FOLDER_BUGS_04] = useState<string[]>([]);
+    const [list_download_items, setList_download_items] = useState<aws_storage[]>([]);
+    const [selectedItemDownloads, setSelectedItemDownloads] = useState<string[]>([]);
 
-    const checkingData = useMemo(() => {
-        return S3_FOLDER_BUGS_02.length > 0 || S3_FOLDER_BUGS_04.length > 0;
-    }, [S3_FOLDER_BUGS_02, S3_FOLDER_BUGS_04]);
+    useEffect(() => {
+        setList_download_items([]);
+        const loadItems = async () => {
+            const result = await appController.get_download_items();
+            
+            if (result.success && result.data) {
+                setList_download_items(result.data);
+            }
+        }
+
+        loadItems();
+    }, []);
 
     useEffect(() => {
         const init = async () => {
-            const result = await s3Controller.handleGetDownloadList();
-
-            if (result.success && result.data) {
-                setS3_FOLDER_BUGS_02(result.data[S3_FOLDER_DOWNLOAD_02?.code || ""]?.bugs || []);
-                setS3_FOLDER_BUGS_04(result.data[S3_FOLDER_DOWNLOAD_04?.code || ""]?.bugs || []);
-            }
-
             const result2 = await downloadController.get_downloads(user?.username || "");
             if (result2.success && result2.data) {
                 setDownloadItems(result2.data as []);
@@ -83,7 +82,7 @@ export const S3DownloadPage: React.FC = () => {
             isMounted = false;
             clearInterval(interval);
         };
-    }, [])
+    }, []);
 
     // Load saved state on component mount
     useEffect(() => {
@@ -126,28 +125,6 @@ export const S3DownloadPage: React.FC = () => {
         )
     }, [selectedBugs]);
 
-    const handleRefresh = async () => {
-        try {
-            showLoading();
-            const result = await s3Controller.handleGetDownloadList();
-
-            if (result.success && result.data) {
-                setS3_FOLDER_BUGS_02(result.data[S3_FOLDER_DOWNLOAD_02?.code || ""]?.bugs || []);
-                setS3_FOLDER_BUGS_04(result.data[S3_FOLDER_DOWNLOAD_04?.code || ""]?.bugs || []);
-            }
-
-            const result2 = await downloadController.get_downloads(user?.username || "");
-            if (result2.success && result2.data) {
-                setDownloadItems(result2.data as []);
-            }
-
-        } catch (error) {
-            showNotification('Tải lại thất bại..!', 'error');
-        } finally {
-            hideLoading();
-        }
-    }
-
     // Select destination folder
     const chooseDestinationFolder = async () => {
         const result = await fsController.selectDirectory();
@@ -173,36 +150,37 @@ export const S3DownloadPage: React.FC = () => {
                     setErrorCheck("Đường dẫn không tồn tại.!");
 
                 } else {
-                    const result = await s3Controller.handleDownloadFile(user?.username || "", [destination], selectDestinationPath);
+                    const params = {
+                        user_id: user?.username || "",
+                        aws_cd: destination.aws_cd,
+                        bug_list: selectedItemDownloads,
+                        localPath: selectDestinationPath,
+                    }
+                    const result = await s3Controller.handleDownloadFile(params);
                     if (result.success) {
-                        showNotification('Tải về thành công.', 'success');
-                    } else {
                         showNotification(result.message || 'Tải về thất bại.', 'error');
                     }
-
-                    await handleRefresh();
-                    resultFlg = true;
+                    resultFlg = result.success;
+                    setReoad(result.success);
+                    showNotification('Tải về thành công.', 'success');
+                    await refreshDownload();
                 }
             } else {
                 showLoading('Đang thực hiện di chuyển tập tin. Vui lòng không tắt màn hình...');
                 const params = {
-                    source: destination,
+                    aws_cd: destination.aws_cd,
                     file_items: Array.from(selectedBugs)
                 }
                 const result = await s3Controller.handleMoveObjectS3(params);
                 if (result.success) {
                     showNotification('Đã di chuyển file S3 thành công.', 'success');
                     resultFlg = true;
+                    await refreshDownload();
                 } else {
                     showNotification(result.message || 'Di chuyển file S3 thất bại!', 'error');
                 }
 
-                const resultReload = await s3Controller.handleGetDownloadList();
-
-                if (resultReload.success && resultReload.data) {
-                    setS3_FOLDER_BUGS_02(resultReload.data[S3_FOLDER_DOWNLOAD_02?.code || ""]?.bugs || []);
-                    setS3_FOLDER_BUGS_04(resultReload.data[S3_FOLDER_DOWNLOAD_04?.code || ""]?.bugs || []);
-                }
+                setReoad(result.success);
             }
 
             resultFlg && setDisplayModal(false);
@@ -215,23 +193,24 @@ export const S3DownloadPage: React.FC = () => {
     }
 
     // handle download each group at s3 store.
-    const hanldeDownload = async (code: string) => {
+    const hanldeDownload = async (aws_storage: aws_storage, selected_items: string[]) => {
         if (StringUtils.isBlank(selectDestinationPath)) {
             const result = await s3Controller.handleGetLocalPathSync();
             if (result.success) {
                 setSelectDestinationPath(result.data || "");
             }
         }
-        setDestination(code);
+        setDestination(aws_storage);
+        setSelectedItemDownloads(selected_items);
         setModalTitle("Chọn đường dẫn nơi lưu");
         setMoving(false);
         setDisplayModal(true);
     }
 
     // handle move objects
-    const hanldeMoveObject = async (code: string, selected_items: string[]) => {
+    const hanldeMoveObject = async (aws_storage: aws_storage, selected_items: string[]) => {
         setSelectedBugs(new Set(Array.from(selected_items)));
-        setDestination(code);
+        setDestination(aws_storage);
         setModalTitle("Di chuyển file S3");
         setMoving(true);
         setDisplayModal(true);
@@ -244,47 +223,33 @@ export const S3DownloadPage: React.FC = () => {
                 className="text-blue-500 hover:text-blue-700">#{row.id}</Link>;
         },
         download_time: (row: Record<string, any>) => {
-            return <div>{row.download_ymd + row.download_hm}</div>;
+            return <div>{row.download_ymd + row.download_hms}</div>;
         },
     };
+
+    const refreshDownload = async () => {
+        const result2 = await downloadController.get_downloads(user?.username || "");
+        if (result2.success && result2.data) {
+            setDownloadItems(result2.data as []);
+        }
+    }
 
     return (
         <React.Fragment>
             <div className="space-y-4 grid grid-cols-1">
-                <div className="bg-white rounded-lg shadow">
-                    <div className="p-3 border-b border-gray-200">
-                        <div className="flex gap-2">
-                            <Button className="flex items-center space-x-2"
-                                onClick={handleRefresh}>
-                                <FcProcess className="w-4 h-4" />
-                                <span>Tải lại</span>
-                            </Button>
-                        </div>
+                <div className={`bg-white rounded-lg shadow grid grid-cols-1 space-y-2 min-h-[calc(100vh-230px)]}`}>
+                    {list_download_items.map((item, index) => {
+                        return (
+                            <S3Download aws_storage={item} downloadAction={hanldeDownload} key={index} reload={reload} moveAction={hanldeMoveObject} />
+                        )
+                    })}
+                    <div className="bg-white rounded text-center text-gray-500 h-full flex flex-col items-center justify-center text-lg">
+                        <img src={emptyList} />
+                        <span className="text-sm text-red-500 animate-bounce py-4">
+                            Không có tập tin nào để tải về...
+                        </span>
                     </div>
-                </div>
-                <div className={`bg-white rounded-lg shadow grid grid-cols-1 space-y-2 ${!(checkingData || trackingTranLog) ? 'min-h-[calc(100vh-230px)] flex items-center justify-between' : ''}`}>
-                    {checkingData ? (
-                        <React.Fragment>
-                            <S3Download key_code={S3_FOLDER_DOWNLOAD_02?.code || ""} key="S3_FOLDER_DOWNLOAD_02"
-                                title={S3_FOLDER_DOWNLOAD_02?.path || ""}
-                                items={S3_FOLDER_BUGS_02}
-                                downloadAction={hanldeDownload}
-                                moveAction={hanldeMoveObject} />
-                            {/*  */}
-                            <S3Download key_code={S3_FOLDER_DOWNLOAD_04?.code || ""} key="S3_FOLDER_DOWNLOAD_04"
-                                title={S3_FOLDER_DOWNLOAD_04?.path || ""}
-                                items={S3_FOLDER_BUGS_04}
-                                downloadAction={hanldeDownload}
-                                moveAction={hanldeMoveObject} />
-                        </React.Fragment>
-                    ) :
-                        <div className="bg-white rounded text-center text-gray-500 h-full flex flex-col items-center justify-center text-lg">
-                            <img src={emptyList} />
-                            <span className="text-sm text-red-500 animate-bounce py-4">
-                                Không có tập tin nào để tải về...
-                            </span>
-                        </div>
-                    }
+                    
                 </div>
                 {trackingTranLog &&
                     <Fieldset title="Thông tin lịch sử đã tải về">
@@ -311,8 +276,7 @@ export const S3DownloadPage: React.FC = () => {
                         </h2>
                         <div className="flex items-center gap-1 flex-1">
                             <span className="flex-1 rounded-lg px-3 py-3 text-sm font-mono break-all flex items-center border border-red-300">
-                                {S3_FOLDER_DOWNLOAD_02?.code === destination
-                                    ? S3_FOLDER_DOWNLOAD_02?.path : S3_FOLDER_DOWNLOAD_04?.path}
+                                {destination.aws_name}
                             </span>
                         </div>
                     </div>}

@@ -4,8 +4,7 @@ import { file_item } from '../types/file_item';
 import TreeView, { flattenTree, INode, ITreeViewOnNodeSelectProps, NodeId } from 'react-accessible-treeview';
 import { FaCheckSquare, FaFolderMinus, FaFolderPlus, FaMinusSquare, FaRegSquare } from 'react-icons/fa';
 import { IFlatMetadata } from 'react-accessible-treeview/dist/TreeView/utils';
-import { FETCH_STATES_LIST } from '../config/constants';
-import { s3_state } from '../types/s3_state';
+import { aws_storage } from '../types/aws_storage';
 import { TfiBrushAlt } from 'react-icons/tfi';
 import { showNotification } from './notification';
 import { fsController } from '../controller/fs-controller';
@@ -14,11 +13,11 @@ import { uploadController } from '../controller/upload-controller';
 import { useAuth } from '../stores/AuthContext';
 
 export interface S3UploadProps {
-    key_code?: string,
+    aws_storage?: aws_storage,
     actions?: React.ReactNode,
     uploaded_id?: string,
     clearAction?: () => void,
-    uploadAction: (params: { keyCode: string, title: string, is_folder_same_name: boolean, selected_items: file_item[] }) => void
+    uploadAction: (params: { aws_storage: aws_storage, is_folder_same_name: boolean, selected_items: file_item[] }) => void
 }
 
 const CheckBoxIcon: React.FC<{ variant: string }> = ({ variant, ...rest }) => {
@@ -34,7 +33,7 @@ const CheckBoxIcon: React.FC<{ variant: string }> = ({ variant, ...rest }) => {
     }
 };
 
-const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploaded_id = "", uploadAction, actions, clearAction }) => {
+const S3Upload: React.FC<S3UploadProps> = ({aws_storage = {} as aws_storage, uploaded_id = "", uploadAction, actions, clearAction }) => {
     const { user } = useAuth();
     const [modalOpen, setModalOpen] = useState<boolean>(true);
     const [selectedItems, setSelectedItems] = useState<Set<file_item>>(new Set());
@@ -49,11 +48,11 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploaded_id = "", up
             const uploadMap: Record<string, boolean> = {};
 
             const result = await displayUpload();
-            uploadMap[key_code] = !!result;
+            uploadMap[aws_storage?.aws_cd || ""] = !!result;
             setUploadableMap(uploadMap);
         };
 
-        if (key_code) {
+        if (aws_storage?.aws_cd) {
             checkAll();
         }
     }, [items, uploaded_id]);
@@ -63,13 +62,6 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploaded_id = "", up
             setExpandedIds(dataTree.map((item) => item.id));
         }
     }, [items])
-
-    const S3_FOLDER_UPLOAD_OBJECT = useMemo(() => {
-        if (key_code) {
-            return FETCH_STATES_LIST.find((item) => item.code === key_code && item.is_to_alx === false) || {} as s3_state;
-        }
-        return {} as s3_state;
-    }, [key_code]);
 
     const dataTree = useMemo(() => {
 
@@ -132,7 +124,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploaded_id = "", up
         }
         const params = {
             user_id: user?.username || "",
-            state: S3_FOLDER_UPLOAD_OBJECT.path,
+            state: aws_storage?.aws_cd || "",
             upload_id: uploaded_id,
             select_items: Array.from(selectedItems).map((item) => item.parent_name)
         }
@@ -199,22 +191,14 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploaded_id = "", up
 
     // 
     const handleUpload = async () => {
-        const S3_OBJECT_TARGET = S3_FOLDER_UPLOAD_OBJECT;
-
-        if (!S3_OBJECT_TARGET) {
-            showNotification("Thông tin nơi lưu trữ trên S3 không tồn tại.", "error");
-            return;
-        }
-
         if (Array.from(selectedItems).length === 0) {
             showNotification("Chưa chọn tập tin để tải lên.", "error");
             return;
         }
 
         const params = {
-            keyCode: key_code,
-            title: S3_OBJECT_TARGET.path,
-            is_folder_same_name: S3_OBJECT_TARGET.code === "01",
+            aws_storage: aws_storage,
+            is_folder_same_name: aws_storage?.aws_cd === "01",
             selected_items: Array.from(selectedItems)
         }
         await uploadAction(params);
@@ -258,7 +242,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploaded_id = "", up
                             <button onClick={toggle}>
                                 {modalOpen ? <FaFolderMinus className='h-5 w-5 text-orange-500' /> : <FaFolderPlus className='h-5 w-5 text-orange-500' />}
                             </button>
-                            <span className="text-lg font-bold">{S3_FOLDER_UPLOAD_OBJECT.path}
+                            <span className="text-lg font-bold">{aws_storage?.aws_name}
                                 <span className="text-red-600">({count})</span>
                             </span>
                         </div>
@@ -273,7 +257,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ key_code = "", uploaded_id = "", up
                                 <span>Chọn tập tin</span>
                             </Button>
                             {(items.length > 0 && selectedItems.size > 0) && <Button className="flex items-center space-x-2"
-                                disabled={selectedItems.size === 0 || !uploadableMap[key_code]}
+                                disabled={selectedItems.size === 0 || !uploadableMap[aws_storage?.aws_cd|| ""]}
                                 onClick={handleUpload}>
                                 <FcReuse className="h-5 w-5 font-bold" />
                                 <span>Tải lên</span>
