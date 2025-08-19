@@ -43,7 +43,7 @@ export const S3DownloadPage: React.FC = () => {
     const { user } = useAuth();
     const [displayModal, setDisplayModal] = useState(false);
     const [moving, setMoving] = useState<boolean>(false);
-    const [reload, setReoad] = useState<boolean>(false);
+    const [reload, setReload] = useState<boolean>(false);
     const [selectDestinationPath, setSelectDestinationPath] = useState<string>("");
     const [errorCheck, setErrorCheck] = useState<string>("");
     const [modalTitle, setModalTitle] = useState<string>("");
@@ -161,7 +161,7 @@ export const S3DownloadPage: React.FC = () => {
                         showNotification(result.message || 'Tải về thất bại.', 'error');
                     }
                     resultFlg = result.success;
-                    setReoad(result.success);
+                    setReload(result.success);
                     showNotification('Tải về thành công.', 'success');
                     await refreshDownload();
                 }
@@ -180,7 +180,7 @@ export const S3DownloadPage: React.FC = () => {
                     showNotification(result.message || 'Di chuyển file S3 thất bại!', 'error');
                 }
 
-                setReoad(result.success);
+                setReload(result.success);
             }
 
             resultFlg && setDisplayModal(false);
@@ -200,6 +200,7 @@ export const S3DownloadPage: React.FC = () => {
                 setSelectDestinationPath(result.data || "");
             }
         }
+        setReload(false);
         setDestination(aws_storage);
         setSelectedItemDownloads(selected_items);
         setModalTitle("Chọn đường dẫn nơi lưu");
@@ -209,6 +210,7 @@ export const S3DownloadPage: React.FC = () => {
 
     // handle move objects
     const hanldeMoveObject = async (aws_storage: aws_storage, selected_items: string[]) => {
+        setReload(false);
         setSelectedBugs(new Set(Array.from(selected_items)));
         setDestination(aws_storage);
         setModalTitle("Di chuyển file S3");
@@ -243,12 +245,12 @@ export const S3DownloadPage: React.FC = () => {
                             <S3Download aws_storage={item} downloadAction={hanldeDownload} key={index} reload={reload} moveAction={hanldeMoveObject} />
                         )
                     })}
-                    <div className="bg-white rounded text-center text-gray-500 h-full flex flex-col items-center justify-center text-lg">
+                    {false && <div className="bg-white rounded text-center text-gray-500 h-full flex flex-col items-center justify-center text-lg">
                         <img src={emptyList} />
                         <span className="text-sm text-red-500 animate-bounce py-4">
                             Không có tập tin nào để tải về...
                         </span>
-                    </div>
+                    </div>}
                     
                 </div>
                 {trackingTranLog &&
