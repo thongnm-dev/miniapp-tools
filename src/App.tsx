@@ -27,9 +27,6 @@ function App() {
                         <Route path="/login" element={<Login />} />
 
                         <Route path="/register" element={<RegisterPage />} />
-                        <Route path="/welcome" element={
-                            <WelcomePage />
-                        } />
                         <Route path="/dashboard" element={
                             <ProtectedRoute>
                                 <MainLayout>
@@ -116,6 +113,13 @@ function App() {
                     </Routes>
                 </Router>
             </AuthProvider>
+            <Router>
+                <Routes>
+                    <Route path="/welcome" element={
+                        <WelcomePage />
+                    } />
+                </Routes>
+            </Router>
         </ErrorBoundary>
     );
 }

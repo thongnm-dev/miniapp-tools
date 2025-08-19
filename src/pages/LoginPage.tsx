@@ -3,7 +3,7 @@ import { useAuth } from '../stores/AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { APP_CONFIG } from '../config/config';
 import Button from '../components/ui/Button';
-import { FcBiotech, FcHighPriority, FcKey, FcManager, FcSportsMode } from 'react-icons/fc';
+import { FcBiotech, FcCopyright, FcHighPriority, FcKey, FcManager, FcSportsMode } from 'react-icons/fc';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Login: React.FC = () => {
@@ -196,8 +196,8 @@ const Login: React.FC = () => {
           <Link to="/register" className="text-primary-600 hover:underline">Đăng ký ngay</Link>
         </div>}
         <div className="text-center">
-          <p className="text-sm">
-            © 2024 {APP_CONFIG.name}. All rights reserved.
+          <p className="text-sm font-bold flex flex-row justify-center gap-3">
+            <FcCopyright className='w-5 h-5' /> <span>2024 {APP_CONFIG.name}. All rights reserved.</span>
           </p>
         </div>
       </div>

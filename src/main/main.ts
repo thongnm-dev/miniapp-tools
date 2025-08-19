@@ -23,6 +23,7 @@ function createWindow(): void {
     frame: true,
     autoHideMenuBar: true,
     show: true,
+    fullscreen: true,
     icon: path.join(__dirname, '../../build/icon.ico') // Optional: add an icon
   });
 

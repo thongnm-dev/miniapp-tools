@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { MenuItem } from '../../types/menu';
-import { FaCloudUploadAlt, FaHistory, FaRegCopy } from 'react-icons/fa';
+import { FaBoxTissue, FaCloudUploadAlt, FaHistory, FaRegCopy } from 'react-icons/fa';
 import { FcFeedIn, FcHome, FcOpenedFolder, FcRules } from 'react-icons/fc';
 import { AiTwotoneBug } from 'react-icons/ai';
 
 // Move iconMap outside the function so it's not redefined on every call
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   dashboard: FcHome,
+  cloud: FaBoxTissue,
   s3upload: FaCloudUploadAlt,
   workdir: FcOpenedFolder,
   s3download: FcFeedIn,
