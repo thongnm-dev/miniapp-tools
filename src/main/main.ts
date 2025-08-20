@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, dialog } from 'electron';
 import * as path from 'path';
 import { config } from 'dotenv';
 config();
@@ -6,71 +6,91 @@ config();
 import { databaseService } from './services/database-service';
 import { cleanupFolderWatcher } from './handlers/fs-watch-handler';
 import { initHandlers } from './handlers/_';
+import { autoUpdater } from 'electron-updater';
 
-let mainWindow: BrowserWindow | null = null;
+let mainWindow: BrowserWindow;
 
 function createWindow(): void {
-  // Create the browser window
-  mainWindow = new BrowserWindow({
-    width: 1000,
-    height: 800,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
-    },
-    titleBarStyle: 'default',
-    frame: true,
-    autoHideMenuBar: true,
-    show: true,
-    icon: path.join(__dirname, '../../build/icon.ico')
-  });
+    // Create the browser window
+    mainWindow = new BrowserWindow({
+        width: 1000,
+        height: 800,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'preload.js')
+        },
+        titleBarStyle: 'default',
+        frame: true,
+        autoHideMenuBar: true,
+        show: true,
+        icon: path.join(__dirname, '../../build/icon.ico')
+    });
 
-  // Load the index.html file
-  if (process.argv.includes('--dev')) {
-    mainWindow.loadURL('http://localhost:3000');
-  } else {
-    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
-  }
+    // Load the index.html file
+    if (process.argv.includes('--dev')) {
+        mainWindow.loadURL('http://localhost:3000');
+    } else {
+        mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+    }
 
-  // Show window when ready to prevent visual flash
-  mainWindow.once('ready-to-show', () => {
-    mainWindow?.show();
-  });
+    // Show window when ready to prevent visual flash
+    mainWindow.once('ready-to-show', () => {
+        mainWindow?.show();
+    });
 
-  // Handle window closed
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
+    // Handle window closed
+    mainWindow.on('closed', () => {
+        // mainWindow = null;
+    });
 }
 
 // Initialize database when app starts
 app.whenReady().then(async () => {
-  createWindow();
+    createWindow();
 
-  try {
-    // Setup all IPC handlers
-    initHandlers();
+    autoUpdater.checkForUpdatesAndNotify();
 
-    if (process.argv.includes('--dev')) {
-      await databaseService.initializeDatabase();
+    autoUpdater.on('download-progress', (p) => {
+        // Gửi progress sang renderer nếu cần
+        // win.webContents.send('update-progress', p);
+        mainWindow?.setProgressBar(p.percent / 100);
+    });
+
+    autoUpdater.on('update-downloaded', () => {
+        const res = dialog.showMessageBoxSync(mainWindow, {
+            type: 'info',
+            buttons: ['Khởi động lại', 'Để sau'],
+            title: 'Cập nhật sẵn sàng',
+            message: 'Bản cập nhật đã tải xong. Khởi động lại để áp dụng?'
+        });
+
+        if (res === 0)
+            autoUpdater.quitAndInstall(); // restart & apply
+    });
+    try {
+        // Setup all IPC handlers
+        initHandlers();
+
+        if (process.argv.includes('--dev')) {
+            await databaseService.initializeDatabase();
+        }
+    } catch (error) {
+        // You might want to show a dialog to the user about configuration issues
     }
-  } catch (error) {
-    // You might want to show a dialog to the user about configuration issues
-  }
 });
 
 // Quit when all windows are closed
 app.on('window-all-closed', async () => {
-  await databaseService.disconnect();
-  cleanupFolderWatcher();
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+    await databaseService.disconnect();
+    cleanupFolderWatcher();
+    if (process.platform !== 'darwin') {
+        app.quit();
+    }
 });
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
+    if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+    }
 });

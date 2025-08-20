@@ -19,6 +19,8 @@ export class AppService {
                          code AS aws_cd
                         ,"name" AS aws_name
                         ,subscribe
+                        ,is_upload
+                        ,is_download
                     FROM
                         aws_storage
                     WHERE 1 = 1
@@ -27,7 +29,9 @@ export class AppService {
                     GROUP BY
                           subscribe
                          ,code AS aws_cd
-                         ,"name" AS aws_name
+                         ,"name"
+                        ,is_upload
+                        ,is_download
                     ORDER BY 
                         subscribe
                         ,code;
@@ -39,7 +43,9 @@ export class AppService {
                 aws_storages.push({
                     aws_cd: row.aws_cd,
                     aws_name: row.aws_name,
-                    subscribe: row.subscribe
+                    subscribe: row.subscribe,
+                    is_upload: row.is_upload,
+                    is_download: row.is_download,
                 });
             }
             return { success: true, data: aws_storages }
