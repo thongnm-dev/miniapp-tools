@@ -1,5 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import emptyList from "../assets/empty.gif";
+import React, { useEffect, useMemo, useState } from "react";
 import DataTable from "../components/ui/DataTable";
 import { Link } from "react-router-dom";
 import { downloadController } from "../controller/download-controller";
@@ -30,9 +29,7 @@ const columns = [
 ];
 
 export const S3DownloadPage: React.FC = () => {
-    const download_ref = useRef<HTMLDivElement>(null);
     const { user } = useAuth();
-    const [not_child, setNot_child] = useState<boolean>(false);
     const [download_items, setDownloadItems] = useState<download_item[]>([]);
     const [list_download_items, setList_download_items] = useState<aws_storage[]>([]);
 
@@ -74,21 +71,6 @@ export const S3DownloadPage: React.FC = () => {
         };
     }, []);
 
-    useEffect(() => {
-        setNot_child(false);
-        let isMounted = true;
-        const running = () => {
-            if (!download_ref.current || download_ref.current?.children.length == 0) {
-                setNot_child(true);
-            }
-        }
-        const interval = setInterval(running, 1000);
-        return () => {
-            isMounted = false;
-            clearInterval(interval);
-        };
-    }, []);
-
     const trackingTranLog = useMemo(() => {
         return download_items.length > 0;
     }, [download_items])
@@ -117,18 +99,9 @@ export const S3DownloadPage: React.FC = () => {
                 <div className={`rounded-lg shadow flex flex-col space-y-2`}>
                     {list_download_items.map((item, index) => {
                         return (
-                            <div ref={download_ref} key={index}>
-                                <S3Download aws_storage={item} />
-                            </div>
+                            <S3Download aws_storage={item} key={index}/>
                         )
                     })}
-                    {not_child && <div className="bg-white rounded text-center text-gray-500 h-full flex flex-col items-center justify-center text-lg">
-                        <img src={emptyList} />
-                        <span className="text-sm text-red-500 animate-bounce py-4">
-                            Không có tập tin nào để tải về...
-                        </span>
-                    </div>}
-                    
                 </div>
                 {trackingTranLog &&
                     <Fieldset title="Thông tin lịch sử đã tải về">
