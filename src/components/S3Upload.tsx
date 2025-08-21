@@ -112,7 +112,6 @@ const S3Upload: React.FC<S3UploadProps> = ({aws_storage = {} as aws_storage, upl
         return nodes;
     }, [items]);
 
-
     const displayUpload = useCallback(async () => {
 
         if (items.length == 0) {

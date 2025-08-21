@@ -1,6 +1,5 @@
 import { S3Client, ListObjectsV2Command, ListObjectsV2Output, GetObjectCommand, CopyObjectCommand, DeleteObjectCommand, _Object, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getS3Config, getWorkdir } from '../_/main-config';
-import { FETCH_STATES_LIST } from "../../config/constants";
 import { Readable } from "stream";
 import { pipeline } from 'stream/promises';
 import { createWriteStream, existsSync, mkdirSync } from "fs";
@@ -15,6 +14,7 @@ import { uploadService } from "./upload-service";
 import { upload_item } from "../../types/upload_item";
 import { aws_storage } from "../../types/aws_storage";
 import { appService } from "./app-service";
+import { S3ObjectInfo } from "../../types/s3_object_info";
 
 export interface S3Config {
     region: string;
@@ -41,15 +41,15 @@ export class S3Service {
     }
 
     // fetch state from s3
-    async getAllStates(): Promise<{ success: boolean; data?: { [key: string]: { bugs: { bug_no: string; message: string }[] } }; message?: string }> {
+    async get_all_s3objects(aws_storages: aws_storage[]): Promise<ServiceReturn<{ [aws_cd: string]: { bugs: S3ObjectInfo[]}}>> {
         try {
 
-            const bug_list: { [key: string]: { state: string, bugs: { bug_no: string; message: string }[] } } = {};
+            const bug_list: { [aws_cd: string]: {bugs: S3ObjectInfo[]}} = {};
 
-            for (const S3_GET_ITEM of FETCH_STATES_LIST) {
+            for (const aws_storage of aws_storages) {
                 let continuationToken: string | undefined = undefined;
 
-                let _prefix_path = this.config.folderName + '/' + S3_GET_ITEM.path + '/';
+                let _prefix_path = this.config.folderName + '/' + aws_storage.aws_name + '/';
 
                 let bug_no_list_moved: string[] = [];
                 do {
@@ -65,7 +65,7 @@ export class S3Service {
 
                     if (response.CommonPrefixes) {
                         response.CommonPrefixes.forEach(commonPrefix => {
-                            if (commonPrefix.Prefix && !commonPrefix.Prefix.includes(S3_GET_ITEM.subscribe)) {
+                            if (commonPrefix.Prefix && !commonPrefix.Prefix.includes(aws_storage.subscribe)) {
                                 bug_no_list_moved.push(commonPrefix.Prefix);
                             }
                         });
@@ -75,7 +75,7 @@ export class S3Service {
                 } while (continuationToken);
 
                 continuationToken = undefined;
-                _prefix_path = this.config.folderName + '/' + S3_GET_ITEM.path + '/' + S3_GET_ITEM.subscribe + "/";
+                _prefix_path = this.config.folderName + '/' + aws_storage.aws_name + '/' + aws_storage.subscribe + "/";
                 let bug_no_list_not_moved: string[] = [];
                 do {
                     const params = {
@@ -120,8 +120,7 @@ export class S3Service {
                     });
 
                 const bug_no_list = [...bug_no_list_moved_map, ...bug_no_list_not_moved_map];
-                bug_list[S3_GET_ITEM.code] = {
-                    state: S3_GET_ITEM.code,
+                bug_list[aws_storage.aws_cd] = {
                     bugs: bug_no_list
                 }
             }
@@ -133,7 +132,8 @@ export class S3Service {
     }
 
     // fetch to download
-    async get_aws_storage_list(aws_cd: string): Promise<ServiceReturn<string[]>> {
+    async get_aws_storage_list(aws_cd: string):
+        Promise<ServiceReturn<string[]>> {
 
         try {
             const result_getaws = await appService.get_aws_item(aws_cd);
@@ -182,7 +182,8 @@ export class S3Service {
     }
 
     // download file from s3
-    async downloadFile(params: { user_id: string, aws_cd: string, bug_list: string[], localPath: string }): Promise<ServiceReturn<boolean>> {
+    async downloadFile(params: { user_id: string, aws_cd: string, bug_list: string[], localPath: string }): 
+        Promise<ServiceReturn<boolean>> {
 
         const paths_downloaded: string[] = [];
         try {
@@ -410,7 +411,8 @@ export class S3Service {
     }
 
     // copy object from the folder to another folder
-    public async copyObject(sourceKey: string, destinationKey: string): Promise<ServiceReturn<{ src: string, des: string }>> {
+    public async copyObject(sourceKey: string, destinationKey: string):
+        Promise<ServiceReturn<{ src: string, des: string }>> {
 
         try {
             const command = new CopyObjectCommand({
@@ -436,7 +438,8 @@ export class S3Service {
     }
 
     // move object from the folder to another folder
-    public async moveObjectS3(params: { aws_cd: string, file_items: string[] }): Promise<ServiceReturn<string>> {
+    public async moveObjectS3(params: { aws_cd: string, file_items: string[] }):
+        Promise<ServiceReturn<string>> {
 
         try {
 
@@ -553,9 +556,8 @@ export class S3Service {
                 deleted_items.add(delete_item.target);
             }
 
-            const OBJECT_TARGET = FETCH_STATES_LIST.filter((item) => item.code === params.ref_aws_cd && item.is_to_alx === false)[0];
             const param_upd = {
-                state: OBJECT_TARGET.path,
+                aws_cd: params.ref_aws_cd,
                 upload_id: params.upload_id,
                 selected_items: Array.from(deleted_items)
             }

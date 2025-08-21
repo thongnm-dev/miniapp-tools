@@ -188,7 +188,7 @@ export class UploadService {
     }
 
     // update state after move
-    async update_state_after_move(params: {state: string, upload_id: string, selected_items: string[] }): Promise<ServiceReturn<boolean>> {
+    async update_state_after_move(params: {aws_cd: string, upload_id: string, selected_items: string[] }): Promise<ServiceReturn<boolean>> {
         if (!this.db) {
             return { success: false };
         }
@@ -203,7 +203,7 @@ export class UploadService {
                     AND id = $1
                     AND aws_cd = $2
                     AND upload_count = (SELECT COUNT(1) FROM upload_dtl WHERE upload_id = $1 AND bug_no = ANY($3::text[]));
-                    `, [params.upload_id, params.state, params.selected_items]);
+                    `, [params.upload_id, params.aws_cd, params.selected_items]);
             await client.query(`COMMIT`);
 
             return { success: true, data: true};

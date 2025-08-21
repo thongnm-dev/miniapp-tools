@@ -5,10 +5,11 @@ import * as fs from 'fs';
 import { getWorkdir } from '../_/main-config';
 import { StringUtils } from '../../core/utils/string-utils';
 import { file_item } from '../../types/file_item';
+import { aws_storage } from '../../types/aws_storage';
 
 export const setupS3Handlers = () => {
-  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_GET_ALL_STATES, async (_event) => {
-    return await s3Service.getAllStates();
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_GET_ALL_STATES, async (_event, aws_storages: aws_storage[]) => {
+    return await s3Service.get_all_s3objects(aws_storages);
   });
 
   ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_GET_DOWNLOAD_LIST, async (_event, aws_cd: string) => {

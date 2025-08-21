@@ -1,10 +1,11 @@
+import { aws_storage } from "../types/aws_storage";
 import { file_item } from "../types/file_item";
 
 export class S3Controller {
 
     // handle fetch object state
-    async handleGetAllState() {
-        return await window.s3API.getAllStates();
+    async get_all_s3objects(aws_storages: aws_storage[]) {
+        return await window.s3API.get_all_s3objects(aws_storages);
     }
 
     async handleGetDownloadList(aws_cd: string) {
@@ -26,6 +27,10 @@ export class S3Controller {
 
     async handleUploadFile(params: { user_id: string, destination: string, is_folder_same_name: boolean, file_items: file_item []}) {
         return await window.s3API.uploadFile(params);
+    }
+
+    async handleOnlyDeleteObjects(delete_items: string[]) {
+        return await window.s3API.getLocalPathSyncDir();
     }
 
     async handleDeleteObjects(params: { user_id: string, upload_id: string, ref_aws_cd: string, delete_items: {aws_cd: string, target: string}[]}) {

@@ -15,7 +15,7 @@ const TabView: React.FC<TabViewProps> = ({ tabs, initialIndex = 0, className}) =
   const [active, setActive] = useState(initialIndex);
   return (
     <div className={className}>
-      <div className="flex border-b mb-4">
+      <div className="flex border-b">
         {tabs.map((tab, idx) => (
           <button
             key={idx}

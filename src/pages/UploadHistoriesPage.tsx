@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react"
 import Fieldset from "../components/ui/Fieldset";
 import DataTable from "../components/ui/DataTable";
 import { download_item } from "../types/download_item";
-import { FETCH_STATES_LIST } from "../config/constants";
 import { useLoading } from "../stores/LoadingContext";
 import { aws_storage } from "../types/aws_storage";
 import { appController } from "../controller/app_controller";

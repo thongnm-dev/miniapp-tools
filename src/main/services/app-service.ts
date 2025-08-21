@@ -21,6 +21,7 @@ export class AppService {
                         ,subscribe
                         ,is_upload
                         ,is_download
+                        ,link_available
                     FROM
                         aws_storage
                     WHERE 1 = 1
@@ -28,13 +29,14 @@ export class AppService {
                         OR is_download = true
                     GROUP BY
                           subscribe
-                         ,code AS aws_cd
+                         ,"code"
                          ,"name"
                         ,is_upload
                         ,is_download
+                        ,link_available
                     ORDER BY 
-                        subscribe
-                        ,code;
+                         subscribe
+                        ,"code";
                 `);
 
             const aws_storages: aws_storage[] = [];
@@ -46,6 +48,7 @@ export class AppService {
                     subscribe: row.subscribe,
                     is_upload: row.is_upload,
                     is_download: row.is_download,
+                    link_available: row.link_available,
                 });
             }
             return { success: true, data: aws_storages }
