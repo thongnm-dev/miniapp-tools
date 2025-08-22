@@ -6,5 +6,6 @@ export interface upload_item {
     is_moved_at_s3?: boolean,
     bug_no?: string,
     file_name?: string,
-    att_files?: string
+    att_files?: string,
+    upload_count?: number,
 }

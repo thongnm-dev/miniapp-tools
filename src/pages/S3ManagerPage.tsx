@@ -78,7 +78,7 @@ const S3ManagerPage: React.FC = () => {
                                             <Button className="flex items-center space-x-2 text-red-500 border-red-500"
                                                 onClick={() => handleOpenMoveModal(aws_store, aws_s3objects[aws_store.aws_cd].bugs || [])}>
                                                 <TfiBrushAlt className="h-4 w-4 font-bold" />
-                                                <span>Di chuyển trên S3</span>
+                                                <span>Xóa thư mục</span>
                                             </Button>
                                         </div>
                                     }

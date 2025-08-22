@@ -16,6 +16,7 @@ import BugManagePage from './pages/BugManagePage';
 import BugDetailPage from './pages/BugDetailPage';
 import CopyFilePage from './pages/CopyFilePage';
 import UploadHistoriesPage from './pages/UploadHistoriesPage';
+import DownloadHistoriesPage from './pages/DownloadHistoriesPage';
 
 function App() {
     return (
@@ -77,10 +78,17 @@ function App() {
                                 </MainLayout>
                             </ProtectedRoute>
                         } />
-                        <Route path="//upload-histories" element={
+                        <Route path="/upload-histories" element={
                             <ProtectedRoute>
                                 <MainLayout>
                                     <UploadHistoriesPage />
+                                </MainLayout>
+                            </ProtectedRoute>
+                        } />
+                        <Route path="/download-histories" element={
+                            <ProtectedRoute>
+                                <MainLayout>
+                                    <DownloadHistoriesPage />
                                 </MainLayout>
                             </ProtectedRoute>
                         } />

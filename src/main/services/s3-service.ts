@@ -41,10 +41,10 @@ export class S3Service {
     }
 
     // fetch state from s3
-    async get_all_s3objects(aws_storages: aws_storage[]): Promise<ServiceReturn<{ [aws_cd: string]: { bugs: S3ObjectInfo[]}}>> {
+    async get_all_s3objects(aws_storages: aws_storage[]): Promise<ServiceReturn<{ [aws_cd: string]: { bugs: S3ObjectInfo[] } }>> {
         try {
 
-            const bug_list: { [aws_cd: string]: {bugs: S3ObjectInfo[]}} = {};
+            const bug_list: { [aws_cd: string]: { bugs: S3ObjectInfo[] } } = {};
 
             for (const aws_storage of aws_storages) {
                 let continuationToken: string | undefined = undefined;
@@ -182,7 +182,7 @@ export class S3Service {
     }
 
     // download file from s3
-    async downloadFile(params: { user_id: string, aws_cd: string, bug_list: string[], localPath: string }): 
+    async downloadFile(params: { user_id: string, aws_cd: string, bug_list: string[], localPath: string }):
         Promise<ServiceReturn<boolean>> {
 
         const paths_downloaded: string[] = [];
@@ -411,7 +411,7 @@ export class S3Service {
     }
 
     // copy object from the folder to another folder
-    public async copyObject(sourceKey: string, destinationKey: string):
+    async copyObject(sourceKey: string, destinationKey: string):
         Promise<ServiceReturn<{ src: string, des: string }>> {
 
         try {
@@ -438,7 +438,7 @@ export class S3Service {
     }
 
     // move object from the folder to another folder
-    public async moveObjectS3(params: { aws_cd: string, file_items: string[] }):
+    async moveObjectS3(params: { aws_cd: string, file_items: string[] }):
         Promise<ServiceReturn<string>> {
 
         try {
@@ -503,7 +503,7 @@ export class S3Service {
     }
 
     // delete object
-    public async deleteObjectS3(params: { user_id: string, upload_id: string, ref_aws_cd: string, delete_items: { aws_cd: string, target: string }[] }):
+    async deleteObjectS3(params: { user_id: string, upload_id: string, ref_aws_cd: string, delete_items: { aws_cd: string, target: string }[] }):
         Promise<ServiceReturn<string[]>> {
 
         try {
@@ -513,6 +513,7 @@ export class S3Service {
             if (!result.success || result.data?.length == 0) {
                 return { success: false, message: "Thông tin nơi lưu trữ trên S3 không tồn tại." };
             }
+
             const S3_OBJECT_TARGET = result.data || [];
 
             for (const delete_item of params.delete_items) {
@@ -521,24 +522,13 @@ export class S3Service {
                 }
             }
 
-            const s3client = this.s3;
-
-            async function listObjects(bucketName: string, prefix: string): Promise<_Object[]> {
-                const command = new ListObjectsV2Command({
-                    Bucket: bucketName,
-                    Prefix: prefix,
-                });
-                const response = await s3client.send(command);
-                return response.Contents || [];
-            }
-
             let results = [];
             let deleted_items: Set<string> = new Set();
             for (const delete_item of params.delete_items) {
                 const TARGET_DELETE = S3_OBJECT_TARGET.find((item) => item.aws_cd === delete_item.aws_cd) as aws_storage;
                 const _source_path = this.config.folderName + '/' + TARGET_DELETE.aws_name + '/';
                 let _source_bug_path = _source_path + delete_item.target + '/';
-                const objectDatas = await listObjects(this.config.bucketName, _source_bug_path) || [];
+                const objectDatas = await this.listObjects(this.config.bucketName, _source_bug_path) || [];
                 const _objectTarget = objectDatas.filter((item) => item.Key !== _source_path);
 
                 for (const objectData of _objectTarget) {
@@ -562,6 +552,50 @@ export class S3Service {
                 selected_items: Array.from(deleted_items)
             }
             await uploadService.update_state_after_move(param_upd);
+            return { success: true, message: "Đã xoá thành công.", data: Array.from(deleted_items) }
+        } catch (error) {
+            return { success: false, message: (error as Error).message };
+        }
+    }
+
+    async listObjects(bucketName: string, prefix: string): Promise<_Object[]> {
+        const command = new ListObjectsV2Command({
+            Bucket: bucketName,
+            Prefix: prefix,
+        });
+        const response = await this.s3.send(command);
+        return response.Contents || [];
+    }
+
+    async deleteObjectS3Directly(params: { aws_cd: string, delete_items: string[] }):
+        Promise<ServiceReturn<string[]>> {
+        try {
+
+            const result_getaws = await appService.get_aws_item(params.aws_cd);
+
+            if (!result_getaws.success || !result_getaws.data) {
+                return { success: false, message: "Thông tin nơi lưu trữ trên S3 không tồn tại." };
+            }
+            const S3_OBJECT_TARGET = result_getaws.data || {} as aws_storage;
+
+            let results = [];
+            let deleted_items: Set<string> = new Set();
+            for (const delete_item of params.delete_items) {
+
+                const _source_path = this.config.folderName + '/' + S3_OBJECT_TARGET.aws_name + '/' + delete_item + "/";
+                const objectDatas = await this.listObjects(this.config.bucketName, _source_path) || [];
+                const _objectTarget = objectDatas.filter((item) => item.Key !== _source_path);
+
+                for (const objectData of _objectTarget) {
+                    const oldKey = objectData.Key || "";
+                    const commandDelete = new DeleteObjectCommand({
+                        Bucket: this.config.bucketName,
+                        Key: oldKey
+                    })
+                    results.push(this.s3.send(commandDelete));
+                }
+            }
+            await Promise.all(results);
             return { success: true, message: "Đã xoá thành công.", data: Array.from(deleted_items) }
         } catch (error) {
             return { success: false, message: (error as Error).message };
