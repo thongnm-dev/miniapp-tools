@@ -17,6 +17,7 @@ import BugDetailPage from './pages/BugDetailPage';
 import CopyFilePage from './pages/CopyFilePage';
 import UploadHistoriesPage from './pages/UploadHistoriesPage';
 import DownloadHistoriesPage from './pages/DownloadHistoriesPage';
+import ShipmentsPage from './pages/ShipmentsPage';
 
 function App() {
     return (
@@ -61,6 +62,14 @@ function App() {
                             <ProtectedRoute>
                                 <MainLayout>
                                     <BugManagePage />
+                                </MainLayout>
+                            </ProtectedRoute>
+                        } />
+
+                        <Route path="/shipments" element={
+                            <ProtectedRoute>
+                                <MainLayout>
+                                    <ShipmentsPage />
                                 </MainLayout>
                             </ProtectedRoute>
                         } />

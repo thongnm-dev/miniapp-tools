@@ -2,7 +2,7 @@ import Button from "../components/ui/Button";
 import DataTable from "../components/ui/DataTable";
 import { useState } from "react";
 import Fieldset from "../components/ui/Fieldset";
-import { FcAddImage, FcPlus, FcShipped } from "react-icons/fc";
+import { FcPlus, FcShipped } from "react-icons/fc";
 import { FaPenToSquare } from "react-icons/fa6";
 
 const columns = [
@@ -39,7 +39,7 @@ const columns = [
         label: 'Phân loại',
     }
 ];
-const BugManagePage: React.FC = () => {
+const ShipmentsPage: React.FC = () => {
 
     const [bug_list, setBug_list] = useState<[]>([]);
 
@@ -71,12 +71,6 @@ const BugManagePage: React.FC = () => {
                     >
                         <FcShipped className="w-4 h-4" />
                         <span>Giao hàng</span>
-                    </Button>
-                    <Button
-                        className="flex items-center space-x-2"
-                    >
-                        <FcAddImage className="w-4 h-4" />
-                        <span>Đăng ký backlog</span>
                     </Button>
                 </div>
 
@@ -146,4 +140,4 @@ const BugManagePage: React.FC = () => {
     )
 }
 
-export default BugManagePage;
+export default ShipmentsPage;

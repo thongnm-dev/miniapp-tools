@@ -115,7 +115,7 @@ const UploadHistoriesPage: React.FC = () => {
                     <div className="flex flex-col items-start gap-2">
                         <div className="flex flex-row items-center justify-items-center gap-2">
                             <span className="bg-sky-500 text-white px-3 py-2 rounded h-full w-[120px]">
-                                Trạng thái
+                                Đích tải lên
                             </span>
                             <select className="bg-transparent px-3 py-2 text-slate-700 text-sm border border-slate-200 rounded transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-400 shadow-sm focus:shadow-md appearance-none cursor-pointer"
                                    value={getAwsCd()} onChange={(event) => setAwsCd(event.target.value)}>
@@ -128,7 +128,7 @@ const UploadHistoriesPage: React.FC = () => {
 
                         <div className="flex flex-row items-center justify-items-center gap-2">
                             <span className="bg-sky-500 text-white px-3 py-2 rounded h-10 items-center w-[120px]">
-                                Ngày cần tìm
+                                Ngày tải lên
                             </span>
                             <div className="flex flex-row items-start justify-items-center gap-3">
                                 <DatePicker className="px-3 py-2 border border-slate-200 rounded w-[120px]" 
