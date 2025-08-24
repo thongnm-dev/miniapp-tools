@@ -63,6 +63,13 @@
   "build": {
     "appId": "ws.alx.app",
     "productName": "miniapp-tools",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "thongnm-dev",
+        "repo": "miniapp-tools"
+      }
+    ],
     "directories": {
       "output": "dist-electron"
     },
@@ -78,7 +85,7 @@
     },
     "mac": {
       "target": "dmg"
-    },
+    },  
     "linux": {
       "target": "AppImage"
     }

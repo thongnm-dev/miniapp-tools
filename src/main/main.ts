@@ -49,7 +49,7 @@ function createWindow(): void {
 app.whenReady().then(async () => {
     createWindow();
 
-    // autoUpdater.checkForUpdatesAndNotify();
+    autoUpdater.checkForUpdatesAndNotify();
 
     autoUpdater.on('download-progress', (p) => {
         // Gửi progress sang renderer nếu cần
@@ -72,12 +72,22 @@ app.whenReady().then(async () => {
         // Setup all IPC handlers
         initHandlers();
 
+        if (! await databaseService.isConnected()) {
+            throw new Error();
+        }
+
         if (process.argv.includes('--dev')) {
             await databaseService.initializeDatabase();
         }
     } catch (error) {
-        console.log("aaaaa");
-        // You might want to show a dialog to the user about configuration issues
+        const res = dialog.showMessageBoxSync(mainWindow, {
+            type: 'error',
+            buttons: ['Đóng'],
+            title: 'Không thể kết nối cơ sở dữ liệu',
+            message: 'Kết nối cơ sở dữ liệu thất bại. Vui lòng liên hệ bộ phận phát triển.'
+        });
+        if (res === 0)
+            app.quit();
     }
 });
 
