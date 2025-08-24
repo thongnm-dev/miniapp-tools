@@ -7,7 +7,7 @@ import { download_item } from '../types/download_item';
 import { upload_item } from '../types/upload_item';
 import { aws_storage } from '../types/aws_storage';
 import { S3ObjectInfo } from '../types/s3_object_info';
-import { copy_and_update_download_params, delete_direct_s3object_params, delete_s3object_params, download_params, move_s3object_params, search_upload_params, upload_display_params, upload_params } from '../types/param_interface';
+import { copy_and_update_download_params, delete_direct_s3object_params, delete_s3object_params, download_params, move_s3object_params, search_download_params, search_upload_params, upload_display_params, upload_params } from '../types/param_interface';
 
 // IPC Channel Constants - Inlined to avoid module resolution issues
 // These match the constants in src/config/ipcChannels.ts
@@ -61,6 +61,7 @@ const IPC_CHANNELS = {
     ALLOW_DOWNLOAD_OBJECT_S3: 'ALLOW_DOWNLOAD_OBJECT_S3',
     ALLOW_MOVE_OBJECT_S3: 'ALLOW_MOVE_OBJECT_S3',
     COPY_AND_UPDATE_PATH_DOWNLOAD: 'COPY_AND_UPDATE_PATH_DOWNLOAD',
+    SEARCH_DOWNLOAD_HISTORY: 'SEARCH_DOWNLOAD_HISTORY',
 
     // upload
     ALLOW_UPLOAD_OBJECT_S3: 'ALLOW_UPLOAD_OBJECT_S3',
@@ -215,6 +216,9 @@ contextBridge.exposeInMainWorld('downloadAPI', {
     copy_and_update_path_download: (params: copy_and_update_download_params) => {
         return ipcRenderer.invoke(IPC_CHANNELS.COPY_AND_UPDATE_PATH_DOWNLOAD, params)
     },
+    search_download_histories: (params: search_download_params) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.SEARCH_DOWNLOAD_HISTORY, params)
+    }
 });
 
 // for upload
@@ -305,6 +309,7 @@ declare global {
             allow_download: (bugs: string[]) => Promise<ServiceReturn<boolean>>;
             allow_remove: (bugs: string[]) => Promise<ServiceReturn<boolean>>;
             copy_and_update_path_download: (params: copy_and_update_download_params) => Promise<ServiceReturn<boolean>>,
+            search_download_histories: (params: search_download_params) => Promise<ServiceReturn<download_item[]>>,
         };
 
         // for upload

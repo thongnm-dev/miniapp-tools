@@ -89,6 +89,7 @@ export class BugService {
             return {success: false, message: (err as Error).message}
         }
     }
+
 }
 
 export const bugService = new BugService(new DatabaseService(getDatabaseConfig()));

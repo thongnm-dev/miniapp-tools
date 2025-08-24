@@ -12,6 +12,8 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { FcAddImage, FcFullTrash } from "react-icons/fc";
 import { CiSearch } from "react-icons/ci";
+import { downloadController } from "../controller/download-controller";
+import { showNotification } from "../components/notification";
 
 
 const init_params = {
@@ -20,6 +22,7 @@ const init_params = {
     from_date: undefined,
     to_date: undefined,
     is_moved_at_s3: false,
+    is_moved_at_local: false,
 } as search_download_params;
 
 const DownloadHistoriesPage: React.FC = () => {
@@ -27,41 +30,49 @@ const DownloadHistoriesPage: React.FC = () => {
     const { showLoading, hideLoading } = useLoading();
     const [selete_options, setSeleteOptions] = useState<aws_storage[]>([]);
     const [download_items, setDownloadIems] = useState<download_item[]>([]);
-    const [upload_props, setUploadProps] = useState<search_download_params>(init_params);
+    const [download_props, setDownloadProps] = useState<search_download_params>(init_params);
     const [fromDate, setFromDateIn] = useState<Date | null>(null);
     const [toDate, setToDateIn] = useState<Date | null>(null);
 
 
     const getAwsCd = () => {
-        return upload_props.aws_cd;
+        return download_props.aws_cd;
     }
 
     const getBugNo = () => {
-        return upload_props.bug_no;
+        return download_props.bug_no;
     }
 
     const getMove = () => {
-        return upload_props.is_moved_at_s3;
+        return download_props.is_moved_at_s3;
+    }
+
+    const getLocal = () => {
+        return download_props.is_moved_at_local;
     }
 
     const setFromDate = (from?: Date | null) => {
         setFromDateIn(from || null);
-        setUploadProps({ ...upload_props, from_date: DateUtils.formatDate(from, "yyyyMMdd") });
+        setDownloadProps({ ...download_props, from_date: DateUtils.formatDate(from, "yyyyMMdd") });
     }
 
     const setToDate = (to?: Date | null) => {
-        setFromDateIn(to || null);
-        setUploadProps({ ...upload_props, to_date: DateUtils.formatDate(to, "yyyyMMdd") });
+        setToDateIn(to || null);
+        setDownloadProps({ ...download_props, to_date: DateUtils.formatDate(to, "yyyyMMdd") });
     }
 
     const setAwsCd = (aws_cd: string) => {
-        setUploadProps({ ...upload_props, aws_cd: aws_cd });
+        setDownloadProps({ ...download_props, aws_cd: aws_cd });
     }
     const setBugNo = (bugNo: string) => {
-        setUploadProps({ ...upload_props, bug_no: bugNo });
+        setDownloadProps({ ...download_props, bug_no: bugNo });
     }
     const setMoveAtS3 = (isMove: boolean) => {
-        setUploadProps({ ...upload_props, is_moved_at_s3: isMove });
+        setDownloadProps({ ...download_props, is_moved_at_s3: isMove });
+    }
+
+    const setLocal = (isMove: boolean) => {
+        setDownloadProps({ ...download_props, is_moved_at_local: isMove });
     }
 
     useEffect(() => {
@@ -82,14 +93,22 @@ const DownloadHistoriesPage: React.FC = () => {
     const search = async () => {
         try {
             showLoading();
+            const result = await downloadController.search_download_histories(download_props);
+            if (!result.success) {
+                showNotification('Không thể tìm kiếm lịch sử tải về.', 'error');
+            } else {
+                setDownloadIems(result.data || []);
+            }
 
+        } catch (error) {
+            showNotification('Không thể tìm kiếm lịch sử tải về.', 'error');
         } finally {
             hideLoading();
         }
     }
 
     const clearSearch = () => {
-        setUploadProps(init_params);
+        setDownloadProps(init_params);
         setFromDateIn(null);
         setToDateIn(null);
     }
@@ -120,6 +139,7 @@ const DownloadHistoriesPage: React.FC = () => {
                                     dateFormat={"yyyy/MM/dd"}
                                     selected={fromDate} onChange={(date) => setFromDate(date)} />
                                 <DatePicker className="px-3 py-2 border border-slate-200 rounded w-[120px]"
+                                dateFormat={"yyyy/MM/dd"}
                                     selected={toDate} onChange={(date) => setToDate(date)} />
                             </div>
                         </div>
@@ -139,6 +159,13 @@ const DownloadHistoriesPage: React.FC = () => {
                             <input type="checkbox" className="form-input" checked={getMove()} onChange={(event) => setMoveAtS3(event.target.checked)} />
                             <label className="whitespace-nowrap">
                                 Đã di chuyển sau khi tải về
+                            </label>
+                        </div>
+
+                        <div className="flex flex-row items-center justify-items-center gap-2">
+                            <input type="checkbox" className="form-input" checked={getLocal()} onChange={(event) => setLocal(event.target.checked)} />
+                            <label className="whitespace-nowrap">
+                                Đã di chuyển vào thư mục nội bộ sau khi tải về
                             </label>
                         </div>
                     </div>
@@ -170,15 +197,15 @@ const DownloadHistoriesPage: React.FC = () => {
                     <DataTable
                         data={download_items}
                         columns={[
-                            {key: "download_ymd", label: "Ngày thực hiện"},
-                            {key: "aws_name", label: "Nguồn đã tải"},
-                            {key: "bug_no", label: "Thông tin đã tải"},
-                            {key: "download_count", label: "Tổng số tập tin"},
-                            {key: "is_moved_at_s3", label: "Di chuyển sau tải"},
-                            {key: "is_moved_at_local", label: "Di chuyển nội bộ"},
+                            { key: "download_ymd", label: "Ngày tải" },
+                            { key: "aws_name", label: "Nguồn" },
+                            { key: "bug_no", label: "Thông tin đã tải" },
+                            { key: "download_count", label: "Tổng số tập tin" },
+                            { key: "is_moved_at_local", label: "Di chuyển nội bộ" },
                         ]}
                         showFilter={false}
                         showCheckboxes={true}
+                        showPagination={true}
                         scrollHeight={400}
                     />
                 </Fieldset>

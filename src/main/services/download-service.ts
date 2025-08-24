@@ -3,7 +3,7 @@ import { getDatabaseConfig } from "../_/main-config";
 import { ServiceReturn } from "../@types/service-return";
 import * as path from 'path';
 import { download_item } from "../../types/download_item";
-import { download_dtl_items_params, upd_after_copied_params } from "../../types/param_interface";
+import { download_dtl_items_params, search_download_params, upd_after_copied_params } from "../../types/param_interface";
 
 export class DownloadService {
     private db: DatabaseService;
@@ -27,7 +27,7 @@ export class DownloadService {
         try {
             const client = await this.db.getClient();
             await client.query(`BEGIN`);
-            
+
             const result = await client.query(`
                     INSERT INTO download_hdr 
                         (download_ymd, download_hms, aws_cd, sync_path, download_count, created_by) 
@@ -92,7 +92,7 @@ export class DownloadService {
                             ORDER BY 
                                 (t1.download_ymd || t1.download_hms) desc `, [user_id]);
 
-            const download_items: download_item [] = [];
+            const download_items: download_item[] = [];
             for (const row of result?.rows || []) {
                 download_items.push({
                     id: row.id,
@@ -152,7 +152,7 @@ export class DownloadService {
                 const fileName = path.basename(row.sync_path);
                 const file_path = path.dirname(row.sync_path);
                 download_items.push({
-                    id:  row.download_dtl_id,
+                    id: row.download_dtl_id,
                     download_ymd: row.download_ymd,
                     bug_no: row.bug_no,
                     fileName: fileName,
@@ -196,8 +196,8 @@ export class DownloadService {
                 const fileName = path.basename(row.full_file_path);
                 const file_path = path.dirname(row.full_file_path);
                 download_items.push({
-                    id:  row.id,
-                    download_dtl_id:  row.download_dtl_id,
+                    id: row.id,
+                    download_dtl_id: row.download_dtl_id,
                     bug_no: row.bug_no,
                     fileName: fileName,
                     file_path: file_path,
@@ -237,11 +237,11 @@ export class DownloadService {
             const rowCount = parseInt(result.rows[0].count, 10);
 
             if (rowCount == 0 && bugs.length > 0) {
-                return { success: true, data: true};
+                return { success: true, data: true };
             } else if (rowCount !== bugs.length) {
-                return { success: true, data: true};
+                return { success: true, data: true };
             }
-            return { success: true, data: false};
+            return { success: true, data: false };
         } catch (error) {
             return { success: false, message: (error as Error).message };
         }
@@ -273,11 +273,11 @@ export class DownloadService {
             const rowCount = parseInt(result.rows[0].count, 10);
 
             if (rowCount == 0 && bugs.length > 0) {
-                return { success: true, data: false};
+                return { success: true, data: false };
             } else if (rowCount !== bugs.length) {
-                return { success: true, data: false};
+                return { success: true, data: false };
             }
-            return { success: true, data: true};
+            return { success: true, data: true };
         } catch (error) {
             return { success: false, message: (error as Error).message };
         }
@@ -299,7 +299,7 @@ export class DownloadService {
                     AND is_moved_at_s3 = false 
                     AND bug_no = ANY($1::text[]) `, [bugs]);
             await client.query(`COMMIT`);
-            return { success: true, data: true};
+            return { success: true, data: true };
         } catch (error) {
             (await this.db.getClient()).query("ROLLBACK")
             return { success: false, message: (error as Error).message };
@@ -332,10 +332,70 @@ export class DownloadService {
                     `, [params.download_id]);
             await client.query(`COMMIT`);
 
-            return { success: true, data: true};
+            return { success: true, data: true };
         } catch (error) {
             (await this.db.getClient()).query("ROLLBACK")
             return { success: false, message: (error as Error).message };
+        }
+    }
+
+    // search upload history
+    async search_download_histories(params: search_download_params): Promise<ServiceReturn<download_item[]>> {
+        try {
+
+            const client = await this.db.getClient();
+            const result = await client.query(`
+                        SELECT
+                              t1.id
+                            , t1.download_ymd
+                            , t1.aws_cd
+                            , t3.name AS aws_name
+                            , t1.download_count
+                            , t1.is_moved_at_local
+                            , t2.bug_no
+                        FROM download_hdr t1
+                        INNER JOIN download_dtl t2
+                            ON t1.id = t2.download_id
+                        INNER JOIN aws_storage t3
+                            ON t1.aws_cd = t3.code 
+                        WHERE 1 = 1
+                            AND (
+                                (TRIM($1) = '' AND TRIM($2) <> '' AND t1.download_ymd <= $2::TEXT)
+                                OR (TRIM($1) <> '' AND TRIM($2) = '' AND t1.download_ymd >= $1::TEXT)
+                                OR (TRIM($1) <> '' AND TRIM($2) <> '' AND t1.download_ymd BETWEEN $1::TEXT AND $2::TEXT)
+                                OR (TRIM($1) = '' AND TRIM($2) = ''))
+                            AND (TRIM($3) = '' OR t1.aws_cd = $3)
+                            AND (TRIM($4) = '' OR t2.bug_no LIKE '%' ||$4|| '%')
+                            AND ($5 = FALSE OR t1.is_moved_at_local = $5)
+                            AND ($6 = FALSE OR t2.is_moved_at_s3 = $6)
+                        GROUP BY
+                              t1.id
+                            , t1.download_ymd
+                            , t1.aws_cd
+                            , t3."name"
+                            , t1.download_count
+                            , t1.is_moved_at_local
+                            , t2.bug_no
+                        ORDER BY 
+                              t1.download_ymd
+                            , t1.aws_cd
+                            , t2.bug_no
+                    `, [params.from_date || "", params.to_date || "", params.aws_cd, params.bug_no, params.is_moved_at_local, params.is_moved_at_s3]);
+            const upload_items: download_item[] = [];
+
+            for (const row of result?.rows || []) {
+                upload_items.push({
+                    id: row.id,
+                    download_ymd: row.download_ymd,
+                    aws_name: row.aws_name,
+                    download_count: row.download_count,
+                    is_moved_at_local: row.is_moved_at_local,
+                    bug_no: row.bug_no,
+                });
+            }
+            return { success: true, data: upload_items };
+        } catch (err) {
+            return { success: false, message: (err as Error).message }
         }
     }
 }

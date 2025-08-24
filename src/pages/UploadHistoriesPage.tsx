@@ -50,7 +50,7 @@ const UploadHistoriesPage: React.FC = () => {
     }
 
     const setToDate = (to?: Date | null) => {
-        setFromDateIn(to || null);
+        setToDateIn(to || null);
         setUploadProps({...upload_props, to_date: DateUtils.formatDate(to, "yyyyMMdd")});
     }
     

@@ -130,6 +130,7 @@ export class DatabaseService {
           sync_path VARCHAR(255) NOT NULL DEFAULT '',
           path_copied VARCHAR(255) NOT NULL DEFAULT '',
           is_moved_at_s3 BOOLEAN DEFAULT FALSE,
+          is_bug_created BOOLEAN DEFAULT FALSE,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );

@@ -2,7 +2,7 @@ import { ipcMain } from 'electron';
 import { IPC_CHANNEL_HANDLERS } from '../_/ipc-channel-handlers';
 import { downloadService } from '../services/download-service';
 import { fsService } from '../services/fs-service';
-import { copy_and_update_download_params, upd_after_copied_params } from '../../types/param_interface';
+import { copy_and_update_download_params, search_download_params, upd_after_copied_params } from '../../types/param_interface';
 
 export const setupDownloadHandlers = () => {
     // GET DOWNLOADS
@@ -27,7 +27,7 @@ export const setupDownloadHandlers = () => {
 
     // GET ALLOW REMOVE
     ipcMain.handle(IPC_CHANNEL_HANDLERS.COPY_AND_UPDATE_PATH_DOWNLOAD, async (_event, params: copy_and_update_download_params) => {
-        
+
         const download_dtl_items = {
             download_id: params.download_id,
             download_dtl_ids: params.download_dtl_ids,
@@ -51,7 +51,7 @@ export const setupDownloadHandlers = () => {
                 const result = (await fsService.makeFolderBaseFileEno(params.destination, item.bug_no || ""));
 
                 if (!result.success || !result.data) {
-                    return { success: false, message: result.message};
+                    return { success: false, message: result.message };
                 }
                 const destination_path = result.data;
 
@@ -61,30 +61,35 @@ export const setupDownloadHandlers = () => {
 
                 if (!copiedResult.success) {
                     await fsService.deleteFile(copiedPaths);
-                    return { success: false, message: "Thực hiện sao chép dữ liệu thất bại.."};
+                    return { success: false, message: "Thực hiện sao chép dữ liệu thất bại.." };
                 }
 
                 for (const path of copiedResult.data || []) {
                     const upd_after_copied_params = {
-                        download_id: item.id, 
-                        download_dtl_id: item.download_dtl_id, 
+                        download_id: item.id,
+                        download_dtl_id: item.download_dtl_id,
                         path_copied: path.destination
                     } as upd_after_copied_params;
-                    
+
                     const resUpd = await downloadService.update_path_after_copied(upd_after_copied_params);
 
                     if (!resUpd.success) {
                         await fsService.deleteFile([path.destination]);
-                        return { success: false, message: "Thực hiện sao chép dữ liệu thất bại.."};
+                        return { success: false, message: "Thực hiện sao chép dữ liệu thất bại.." };
                     }
                     copiedPaths.push(path.destination)
                 }
             }
 
-            return { success: true, message: "Thực hiện sao chép dữ liệu thành công.."};
+            return { success: true, message: "Thực hiện sao chép dữ liệu thành công.." };
         } catch (error) {
             await fsService.deleteFile(copiedPaths);
             return { success: false, message: (error as Error).message };
         }
+    });
+
+
+    ipcMain.handle(IPC_CHANNEL_HANDLERS.SEARCH_DOWNLOAD_HISTORY, async (_event, params: search_download_params) => {
+        return await downloadService.search_download_histories(params);
     });
 }

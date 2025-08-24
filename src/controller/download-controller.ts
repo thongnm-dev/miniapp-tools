@@ -1,4 +1,4 @@
-import { copy_and_update_download_params } from "../types/param_interface";
+import { copy_and_update_download_params, search_download_params } from "../types/param_interface";
 
 export class DownloadController {
     async get_downloads(user_id: string) {
@@ -19,6 +19,10 @@ export class DownloadController {
 
     async copy_and_update_path_download(params: copy_and_update_download_params) {
         return await window.downloadAPI.copy_and_update_path_download(params);
+    }
+
+    async search_download_histories(params: search_download_params) {
+        return await window.downloadAPI.search_download_histories(params);
     }
 }
 

@@ -2,8 +2,11 @@ import Button from "../components/ui/Button";
 import DataTable from "../components/ui/DataTable";
 import { useState } from "react";
 import Fieldset from "../components/ui/Fieldset";
-import { FcAddImage, FcPlus, FcShipped } from "react-icons/fc";
+import { FcAddImage, FcFullTrash, FcPlus, FcShipped } from "react-icons/fc";
 import { FaPenToSquare } from "react-icons/fa6";
+import { CiSearch } from "react-icons/ci";
+import { useLoading } from "../stores/LoadingContext";
+import { showNotification } from "../components/notification";
 
 const columns = [
     {
@@ -41,14 +44,36 @@ const columns = [
 ];
 const BugManagePage: React.FC = () => {
 
-    const [bug_list, setBug_list] = useState<[]>([]);
+    const { showLoading, hideLoading } = useLoading();
+    const [bug_list, setBugItems] = useState<[]>([]);
 
 
     const register = async () => {
-        
+
     }
     const customCellRender = {
 
+    }
+
+    const clearSearch = () => {
+
+    }
+
+    const search = async () => {
+        try {
+            showLoading();
+            // const result = await downloadController.search_download_histories(download_props);
+            // if (!result.success) {
+            //     showNotification('Không thể tìm kiếm thông tin phiếu bug.', 'error');
+            // } else {
+            //     setBugItems(result.data || []);
+            // }
+
+        } catch (error) {
+            showNotification('Không thể tìm kiếm thông tin phiếu bug.', 'error');
+        } finally {
+            hideLoading();
+        }
     }
     return (
         <>
@@ -82,51 +107,19 @@ const BugManagePage: React.FC = () => {
 
                 <Fieldset title="Tìm kiếm">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="form-label">
-                                School/University Name *
-                            </label>
-                            <input
-                                type="text"
-                                required
-                                className="form-input"
-                                placeholder="Enter school/university name"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="form-label">
-                                Degree/Certificate *
-                            </label>
-                            <input
-                                type="text"
-                                required
-                                className="form-input"
-                                placeholder="e.g., Bachelor's Degree"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="form-label">
-                                Field of Study *
-                            </label>
-                            <input
-                                type="text"
-                                required
-                                className="form-input"
-                                placeholder="e.g., Computer Science"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="form-label">
-                                Graduation Date *
-                            </label>
-                            <input
-                                type="date"
-                                required
-                                className="form-input"
-                            />
+                        <div className="flex flex-row gap-4 pt-4">
+                            <Button
+                                onClick={clearSearch}
+                                className="flex items-center gap-2">
+                                <FcFullTrash className="w-4 h-4 stroke-2 text-red-500" />
+                                Xoá thông tin nhập
+                            </Button>
+                            <Button
+                                onClick={search}
+                                className="flex items-center gap-2">
+                                <CiSearch className="w-4 h-4 stroke-2" />
+                                Tìm kiếm
+                            </Button>
                         </div>
                     </div>
                 </Fieldset>

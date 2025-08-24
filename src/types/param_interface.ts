@@ -45,7 +45,8 @@ export interface search_download_params {
     to_date?: string, 
     aws_cd?: string, 
     bug_no?: string, 
-    is_moved_at_s3?: boolean
+    is_moved_at_s3?: boolean,
+    is_moved_at_local?: boolean,
 }
 
 export interface download_params {
