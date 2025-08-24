@@ -181,14 +181,12 @@ export class FSService {
             }
 
             const num = parseInt(matched[1], 10);
-
-            let start = 1;
-            let end = 100;
-
-            while (num > end) {
-                start += 100;
-                end += 100;
+            if (isNaN(num)) {
+                return { success: true, data: destinationPath };
             }
+
+            const start = Math.floor((num - 1) / 100) * 100 + 1;
+            const end = start + 99;
 
             const startStr = String(start).padStart(4, "0");
             const endStr = String(end).padStart(4, "0");

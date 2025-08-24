@@ -1,3 +1,5 @@
+import { copy_and_update_download_params } from "../types/param_interface";
+
 export class DownloadController {
     async get_downloads(user_id: string) {
         return await window.downloadAPI.get_downloads(user_id);
@@ -15,7 +17,7 @@ export class DownloadController {
         return await window.downloadAPI.allow_remove(bugs);
     }
 
-    async copy_and_update_path_download(params: {download_id: string, download_dtl_ids: string[], destination: string}) {
+    async copy_and_update_path_download(params: copy_and_update_download_params) {
         return await window.downloadAPI.copy_and_update_path_download(params);
     }
 }

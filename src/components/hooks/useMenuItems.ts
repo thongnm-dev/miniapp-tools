@@ -3,6 +3,7 @@ import { MenuItem } from '../../types/menu';
 import { FaBoxTissue, FaCloudUploadAlt, FaHistory, FaRegCopy } from 'react-icons/fa';
 import { FcFeedIn, FcHome, FcOpenedFolder, FcRules } from 'react-icons/fc';
 import { AiTwotoneBug } from 'react-icons/ai';
+import { MdOutlineHistoryEdu } from 'react-icons/md';
 
 // Move iconMap outside the function so it's not redefined on every call
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -13,7 +14,8 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   s3download: FcFeedIn,
   bugs: AiTwotoneBug,
   copy: FaRegCopy,
-  history: FaHistory
+  history: FaHistory,
+  downloadHistory: MdOutlineHistoryEdu,
 };
 
 export const useMenuItems = () => {

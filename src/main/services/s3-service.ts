@@ -15,6 +15,7 @@ import { upload_item } from "../../types/upload_item";
 import { aws_storage } from "../../types/aws_storage";
 import { appService } from "./app-service";
 import { S3ObjectInfo } from "../../types/s3_object_info";
+import { copy_s3object_params, delete_direct_s3object_params, delete_s3object_params, download_params, move_s3object_params, upload_params } from "../../types/param_interface";
 
 export interface S3Config {
     region: string;
@@ -134,8 +135,7 @@ export class S3Service {
     }
 
     // fetch to download
-    async get_aws_storage_list(aws_cd: string):
-        Promise<ServiceReturn<string[]>> {
+    async get_aws_storage_list(aws_cd: string): Promise<ServiceReturn<string[]>> {
 
         try {
             const result_getaws = await appService.get_aws_item(aws_cd);
@@ -184,8 +184,7 @@ export class S3Service {
     }
 
     // download file from s3
-    async downloadFile(params: { user_id: string, aws_cd: string, bug_list: string[], localPath: string }):
-        Promise<ServiceReturn<boolean>> {
+    async downloadFile(params: download_params): Promise<ServiceReturn<boolean>> {
 
         const paths_downloaded: string[] = [];
         try {
@@ -318,8 +317,7 @@ export class S3Service {
     }
 
     // upload file to s3
-    async uploadFile(params: { user_id: string, destination: string, is_folder_same_name: boolean, file_items: file_item[] }):
-        Promise<ServiceReturn<{ upload_id: string, uploaded_items: upload_item[] }>> {
+    async uploadFile(params: upload_params): Promise<ServiceReturn<{ upload_id: string, uploaded_items: upload_item[] }>> {
         try {
 
             const result_getaws = await appService.get_aws_item(params.destination);
@@ -413,21 +411,20 @@ export class S3Service {
     }
 
     // copy object from the folder to another folder
-    async copyObject(sourceKey: string, destinationKey: string):
-        Promise<ServiceReturn<{ src: string, des: string }>> {
+    async copyObject(params: copy_s3object_params): Promise<ServiceReturn<{ src: string, des: string }>> {
 
         try {
             const command = new CopyObjectCommand({
                 Bucket: this.config.bucketName,
-                CopySource: encodeURIComponent(`${this.config.bucketName}/${sourceKey}`),
-                Key: destinationKey
+                CopySource: encodeURIComponent(`${this.config.bucketName}/${params.sourceKey}`),
+                Key: params.destinationKey
             })
 
             await this.s3.send(command);
 
             const result = {
-                src: sourceKey,
-                des: destinationKey
+                src: params.sourceKey,
+                des: params.destinationKey
             }
 
             return {
@@ -440,8 +437,7 @@ export class S3Service {
     }
 
     // move object from the folder to another folder
-    async moveObjectS3(params: { aws_cd: string, file_items: string[] }):
-        Promise<ServiceReturn<string>> {
+    async moveObjectS3(params: move_s3object_params): Promise<ServiceReturn<string>> {
 
         try {
 
@@ -505,8 +501,7 @@ export class S3Service {
     }
 
     // delete object
-    async deleteObjectS3(params: { user_id: string, upload_id: string, ref_aws_cd: string, delete_items: { aws_cd: string, target: string }[] }):
-        Promise<ServiceReturn<string[]>> {
+    async deleteObjectS3(params: delete_s3object_params): Promise<ServiceReturn<string[]>> {
 
         try {
 
@@ -569,8 +564,7 @@ export class S3Service {
         return response.Contents || [];
     }
 
-    async deleteObjectS3Directly(params: { aws_cd: string, delete_items: {bug_no: string, subscribe: boolean}[] }):
-        Promise<ServiceReturn<string[]>> {
+    async deleteObjectS3Directly(params: delete_direct_s3object_params): Promise<ServiceReturn<string[]>> {
         try {
 
             const result_getaws = await appService.get_aws_item(params.aws_cd);

@@ -1,7 +1,8 @@
+import { upload_display_params } from "../types/param_interface";
 
 
 export class UploadController {
-    async display_upload_button(params: { user_id: string, state: string, upload_id: string, select_items: string[]}) {
+    async display_upload_button(params: upload_display_params) {
         return await window.uploadAPI.display_upload_button(params);
     }
 }

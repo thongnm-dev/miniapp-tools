@@ -3,6 +3,7 @@ import { getDatabaseConfig } from "../_/main-config";
 import { ServiceReturn } from "../@types/service-return";
 import * as path from 'path';
 import { download_item } from "../../types/download_item";
+import { download_dtl_items_params, upd_after_copied_params } from "../../types/param_interface";
 
 export class DownloadService {
     private db: DatabaseService;
@@ -169,7 +170,7 @@ export class DownloadService {
     }
 
     // Get download detail item
-    async get_download_dtl_items(download_id: string, download_dtl_ids: string[]): Promise<ServiceReturn<download_item[]>> {
+    async get_download_dtl_items(params: download_dtl_items_params): Promise<ServiceReturn<download_item[]>> {
         if (!this.db) {
             return { success: false };
         }
@@ -188,7 +189,7 @@ export class DownloadService {
                             ON t1.id = t2.download_id
                         WHERE 1 = 1
                             AND t1.id = $1
-                            AND t2.id = ANY($2)`, [download_id, download_dtl_ids]);
+                            AND t2.id = ANY($2)`, [params.download_id, params.download_dtl_ids]);
             const download_items: download_item[] = [];
             for (const row of result?.rows || []) {
 
@@ -306,7 +307,7 @@ export class DownloadService {
     }
 
     // update path
-    async update_path_after_copied(download_id: string, download_dtl_id: string, path_copied: string): Promise<ServiceReturn<boolean>> {
+    async update_path_after_copied(params: upd_after_copied_params): Promise<ServiceReturn<boolean>> {
         if (!this.db) {
             return { success: false };
         }
@@ -320,7 +321,7 @@ export class DownloadService {
                 WHERE 1 = 1
                     AND id = $2
                     AND download_id = $3
-                    `, [path_copied, download_dtl_id, download_id]);
+                    `, [params.path_copied, params.download_dtl_id, params.download_id]);
 
             await client.query(`
                 UPDATE download_hdr SET 
@@ -328,7 +329,7 @@ export class DownloadService {
                 WHERE 1 = 1
                     AND download_count = (SELECT COUNT(1) FROM download_dtl WHERE download_id = $1 AND COALESCE(TRIM(path_copied), '') <> '' )
                     AND id = $1
-                    `, [download_id]);
+                    `, [params.download_id]);
             await client.query(`COMMIT`);
 
             return { success: true, data: true};

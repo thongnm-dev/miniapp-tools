@@ -49,7 +49,7 @@ function createWindow(): void {
 app.whenReady().then(async () => {
     createWindow();
 
-    autoUpdater.checkForUpdatesAndNotify();
+    // autoUpdater.checkForUpdatesAndNotify();
 
     autoUpdater.on('download-progress', (p) => {
         // Gửi progress sang renderer nếu cần
@@ -76,6 +76,7 @@ app.whenReady().then(async () => {
             await databaseService.initializeDatabase();
         }
     } catch (error) {
+        console.log("aaaaa");
         // You might want to show a dialog to the user about configuration issues
     }
 });

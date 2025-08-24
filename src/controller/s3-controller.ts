@@ -1,5 +1,5 @@
 import { aws_storage } from "../types/aws_storage";
-import { file_item } from "../types/file_item";
+import { delete_direct_s3object_params, delete_s3object_params, download_params, move_s3object_params, upload_params } from "../types/param_interface";
 
 export class S3Controller {
 
@@ -16,24 +16,24 @@ export class S3Controller {
         return await window.s3API.getLocalPathSyncDir();
     }
 
-    async handleDownloadFile(params: {user_id: string, aws_cd: string, bug_list: string[], localPath: string}) {
+    async handleDownloadFile(params: download_params) {
         return await window.s3API.downloadFile(params);
     }
 
     // handle move object S3
-    async handleMoveObjectS3(params: {aws_cd: string, file_items: string[]}) {
+    async handleMoveObjectS3(params: move_s3object_params) {
         return await window.s3API.moveObjectS3(params);
     }
 
-    async handleUploadFile(params: { user_id: string, destination: string, is_folder_same_name: boolean, file_items: file_item []}) {
+    async handleUploadFile(params: upload_params) {
         return await window.s3API.uploadFile(params);
     }
 
-    async handleOnlyDeleteObjects(params: { aws_cd: string, delete_items: {bug_no: string, subscribe: boolean}[]}) {
+    async handleOnlyDeleteObjects(params: delete_direct_s3object_params) {
         return await window.s3API.delete_objects_direct(params);
     }
 
-    async handleDeleteObjects(params: { user_id: string, upload_id: string, ref_aws_cd: string, delete_items: {aws_cd: string, target: string}[]}) {
+    async handleDeleteObjects(params: delete_s3object_params) {
         return await window.s3API.deleteObjectS3(params);
     }
 }

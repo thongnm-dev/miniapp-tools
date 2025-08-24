@@ -2,6 +2,7 @@ import { ipcMain } from 'electron';
 import { IPC_CHANNEL_HANDLERS } from '../_/ipc-channel-handlers';
 import { downloadService } from '../services/download-service';
 import { fsService } from '../services/fs-service';
+import { copy_and_update_download_params, upd_after_copied_params } from '../../types/param_interface';
 
 export const setupDownloadHandlers = () => {
     // GET DOWNLOADS
@@ -25,9 +26,14 @@ export const setupDownloadHandlers = () => {
     });
 
     // GET ALLOW REMOVE
-    ipcMain.handle(IPC_CHANNEL_HANDLERS.COPY_AND_UPDATE_PATH_DOWNLOAD, async (_event, params: {download_id: string, download_dtl_ids: string[], destination: string}) => {
+    ipcMain.handle(IPC_CHANNEL_HANDLERS.COPY_AND_UPDATE_PATH_DOWNLOAD, async (_event, params: copy_and_update_download_params) => {
         
-        const result = await downloadService.get_download_dtl_items(params.download_id, params.download_dtl_ids);
+        const download_dtl_items = {
+            download_id: params.download_id,
+            download_dtl_ids: params.download_dtl_ids,
+        }
+
+        const result = await downloadService.get_download_dtl_items(download_dtl_items);
 
         if (!result.success) {
             return result;
@@ -59,7 +65,13 @@ export const setupDownloadHandlers = () => {
                 }
 
                 for (const path of copiedResult.data || []) {
-                    const resUpd = await downloadService.update_path_after_copied(item.id, item.download_dtl_id || "", path.destination);
+                    const upd_after_copied_params = {
+                        download_id: item.id, 
+                        download_dtl_id: item.download_dtl_id, 
+                        path_copied: path.destination
+                    } as upd_after_copied_params;
+                    
+                    const resUpd = await downloadService.update_path_after_copied(upd_after_copied_params);
 
                     if (!resUpd.success) {
                         await fsService.deleteFile([path.destination]);

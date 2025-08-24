@@ -1,8 +1,16 @@
 import { file_item } from "../../types/file_item";
+import { get_uploaded_params, search_upload_params, update_after_move_params, upload_display_params } from "../../types/param_interface";
 import { upload_item } from "../../types/upload_item";
 import { ServiceReturn } from "../@types/service-return";
 import { getDatabaseConfig } from "../_/main-config";
 import { DatabaseService } from "./database-service";
+
+export interface ins_upload_params {
+    user_id: string, 
+    state: string, 
+    is_folder_same_name: boolean, 
+    file_items: file_item[]
+}
 
 export class UploadService {
     private db: DatabaseService;
@@ -62,7 +70,7 @@ export class UploadService {
     }
 
     // insert upload data
-    async ins_upload(params: {user_id: string, state: string, is_folder_same_name: boolean, file_items: file_item[]}): Promise<ServiceReturn<string>> {
+    async ins_upload(params: ins_upload_params): Promise<ServiceReturn<string>> {
         if (!this.db) {
             return { success: false, message: ""}
         };
@@ -120,7 +128,7 @@ export class UploadService {
     }
 
     // get all uploaded list
-    async get_uploaded_items(params: {user_id: string, aws_cd: string, upload_id: string}): Promise<ServiceReturn<upload_item[]>> {
+    async get_uploaded_items(params: get_uploaded_params): Promise<ServiceReturn<upload_item[]>> {
         if (!this.db) return { success: false, message: ""};
         try {
 
@@ -154,7 +162,7 @@ export class UploadService {
         }
     }
 
-    async display_upload_button(params: { user_id: string, state: string, upload_id: string, select_items: string[] }) : Promise<ServiceReturn<boolean>> {
+    async display_upload_button(params: upload_display_params) : Promise<ServiceReturn<boolean>> {
         if (!this.db) return { success: false, message: "", data: false};
 
         try {
@@ -188,7 +196,7 @@ export class UploadService {
     }
 
     // update state after move
-    async update_state_after_move(params: {aws_cd: string, upload_id: string, selected_items: string[] }): Promise<ServiceReturn<boolean>> {
+    async update_state_after_move(params: update_after_move_params): Promise<ServiceReturn<boolean>> {
         if (!this.db) {
             return { success: false };
         }
@@ -213,8 +221,8 @@ export class UploadService {
         }
     }
 
-    async get_upload_histories(params: {from_date?: string, to_date?: string, state?: string, bug_no?: string, is_moved_at_s3?: boolean}):
-        Promise<ServiceReturn<upload_item[]>> {
+    // search upload history
+    async search_upload_histories(params: search_upload_params): Promise<ServiceReturn<upload_item[]>> {
         try {
 
             const client = await this.db.getClient();
