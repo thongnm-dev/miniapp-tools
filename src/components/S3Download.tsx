@@ -245,6 +245,9 @@ const S3Download: React.FC<S3UploadProps> = ({ aws_storage = {} as aws_storage }
                 reaload();
                 const event = new CustomEvent("refreshDownload");
                 window.dispatchEvent(event);
+
+                const check_exist_to_download = new CustomEvent("check_exist_to_download");
+                window.dispatchEvent(check_exist_to_download);
             }
 
             setDisplayModal(!resultFlg);

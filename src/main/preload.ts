@@ -7,7 +7,7 @@ import { download_item } from '../types/download_item';
 import { upload_item } from '../types/upload_item';
 import { aws_storage } from '../types/aws_storage';
 import { S3ObjectInfo } from '../types/s3_object_info';
-import { copy_and_update_download_params, delete_direct_s3object_params, delete_s3object_params, download_params, move_s3object_params, upload_display_params, upload_params } from '../types/param_interface';
+import { copy_and_update_download_params, delete_direct_s3object_params, delete_s3object_params, download_params, move_s3object_params, search_upload_params, upload_display_params, upload_params } from '../types/param_interface';
 
 // IPC Channel Constants - Inlined to avoid module resolution issues
 // These match the constants in src/config/ipcChannels.ts
@@ -37,6 +37,7 @@ const IPC_CHANNELS = {
     S3_UPLOAD_OBJECTS: 'S3_UPLOAD_OBJECTS',
     S3_DELETE_OBJECTS: 'S3_DELETE_OBJECTS',
     S3_DELETE_OBJECTS_DIRECTLY: 'S3_DELETE_OBJECTS_DIRECTLY',
+    CHECK_EXIST_TO_DOWNLOAD: 'CHECK_EXIST_TO_DOWNLOAD',
 
     // File Monitoring Operations
     START_FILE_MONITORING: 'start-file-monitoring',
@@ -63,6 +64,7 @@ const IPC_CHANNELS = {
 
     // upload
     ALLOW_UPLOAD_OBJECT_S3: 'ALLOW_UPLOAD_OBJECT_S3',
+    SEARCH_UPLOAD_HISTORY: 'SEARCH_UPLOAD_HISTORY',
 
     APP_API_GET_ALL_AWS_STORE: 'APP_API_GET_ALL_AWS_STORE',
     APP_API_GET_DOWNLOAD_ITEMS: 'APP_API_GET_DOWNLOAD_ITEMS',
@@ -82,7 +84,7 @@ contextBridge.exposeInMainWorld('loginAPI', {
     },
 });
 
-// Fetch Tran API
+// for app data
 contextBridge.exposeInMainWorld('appAPI', {
     get_all_items: () => {
         return ipcRenderer.invoke(IPC_CHANNELS.APP_API_GET_ALL_AWS_STORE) as Promise<ServiceReturn<aws_storage[]>>
@@ -106,7 +108,7 @@ contextBridge.exposeInMainWorld('systemAPI', {
     selectMultiDir: () => ipcRenderer.invoke(IPC_CHANNELS.SELECT_MULTI_DIR),
 
     // READ DIRECTORY FOLDER
-    readDirectory: (path: string, options?: {onlyExcel?: boolean, fileExtension?: string }) => {
+    readDirectory: (path: string, options?: { onlyExcel?: boolean, fileExtension?: string }) => {
         return ipcRenderer.invoke(IPC_CHANNELS.READ_DIRECTORY, path, options)
     },
 
@@ -158,8 +160,8 @@ contextBridge.exposeInMainWorld('systemAPI', {
 // S3 API 
 contextBridge.exposeInMainWorld('s3API', {
     get_all_s3objects: (aws_storages: aws_storage[]) => {
-        return ipcRenderer.invoke(IPC_CHANNELS.S3_GET_ALL_STATES, aws_storages) as 
-            Promise<ServiceReturn<{ [aws_cd: string]: { bugs: S3ObjectInfo[]}}>>
+        return ipcRenderer.invoke(IPC_CHANNELS.S3_GET_ALL_STATES, aws_storages) as
+            Promise<ServiceReturn<{ [aws_cd: string]: { bugs: S3ObjectInfo[] } }>>
     },
     get_aws_storage_list: (aws_cd: string) => {
         return ipcRenderer.invoke(IPC_CHANNELS.S3_GET_DOWNLOAD_LIST, aws_cd) as Promise<ServiceReturn<string[]>>
@@ -167,6 +169,11 @@ contextBridge.exposeInMainWorld('s3API', {
     getLocalPathSyncDir: () => {
         return ipcRenderer.invoke(IPC_CHANNELS.GET_S3_LOCAL_SYNC_WORKDIR)
     },
+
+    check_exist_to_download: (aws_storages: aws_storage[]) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.CHECK_EXIST_TO_DOWNLOAD, aws_storages)
+    },
+
     downloadFile: (params: download_params) => {
         return ipcRenderer.invoke(IPC_CHANNELS.S3_DOWNLOAD_FILES, params)
     },
@@ -178,8 +185,8 @@ contextBridge.exposeInMainWorld('s3API', {
 
     // upload to S3
     uploadFile: (params: upload_params) => {
-        return ipcRenderer.invoke(IPC_CHANNELS.S3_UPLOAD_OBJECTS, params) as 
-            Promise<ServiceReturn<{ upload_id: string, uploaded_items: upload_item[]}>>
+        return ipcRenderer.invoke(IPC_CHANNELS.S3_UPLOAD_OBJECTS, params) as
+            Promise<ServiceReturn<{ upload_id: string, uploaded_items: upload_item[] }>>
     },
 
     deleteObjectS3: (params: delete_s3object_params) => {
@@ -191,7 +198,7 @@ contextBridge.exposeInMainWorld('s3API', {
     },
 });
 
-// Fetch Tran API
+// for download
 contextBridge.exposeInMainWorld('downloadAPI', {
     get_downloads: (user_id: string) => {
         return ipcRenderer.invoke(IPC_CHANNELS.GET_DONWLOADS, user_id)
@@ -210,38 +217,48 @@ contextBridge.exposeInMainWorld('downloadAPI', {
     },
 });
 
-// Fetch Tran API
+// for upload
 contextBridge.exposeInMainWorld('uploadAPI', {
     display_upload_button: (params: upload_display_params) => {
         return ipcRenderer.invoke(IPC_CHANNELS.ALLOW_UPLOAD_OBJECT_S3, params)
+    },
+
+    search_upload_histories: (params: search_upload_params) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.SEARCH_UPLOAD_HISTORY, params)
     }
 });
 
 // Type declaration for the exposed API
 declare global {
     interface Window {
+        // for credential
         loginAPI: {
             login: (credentials: LoginCredentials) =>
                 Promise<{ success: boolean; message?: string; user?: User, menuItems?: MenuItem[] }>;
             register: (credentials: RegisterCredentials) =>
                 Promise<{ success: boolean; message?: string; user?: User }>;
         };
+
+        // for app data
         appAPI: {
             get_all_items: () => Promise<ServiceReturn<aws_storage[]>>
             get_download_items: () => Promise<ServiceReturn<aws_storage[]>>
             get_upload_items: () => Promise<ServiceReturn<aws_storage[]>>
             get_delete_items: (aws_cd: string) => Promise<ServiceReturn<aws_storage[]>>
         },
-        s3API: {
 
+        // for s3 storage
+        s3API: {
             // get all object at s3
-            get_all_s3objects: (aws_storages: aws_storage[]) => Promise<ServiceReturn<{ [aws_cd: string]: { bugs: S3ObjectInfo[]}}>>;
+            get_all_s3objects: (aws_storages: aws_storage[]) => Promise<ServiceReturn<Record<string, { bugs: S3ObjectInfo[] }>>>;
 
             // get object s3 by key
             get_aws_storage_list: (aws_cd: string) => Promise<ServiceReturn<string[]>>;
 
             // get local path to store after download
             getLocalPathSyncDir: () => Promise<ServiceReturn<string>>;
+
+            check_exist_to_download: (aws_storages: aws_storage[]) => Promise<ServiceReturn<Record<string, { download_available: boolean }>>>;
 
             // download object at S3 storage
             downloadFile: (params: download_params) => Promise<ServiceReturn<boolean>>;
@@ -253,17 +270,18 @@ declare global {
             deleteObjectS3: (params: delete_s3object_params) => Promise<ServiceReturn<string[]>>;
 
             // upload file to S3 storage
-            uploadFile: (params: upload_params) => Promise<ServiceReturn<{upload_id: string, uploaded_items: upload_item[]}>>
+            uploadFile: (params: upload_params) => Promise<ServiceReturn<{ upload_id: string, uploaded_items: upload_item[] }>>
             ;
 
             delete_objects_direct: (params: delete_direct_s3object_params) => Promise<ServiceReturn<string[]>>
         };
 
+        // for file system
         systemAPI: {
             selectDirectory: () => Promise<ServiceReturn<string>>;
             selectMultiDir: () => Promise<ServiceReturn<string[]>>;
-            readDirectory: (path: string, options?: {onlyExcel?: boolean, fileExtension?: string }) => Promise<ServiceReturn<file_item[]>>;
-            readMultiDir: (paths: string[], options?: {isHistory?: boolean, onlyExcel?: boolean, fileExtension?: string }) => Promise<ServiceReturn<file_item[]>>;
+            readDirectory: (path: string, options?: { onlyExcel?: boolean, fileExtension?: string }) => Promise<ServiceReturn<file_item[]>>;
+            readMultiDir: (paths: string[], options?: { isHistory?: boolean, onlyExcel?: boolean, fileExtension?: string }) => Promise<ServiceReturn<file_item[]>>;
             readFile: (path: string) => Promise<{ success: boolean; data?: string; message?: string }>;
             openFile: (path: string) => Promise<{ success: boolean; message?: string }>;
             copyFiles: (filePaths: string[], destinationPath: string) =>
@@ -279,6 +297,8 @@ declare global {
             onFileCopied: (callback: (event: any) => void) => void;
             isExitDirectory: (path: string) => boolean;
         };
+
+        // for download
         downloadAPI: {
             get_downloads: (user_id: string) => Promise<ServiceReturn<download_item[]>>;
             get_download_dtls: (fetchId: string) => Promise<ServiceReturn<download_item[]>>;
@@ -287,8 +307,10 @@ declare global {
             copy_and_update_path_download: (params: copy_and_update_download_params) => Promise<ServiceReturn<boolean>>,
         };
 
+        // for upload
         uploadAPI: {
             display_upload_button: (params: upload_display_params) => Promise<ServiceReturn<boolean>>;
+            search_upload_histories: (params: search_upload_params) => Promise<ServiceReturn<upload_item[]>>;
         }
     }
 } 

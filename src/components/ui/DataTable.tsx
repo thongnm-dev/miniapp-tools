@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import ReactPaginate from 'react-paginate';
 import { ChevronDoubleLeftIcon, ChevronDoubleRightIcon } from '@heroicons/react/24/outline';
+import { FcAlphabeticalSortingAz, FcAlphabeticalSortingZa } from 'react-icons/fc';
 
 export interface DataTableColumn {
     key: string;
@@ -180,13 +181,15 @@ const DataTable: React.FC<DataTableProps> = ({
                             {columns.map(col => (
                                 <th
                                     key={col.key}
-                                    className={`px-4 py-4 text-center text-xs font-medium uppercase tracking-wider cursor-pointer select-none bg-gray-200 ${customCellRender && customCellRender[col.key] ? ' w-12' : ''}`}
+                                    className={`px-4 py-4 text-center text-xs font-medium uppercase cursor-pointer select-none bg-gray-200`}
                                     onClick={() => handleSort(col.key)}
                                 >
-                                    <span>{col.label}</span>
-                                    {sortKey === col.key && (
-                                        <span className="ml-1">{sortOrder === 'asc' ? '▲' : '▼'}</span>
-                                    )}
+                                    <div className='flex flex-row items-center justify-items-center gap-3'>
+                                        <span>{col.label}</span>
+                                        {sortKey === col.key && (
+                                            sortOrder === 'asc' ? (<FcAlphabeticalSortingAz className='w-4 h-4'/>) : (<FcAlphabeticalSortingZa className='w-4 h-4'/>)
+                                        )}
+                                    </div>
                                 </th>
                             ))}
                         </tr>

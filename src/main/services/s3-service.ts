@@ -42,7 +42,7 @@ export class S3Service {
     }
 
     // fetch state from s3
-    async get_all_s3objects(aws_storages: aws_storage[]): Promise<ServiceReturn<{ [aws_cd: string]: { bugs: S3ObjectInfo[] } }>> {
+    async get_all_s3objects(aws_storages: aws_storage[]): Promise<ServiceReturn<Record<string, { bugs: S3ObjectInfo[] }>>> {
         try {
 
             const bug_list: { [aws_cd: string]: { bugs: S3ObjectInfo[] } } = {};
@@ -178,6 +178,26 @@ export class S3Service {
                 return parts[parts.length - 1];
             })
             return { success: true, data: result }
+        } catch (error) {
+            return { success: false, message: (error as Error).message };
+        }
+    }
+
+    async check_exist_to_download(aws_storages: aws_storage[]) : Promise<ServiceReturn<Record<string, {download_available: boolean}>>> {
+        try {
+
+            const result_check: { [aws_cd: string]: { download_available: boolean} } = {};
+            for (const aws_storage of aws_storages) {
+                const _prefix_path = this.config.folderName + '/' + aws_storage.aws_name + '/' + aws_storage.subscribe + "/";
+
+                const objectDatas = await this.listObjects(this.config.bucketName, _prefix_path) || [];
+                const _objectTarget = objectDatas.filter((item) => item.Key !== _prefix_path);
+
+                result_check[aws_storage.aws_cd] = {
+                    download_available: _objectTarget.length > 0
+                }
+            }
+            return { success: true, data: result_check };
         } catch (error) {
             return { success: false, message: (error as Error).message };
         }

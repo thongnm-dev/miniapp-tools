@@ -2,7 +2,7 @@ import { DateTime } from 'luxon';
 
 export class DateUtils {
 
-    static formatDate(date?: Date, format?: string): string {
+    static formatDate(date?: Date | null, format?: string): string {
         if (!date) return "";
         return DateTime.fromJSDate(date).toFormat(format || "YYYYMMDDHHmmss");
     }

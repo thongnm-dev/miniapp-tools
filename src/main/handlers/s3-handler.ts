@@ -52,4 +52,8 @@ export const setupS3Handlers = () => {
   ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_DELETE_OBJECTS_DIRECTLY, async (_event, params: delete_direct_s3object_params) => {
     return await s3Service.deleteObjectS3Directly(params);
   });
+
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.CHECK_EXIST_TO_DOWNLOAD, async (_event, aws_storages: aws_storage[]) => {
+    return await s3Service.check_exist_to_download(aws_storages);
+  });
 }; 

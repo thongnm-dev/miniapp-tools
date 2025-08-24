@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import DataTable from "../components/ui/DataTable";
 import { Link } from "react-router-dom";
 import { downloadController } from "../controller/download-controller";
@@ -8,6 +8,11 @@ import { useAuth } from "../stores/AuthContext";
 import { download_item } from "../types/download_item";
 import { aws_storage } from "../types/aws_storage";
 import { appController } from "../controller/app_controller";
+import { s3Controller } from "../controller/s3-controller";
+import emptyList from "../assets/empty.gif";
+import Button from "../components/ui/Button";
+import { FcProcess } from "react-icons/fc";
+import { useLoading } from "../stores/LoadingContext";
 
 const columns = [
     {
@@ -30,17 +35,21 @@ const columns = [
 
 export const S3DownloadPage: React.FC = () => {
     const { user } = useAuth();
+    const { showLoading, hideLoading } = useLoading();
     const [download_items, setDownloadItems] = useState<download_item[]>([]);
     const [list_download_items, setList_download_items] = useState<aws_storage[]>([]);
+    const [downloadable, setDownloadable] = useState<Record<string, { download_available: boolean }>>({});
+    const [is_reload, setIsReload] = useState<boolean>(false);
 
     useEffect(() => {
         setList_download_items([]);
         const loadItems = async () => {
             const result = await appController.get_download_items();
-            
+
             if (result.success && result.data) {
                 setList_download_items(result.data);
             }
+            setIsReload(list_download_items.length > 0);
         }
 
         loadItems();
@@ -51,6 +60,18 @@ export const S3DownloadPage: React.FC = () => {
 
         window.addEventListener("refreshDownload", handler);
         return () => window.removeEventListener("refreshDownload", handler);
+
+
+    }, []);
+
+    useEffect(() => {
+
+        const check_exist_to_download = () => {
+            setIsReload(true);
+        }
+
+        window.addEventListener("check_exist_to_download", check_exist_to_download);
+        return () => window.removeEventListener("check_exist_to_download", check_exist_to_download);
     }, []);
 
     useEffect(() => {
@@ -64,16 +85,58 @@ export const S3DownloadPage: React.FC = () => {
         init();
         let isMounted = true;
         // immediately fetch every 15 minutes
-        const interval = setInterval(init, 5 * 60 * 1000); // 5 minutes
+        const interval = setInterval(init, 1500000); // 5 minutes
         return () => {
             isMounted = false;
             clearInterval(interval);
         };
     }, []);
 
+    useEffect(() => {
+        setDownloadable({});
+        if (list_download_items.length > 0 && is_reload) {
+            const init = async () => {
+                const result = await s3Controller.check_exist_to_download(list_download_items);
+                if (result.success && result.data) {
+                    setDownloadable(result.data || {});
+                }
+                setIsReload(false);
+            }
+
+            init();
+            let isMounted = true;
+
+            const interval = setInterval(init, 1500000);
+            return () => {
+                isMounted = false;
+                clearInterval(interval);
+            };
+        }
+    }, [list_download_items, is_reload]);
+
     const trackingTranLog = useMemo(() => {
         return download_items.length > 0;
-    }, [download_items])
+    }, [download_items]);
+
+    const notempty_download = useMemo(() => {
+        if (Object.entries(downloadable).length > 0) {
+            let checking = 0;
+            for (const aws_storage of list_download_items) {
+                if (downloadable[aws_storage.aws_cd]?.download_available) {
+                    checking++;
+                }
+            }
+            return checking !== 0;
+        }
+        return false;
+    }, [downloadable]);
+
+    const candownload = useCallback((aws_cd: string) => {
+        if (Object.entries(downloadable).length > 0) {
+            return downloadable[aws_cd].download_available;
+        }
+        return false;
+    }, [downloadable]);
 
     const customCellRender = {
         id: (row: Record<string, any>) => {
@@ -93,16 +156,44 @@ export const S3DownloadPage: React.FC = () => {
         }
     }
 
+    const handleRefresh = async () => {
+        try {
+            showLoading("Đang tải lại. Vui lòng chờ");
+            setDownloadable({});
+            const result = await s3Controller.check_exist_to_download(list_download_items);
+            if (result.success && result.data) {
+                setDownloadable(result.data || {});
+            }
+            await refreshDownload();
+        } finally {
+            hideLoading();
+        }
+    }
+
     return (
         <React.Fragment>
             <div className="flex flex-col gap-4 h-full">
-                <div className={`rounded-lg shadow flex flex-col space-y-2`}>
-                    {list_download_items.map((item, index) => {
-                        return (
-                            <S3Download aws_storage={item} key={index}/>
-                        )
-                    })}
-                </div>
+                {notempty_download ? (<div className={`rounded-lg shadow flex flex-col space-y-2`}>
+                    {list_download_items
+                        .filter((item) => candownload(item.aws_cd))
+                        .map((item) => {
+                            return (
+                                <S3Download aws_storage={item} key={item.aws_cd} />
+                            )
+                        })}
+                </div>) : (
+                    <div className="bg-white rounded text-center text-gray-500 h-full flex flex-col items-center justify-center text-lg">
+                        <img src={emptyList} />
+                        <span className="text-sm text-red-500 animate-bounce py-4">
+                            Không có tập tin nào để tải về...
+                        </span>
+                        <Button className="flex items-center space-x-2"
+                            onClick={handleRefresh}>
+                            <FcProcess className="w-4 h-4" />
+                            <span>Làm mới trạng thái</span>
+                        </Button>
+                    </div>
+                )}
                 {trackingTranLog &&
                     <Fieldset title="Thông tin lịch sử đã tải về">
                         <DataTable

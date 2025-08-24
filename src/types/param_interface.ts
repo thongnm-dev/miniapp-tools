@@ -6,7 +6,7 @@ import { file_item } from "./file_item"
 export interface search_upload_params {
     from_date?: string, 
     to_date?: string, 
-    state?: string, 
+    aws_cd?: string, 
     bug_no?: string, 
     is_moved_at_s3?: boolean
 }
@@ -39,6 +39,15 @@ export interface get_uploaded_params {
 //*****************************
 // download parameter
 //*****************************
+
+export interface search_download_params {
+    from_date?: string, 
+    to_date?: string, 
+    aws_cd?: string, 
+    bug_no?: string, 
+    is_moved_at_s3?: boolean
+}
+
 export interface download_params {
     user_id: string, 
     aws_cd: string, 

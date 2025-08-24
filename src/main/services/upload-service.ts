@@ -230,6 +230,8 @@ export class UploadService {
                     SELECT
                           t1.upload_ymd
                         , t1.aws_cd
+                        , t4.name AS aws_name
+                        , t1.upload_count
                         , t1.is_moved_at_s3
                         , t2.bug_no
                         , string_agg(t3.file_name , ', ') AS att_files
@@ -239,28 +241,37 @@ export class UploadService {
                         ON t1.id = t2.upload_id 
                     INNER JOIN upload_attach t3
                         ON t1.id = t3.upload_id 
-                        AND t2.id = t3.upload_dtl_id 
+                        AND t2.id = t3.upload_dtl_id
+                    INNER JOIN aws_storage t4
+                        ON t1.aws_cd = t4.code 
                     WHERE 1 = 1
                         AND (
-                            ($1 IS NULL AND $2 IS NOT NULL AND t1.upload_ymd <= $2::TEXT)
-                            OR ($1 IS NOT NULL AND $2 IS NULL AND t1.upload_ymd >= $1::TEXT)
-                            OR ($1 IS NOT NULL AND $2 IS NOT NULL AND t1.upload_ymd BETWEEN $1::TEXT AND $2::TEXT)
-                            OR ($1 IS NULL AND $2 IS NULL))
-                        AND ($3 IS NULL OR t1.aws_cd = $3)
-                        AND ($4 IS NULL OR t2.bug_no LIKE '%' ||$4|| '%')
-                        AND ($5 IS NULL OR t1.is_moved_at_s3 = $5)
+                            (TRIM($1) = '' AND TRIM($2) <> '' AND t1.upload_ymd <= $2::TEXT)
+                            OR (TRIM($1) <> '' AND TRIM($2) = '' AND t1.upload_ymd >= $1::TEXT)
+                            OR (TRIM($1) <> '' AND TRIM($2) <> '' AND t1.upload_ymd BETWEEN $1::TEXT AND $2::TEXT)
+                            OR (TRIM($1) = '' AND TRIM($2) = ''))
+                        AND (TRIM($3) = '' OR t1.aws_cd = $3)
+                        AND (TRIM($4) = '' OR t2.bug_no LIKE '%' ||$4|| '%')
+                        AND ($5 = FALSE OR t1.is_moved_at_s3 = $5)
                     GROUP BY 
                           t1.upload_ymd
                         , t1.aws_cd
+                        , t4."name"
+                        , t1.upload_count
                         , t1.is_moved_at_s3
                         , t2.bug_no
-                `, [params.from_date, params.to_date, params.state, params.bug_no, params.is_moved_at_s3]);
+                    ORDER BY 
+                          t1.upload_ymd
+                        , t1.aws_cd
+                        , t2.bug_no
+                `, [params.from_date || "", params.to_date || "", params.aws_cd, params.bug_no, params.is_moved_at_s3]);
             const upload_items: upload_item [] = [];
 
             for (const row of result?.rows || []) {
                 upload_items.push({
                     upload_ymd: row.upload_ymd,
-                    aws_name: row.aws_cd,
+                    aws_name: row.aws_name,
+                    upload_count: row.upload_count,
                     is_moved_at_s3: row.is_moved_at_s3,
                     bug_no: row.bug_no,
                     att_files: row.att_files,

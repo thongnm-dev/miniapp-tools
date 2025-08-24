@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MenuItem } from '../../types/menu';
 import { FaBoxTissue, FaCloudUploadAlt, FaHistory, FaRegCopy } from 'react-icons/fa';
-import { FcFeedIn, FcHome, FcOpenedFolder, FcRules } from 'react-icons/fc';
+import { FcFeedIn, FcHome, FcInTransit, FcOpenedFolder, FcRules } from 'react-icons/fc';
 import { AiTwotoneBug } from 'react-icons/ai';
 import { MdOutlineHistoryEdu } from 'react-icons/md';
 
@@ -16,6 +16,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   copy: FaRegCopy,
   history: FaHistory,
   downloadHistory: MdOutlineHistoryEdu,
+  delivery: FcInTransit,
 };
 
 export const useMenuItems = () => {
