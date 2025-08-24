@@ -58,7 +58,11 @@ export class DatabaseService {
           project_id INT NOT NULL,
           bug_no VARCHAR(100) NOT NULL,
           aws_cd VARCHAR(3) NOT NULL,
-          bug_phase VARCHAR(10) NOT NULL,
+          expected_date DATE,
+          confirm_date DATE,
+          confirm_usr VARCHAR(100) DEFAULT '',
+          text_phase VARCHAR(10) NOT NULL, -- CT0, CT1, CT2
+          bug_phase VARCHAR(10) NOT NULL, -- PG, RWPG, UT, RWUT
           bug_status VARCHAR(10) DEFAULT '',
           bug_priority VARCHAR(10) DEFAULT '',
           bug_type VARCHAR(10) DEFAULT '',
@@ -74,6 +78,7 @@ export class DatabaseService {
           assignee VARCHAR(100) DEFAULT '',
           estimated_hours NUMERIC(10, 2),
           actual_hours NUMERIC(10, 2),
+          created_by VARCHAR(100) DEFAULT '',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );

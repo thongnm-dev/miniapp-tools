@@ -134,7 +134,8 @@ const UploadHistoriesPage: React.FC = () => {
                                 <DatePicker className="px-3 py-2 border border-slate-200 rounded w-[120px]" 
                                     dateFormat={"yyyy/MM/dd"}
                                     selected={fromDate} onChange={(date) => setFromDate(date)}/>
-                                <DatePicker className="px-3 py-2 border border-slate-200 rounded w-[120px]" 
+                                <DatePicker className="px-3 py-2 border border-slate-200 rounded w-[120px]"
+                                    dateFormat={"yyyy/MM/dd"}
                                     selected={toDate} onChange={(date) => setToDate(date)}/>
                             </div>
                         </div>

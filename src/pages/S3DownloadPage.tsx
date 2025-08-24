@@ -49,7 +49,6 @@ export const S3DownloadPage: React.FC = () => {
             if (result.success && result.data) {
                 setList_download_items(result.data);
             }
-            setIsReload(list_download_items.length > 0);
         }
 
         loadItems();
@@ -70,6 +69,8 @@ export const S3DownloadPage: React.FC = () => {
             setIsReload(true);
         }
 
+        check_exist_to_download();
+        
         window.addEventListener("check_exist_to_download", check_exist_to_download);
         return () => window.removeEventListener("check_exist_to_download", check_exist_to_download);
     }, []);
@@ -94,10 +95,11 @@ export const S3DownloadPage: React.FC = () => {
 
     useEffect(() => {
         setDownloadable({});
-        if (list_download_items.length > 0 && is_reload) {
+        if (list_download_items.length > 0 || is_reload) {
             const init = async () => {
                 const result = await s3Controller.check_exist_to_download(list_download_items);
-                if (result.success && result.data) {
+                if (result.success) {
+                    console.log(result.data);
                     setDownloadable(result.data || {});
                 }
                 setIsReload(false);
@@ -119,16 +121,16 @@ export const S3DownloadPage: React.FC = () => {
     }, [download_items]);
 
     const notempty_download = useMemo(() => {
-        if (Object.entries(downloadable).length > 0) {
+        if (Object.keys(downloadable).length > 0) {
             let checking = 0;
             for (const aws_storage of list_download_items) {
+                console.log(downloadable[aws_storage.aws_cd]?.download_available)
                 if (downloadable[aws_storage.aws_cd]?.download_available) {
                     checking++;
                 }
             }
             return checking !== 0;
         }
-        return false;
     }, [downloadable]);
 
     const candownload = useCallback((aws_cd: string) => {
