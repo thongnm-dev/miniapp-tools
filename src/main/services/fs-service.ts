@@ -50,7 +50,7 @@ export class FSService {
                     name: path.basename(filePath),
                     file_path: path.dirname(filePath),
                     full_path: filePath,
-                    file_size: await fs.statSync(filePath).size
+                    file_size: fs.statSync(filePath).size
                 });
             }
 

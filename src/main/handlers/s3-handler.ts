@@ -50,4 +50,9 @@ export const setupS3Handlers = () => {
       async (_event, params: { user_id: string, upload_id: string, ref_aws_cd: string, delete_items: {aws_cd: string, target: string}[]}) => {
     return await s3Service.deleteObjectS3(params);
   });
+
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_DELETE_OBJECTS_DIRECTLY, 
+      async (_event, params: { aws_cd: string, delete_items: {bug_no: string, subscribe: boolean}[]}) => {
+    return await s3Service.deleteObjectS3Directly(params);
+  });
 }; 

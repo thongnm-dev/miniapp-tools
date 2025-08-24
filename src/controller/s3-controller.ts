@@ -29,8 +29,8 @@ export class S3Controller {
         return await window.s3API.uploadFile(params);
     }
 
-    async handleOnlyDeleteObjects(delete_items: string[]) {
-        return await window.s3API.getLocalPathSyncDir();
+    async handleOnlyDeleteObjects(params: { aws_cd: string, delete_items: {bug_no: string, subscribe: boolean}[]}) {
+        return await window.s3API.delete_objects_direct(params);
     }
 
     async handleDeleteObjects(params: { user_id: string, upload_id: string, ref_aws_cd: string, delete_items: {aws_cd: string, target: string}[]}) {

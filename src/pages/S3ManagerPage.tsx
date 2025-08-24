@@ -12,17 +12,17 @@ import { TfiBrushAlt } from 'react-icons/tfi';
 import Modal from '../components/ui/Modal';
 import { GiExitDoor } from 'react-icons/gi';
 import DataTable from '../components/ui/DataTable';
-import { useAuth } from '../stores/AuthContext';
 
 const S3ManagerPage: React.FC = () => {
     const { showLoading, hideLoading } = useLoading();
-    const { user } = useAuth();
     const [aws_s3objects, setAwsS3Objects] = useState<{ [aws_cd: string]: { bugs: S3ObjectInfo[] } }>({});
-    const [destination, setDestination] = useState<aws_storage>({} as aws_storage);
-    const [displayModal, setDisplayModal] = useState(false);
     const [aws_storages, setAwsStorages] = useState<aws_storage[]>([]);
+    const [destination, setDestination] = useState<aws_storage>({} as aws_storage);
+    const [displayModal, setDisplayModal] = useState<boolean>(false);
+    const [deleted, setDeleted] = useState<boolean>(false);
     const [aws_delete_items, setAwsDeleteItems] = useState<S3ObjectInfo[]>([]);
-    const [selected_items, setSelectedItems] = useState<Set<string>>(new Set());
+    const [selected_items, setSelectedItems] = useState<Set<S3ObjectInfo>>(new Set());
+    const [modalTitle, setModalTitle] = useState<string>("");
 
     useEffect(() => {
         setAwsStorages([]);
@@ -99,10 +99,14 @@ const S3ManagerPage: React.FC = () => {
             });
     }, [aws_s3objects]);
 
-    const handleRefreshFetchState = async () => {
+    const handleRefresh = async () => {
         try {
             showLoading();
-            await s3Controller.get_all_s3objects(aws_storages);
+            setAwsS3Objects({});
+            const result = await s3Controller.get_all_s3objects(aws_storages);
+            if (result.success && result.data) {
+                    setAwsS3Objects(result.data);
+                }
         } catch (error) {
             showNotification("Không thể lấy dữ liệu từ S3 AWS.")
         } finally {
@@ -113,6 +117,7 @@ const S3ManagerPage: React.FC = () => {
     const handleOpenMoveModal = async (aws_storage: aws_storage, selected_items: S3ObjectInfo[]) => {
         setDestination(aws_storage);
         setAwsDeleteItems(selected_items);
+        setModalTitle("Bạn có chắc muốn xoá các thông tin bên dưới không?");
         setDisplayModal(true);
     }
 
@@ -124,19 +129,25 @@ const S3ManagerPage: React.FC = () => {
             const bugNo = aws_delete_items.find(f => f.bug_no === fileName);
             if (bugNo) {
                 if (checked) {
-                    newSet.add(bugNo.bug_no);
+                    newSet.add(bugNo);
                 } else {
-                    newSet.delete(bugNo.bug_no);
+                    newSet.delete(bugNo);
                 }
             }
             return newSet;
         });
     };
+
     // accept
     const handleConfirm = async () => {
         try {
             showLoading();
-            const result = await s3Controller.handleOnlyDeleteObjects(Array.from(selected_items));
+
+            const params = {
+                aws_cd: destination.aws_cd,
+                delete_items: Array.from(selected_items)
+            }
+            const result = await s3Controller.handleOnlyDeleteObjects(params);
 
             if (!result.success) {
                 showNotification('Xoá tập tin S3 thất bại', 'error')
@@ -151,8 +162,16 @@ const S3ManagerPage: React.FC = () => {
             } else {
                 showNotification(`Đã xoá ${deletedCnt}/${totalFiles} tập tin.`, 'info');
             }
-            setDisplayModal(false);
-            setDestination({} as aws_storage);
+            setModalTitle("Bạn đã xoá thành công các tập tin");
+            setDeleted(result.success);
+            setSelectedItems(new Set());
+
+            const deletedItems = (result.data || []).map((item) => {
+                return { bug_no: item, message: "" } as S3ObjectInfo;
+            });
+
+            setAwsDeleteItems(deletedItems);
+            await handleRefresh();
         } catch (error) {
             showNotification('Thực hiện xoá tập tin thất bại', 'error');
         } finally {
@@ -161,6 +180,7 @@ const S3ManagerPage: React.FC = () => {
     }
     const handleCancelModal = () => {
         setDisplayModal(false);
+        setDeleted(false);
         setDestination({} as aws_storage);
     }
 
@@ -170,7 +190,7 @@ const S3ManagerPage: React.FC = () => {
                 <fieldset className="border border-gray-300 rounded-lg p-2 bg-white shadow-lg min-h-[calc(100vh-195px)]">
                     <legend className="rounded-lg">
                         <Button
-                            onClick={handleRefreshFetchState}
+                            onClick={handleRefresh}
                             className="flex items-center gap-2">
                             <FcProcess className="w-4 h-4 stroke-2" />
                             Tải lại
@@ -182,7 +202,7 @@ const S3ManagerPage: React.FC = () => {
                 </fieldset>
             </div>
 
-            <Modal open={displayModal} onClose={handleCancelModal} title="Bạn có chắc muốn xoá các thông tin bên dưới không?" size="xl">
+            <Modal open={displayModal} onClose={handleCancelModal} title={modalTitle} size="xl">
                 <div className="bg-white shadow-lg rounded-lg flex flex-col">
                     <div className="flex flex-row items-center justify-items-center text-center border-b border-gray-200 p-4">
                         <h2 className="text-lg font-semibold text-white bg-sky-500 px-3 py-2 rounded-l">
@@ -204,9 +224,9 @@ const S3ManagerPage: React.FC = () => {
                                 bug_no: bugNo.bug_no
                             }))}
                             showFilter={false}
-                            showCheckboxes={true}
+                            showCheckboxes={!deleted}
                             rowKey="bug_no"
-                            selectedRows={new Set(Array.from(selected_items))}
+                            selectedRows={new Set(Array.from(selected_items).map((item) => item.bug_no))}
                             onRowSelectionChange={handleFileCheckboxChange}
                         />
                     </div>
@@ -218,12 +238,13 @@ const S3ManagerPage: React.FC = () => {
                             <GiExitDoor className="h-5 w-5" />
                             <span>Đóng</span>
                         </Button>
-                        <Button
+                        {!deleted && <Button
                             onClick={handleConfirm}
                             className="flex items-center space-x-2">
                             <FcOk className="h-5 w-5" />
                             <span>Bắt đầu...</span>
                         </Button>
+                        }
                     </div>
                 </div>
             </Modal>

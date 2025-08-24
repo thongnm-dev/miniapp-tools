@@ -105,6 +105,7 @@ export class S3Service {
                         let parts = trimmed.split('/');
                         return {
                             bug_no: parts[parts.length - 1],
+                            subscribe: false,
                             message: ""
                         };
                     });
@@ -115,6 +116,7 @@ export class S3Service {
                         let parts = trimmed.split('/');
                         return {
                             bug_no: parts[parts.length - 1],
+                            subscribe: true,
                             message: "Chưa di chuyển ra ngoài..!"
                         };
                     });
@@ -567,7 +569,7 @@ export class S3Service {
         return response.Contents || [];
     }
 
-    async deleteObjectS3Directly(params: { aws_cd: string, delete_items: string[] }):
+    async deleteObjectS3Directly(params: { aws_cd: string, delete_items: {bug_no: string, subscribe: boolean}[] }):
         Promise<ServiceReturn<string[]>> {
         try {
 
@@ -581,8 +583,14 @@ export class S3Service {
             let results = [];
             let deleted_items: Set<string> = new Set();
             for (const delete_item of params.delete_items) {
+                let _source_path = this.config.folderName + '/' + S3_OBJECT_TARGET.aws_name;
 
-                const _source_path = this.config.folderName + '/' + S3_OBJECT_TARGET.aws_name + '/' + delete_item + "/";
+                if (delete_item.subscribe) {
+                    _source_path = _source_path + '/' + S3_OBJECT_TARGET.subscribe;
+                }
+
+                _source_path = _source_path + '/' + delete_item.bug_no + "/";
+
                 const objectDatas = await this.listObjects(this.config.bucketName, _source_path) || [];
                 const _objectTarget = objectDatas.filter((item) => item.Key !== _source_path);
 
@@ -594,6 +602,7 @@ export class S3Service {
                     })
                     results.push(this.s3.send(commandDelete));
                 }
+                deleted_items.add(delete_item.bug_no);
             }
             await Promise.all(results);
             return { success: true, message: "Đã xoá thành công.", data: Array.from(deleted_items) }

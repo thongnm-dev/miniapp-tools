@@ -19,7 +19,7 @@ const S3UploadPage: React.FC = () => {
     const { user } = useAuth();
     const { showLoading, hideLoading } = useLoading();
     const [modalTitle, setModalTitle] = useState<string>("");
-    const [destination, setDestination] = useState<string>("");
+    const [destination, setDestination] = useState<aws_storage>({} as aws_storage);
     const [uploaded_id, setUploadedId] = useState<string>("");
     const [modalHeaderTitle, setModalHeaderTitle] = useState<string>("");
     const [openModal, setOpenModal] = useState(false);
@@ -47,7 +47,7 @@ const S3UploadPage: React.FC = () => {
         setDelete_options([]);
         if (destination) {
             const loadItems = async () => {
-                const result = await appController.get_delete_items(destination);
+                const result = await appController.get_delete_items(destination.aws_cd);
 
                 if (result.success && result.data) {
                     setDelete_options(result.data);
@@ -61,7 +61,7 @@ const S3UploadPage: React.FC = () => {
     const uploadAction = async (params: { aws_storage: aws_storage, is_folder_same_name: boolean, selected_items: file_item[] }) => {
         setModalHeaderTitle(params.aws_storage.aws_name);
         setCreatFolderSameName(params.is_folder_same_name);
-        setDestination(params.aws_storage.aws_cd);
+        setDestination(params.aws_storage);
         setModalTitle("Tải lên S3 AWS")
         setUploadFileItems(params.selected_items);
         setOpenModal(true);
@@ -78,7 +78,7 @@ const S3UploadPage: React.FC = () => {
                 const totalFiles = filesToUpload.length;
                 const params = {
                     user_id: user?.username || "",
-                    destination: destination,
+                    destination: destination.aws_cd,
                     file_items: filesToUpload,
                     is_folder_same_name: creatFolderSameName
                 }
@@ -116,7 +116,7 @@ const S3UploadPage: React.FC = () => {
                 const params = {
                     user_id: user?.username || "",
                     upload_id: uploaded_id,
-                    ref_aws_cd: destination,
+                    ref_aws_cd: destination.aws_cd,
                     delete_items: delete_items
                 }
 
@@ -199,7 +199,7 @@ const S3UploadPage: React.FC = () => {
                     <span className='text-red-600 font-bold'>{delete_options[0].aws_name}</span>
 
                 </div>}
-                {destination === "01" && <div className='flex flex-row bg-white p-2 gap-2'>
+                {destination.aws_cd === "01" && <div className='flex flex-row bg-white p-2 gap-2'>
                     <div className="flex items-center text-red-600">
                         <input id="chkCreatFolderSameName" type="checkbox" disabled={true}
                             checked={creatFolderSameName} onChange={(event) => setCreatFolderSameName(event.target.checked)}
@@ -251,9 +251,7 @@ const S3UploadPage: React.FC = () => {
                                                 )
                                             );
 
-                                            console.log(newValue);
-
-                                        }} disabled={row.aws_cd !== '03'}>
+                                        }} disabled={destination.aws_cd === '05'}>
                                             {delete_options.map((item, index) => {
                                                 return <option value={item.aws_cd} key={index}>{item.aws_name}</option>
                                             })}

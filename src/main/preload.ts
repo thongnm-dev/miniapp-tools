@@ -35,6 +35,7 @@ const IPC_CHANNELS = {
     S3_MOVE_OBJECT: 'S3_MOVE_OBJECT',
     S3_UPLOAD_OBJECTS: 'S3_UPLOAD_OBJECTS',
     S3_DELETE_OBJECTS: 'S3_DELETE_OBJECTS',
+  S3_DELETE_OBJECTS_DIRECTLY: 'S3_DELETE_OBJECTS_DIRECTLY',
 
     // File Monitoring Operations
     START_FILE_MONITORING: 'start-file-monitoring',
@@ -183,6 +184,10 @@ contextBridge.exposeInMainWorld('s3API', {
     deleteObjectS3: (params: { user_id: string, upload_id: string, ref_aws_cd: string, delete_items: {aws_cd: string, target: string}[]}) => {
         return ipcRenderer.invoke(IPC_CHANNELS.S3_DELETE_OBJECTS, params) as Promise<ServiceReturn<string[]>>
     },
+
+    delete_objects_direct: (params: { aws_cd: string, delete_items: {bug_no: string, subscribe: boolean}[]}) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.S3_DELETE_OBJECTS_DIRECTLY, params) as Promise<ServiceReturn<string[]>>
+    },
 });
 
 // Fetch Tran API
@@ -248,6 +253,9 @@ declare global {
             uploadFile: (params: { user_id: string, destination: string, is_folder_same_name: boolean, file_items: file_item[]}) =>
                 Promise<ServiceReturn<{upload_id: string, uploaded_items: upload_item[]}>>
             ;
+
+            delete_objects_direct: (params: { aws_cd: string, delete_items: {bug_no: string, subscribe: boolean}[]}) => 
+                Promise<ServiceReturn<string[]>>
         };
 
         systemAPI: {
