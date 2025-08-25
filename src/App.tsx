@@ -110,13 +110,6 @@ function App() {
                             </ProtectedRoute>
                         } />
 
-                        <Route path="/copy-tools" element={
-                            <ProtectedRoute>
-                                <MainLayout>
-                                    <CopyFilePage />
-                                </MainLayout>
-                            </ProtectedRoute>
-                        } />
                         {/* Redirect to dashboard for root path */}
                         <Route path="/" element={
                             <ProtectedRoute>

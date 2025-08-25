@@ -71,6 +71,7 @@ app.whenReady().then(async () => {
     try {
         // Setup all IPC handlers
         initHandlers();
+        await databaseService.connect();
 
         if (! await databaseService.isConnected()) {
             throw new Error();
