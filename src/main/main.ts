@@ -49,25 +49,31 @@ function createWindow(): void {
 app.whenReady().then(async () => {
     createWindow();
 
-    autoUpdater.checkForUpdatesAndNotify();
+    if (!process.argv.includes('--dev')) {
+        autoUpdater.checkForUpdatesAndNotify();
 
-    autoUpdater.on('download-progress', (p) => {
-        // Gửi progress sang renderer nếu cần
-        // win.webContents.send('update-progress', p);
-        mainWindow?.setProgressBar(p.percent / 100);
-    });
-
-    autoUpdater.on('update-downloaded', () => {
-        const res = dialog.showMessageBoxSync(mainWindow, {
-            type: 'info',
-            buttons: ['Khởi động lại', 'Để sau'],
-            title: 'Cập nhật sẵn sàng',
-            message: 'Bản cập nhật đã tải xong. Khởi động lại để áp dụng?'
+          autoUpdater.on("update-available", () => {
+            console.log("Có bản update mới trên server");
         });
+        autoUpdater.on('download-progress', (p) => {
+            console.log(`Downloading`);
+            // Gửi progress sang renderer nếu cần
+            // win.webContents.send('update-progress', p);
+            mainWindow?.setProgressBar(p.percent / 100);
+        });
+        autoUpdater.on('update-downloaded', () => {
+            console.log("Update đã tải xong, sẵn sàng restart");
+            const res = dialog.showMessageBoxSync(mainWindow, {
+                type: 'info',
+                buttons: ['Khởi động lại', 'Để sau'],
+                title: 'Cập nhật sẵn sàng',
+                message: 'Bản cập nhật đã tải xong. Khởi động lại để áp dụng?'
+            });
 
-        if (res === 0)
-            autoUpdater.quitAndInstall(); // restart & apply
-    });
+            if (res === 0)
+                autoUpdater.quitAndInstall(); // restart & apply
+        });
+    }
     try {
         // Setup all IPC handlers
         initHandlers();
