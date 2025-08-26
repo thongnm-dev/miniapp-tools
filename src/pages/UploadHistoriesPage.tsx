@@ -181,7 +181,6 @@ const UploadHistoriesPage: React.FC = () => {
                             {key: "upload_ymd", label: "Ngày thực hiện"},
                             {key: "aws_name", label: "Đích đã tải lên"},
                             {key: "bug_no", label: "Thông tin đã tải lên"},
-                            {key: "upload_count", label: "Tổng số tập tin"},
                             {key: "is_moved_at_s3", label: "Xoá sau up"},
                         ]}
                         showFilter={false}

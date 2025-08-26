@@ -189,8 +189,8 @@ const Login: React.FC = () => {
         </div>
 
         {/* Footer */}
-        {false && <div className="text-center mt-4">
-          <span className="text-primary-200">Bạn đã có tài khoản chưa? </span>
+        {<div className="text-center mt-4">
+          <span>Bạn đã có tài khoản chưa? </span>
           <Link to="/register" className="text-primary-600 hover:underline">Đăng ký ngay</Link>
         </div>}
         <div className="text-center">

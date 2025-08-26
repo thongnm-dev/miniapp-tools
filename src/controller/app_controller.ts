@@ -1,6 +1,10 @@
 
 
 export class AppController {
+
+    async getAppVersion() {
+        return await window.appAPI.getAppVersion();
+    }
     async get_all_items() {
         return await window.appAPI.get_all_items();
     }
@@ -15,4 +19,4 @@ export class AppController {
     }
 }
 
-export const appController = new  AppController();
+export const appController = new AppController();

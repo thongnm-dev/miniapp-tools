@@ -67,6 +67,7 @@ const IPC_CHANNELS = {
     ALLOW_UPLOAD_OBJECT_S3: 'ALLOW_UPLOAD_OBJECT_S3',
     SEARCH_UPLOAD_HISTORY: 'SEARCH_UPLOAD_HISTORY',
 
+    APP_VERSION: 'APP_VERSION',
     APP_API_GET_ALL_AWS_STORE: 'APP_API_GET_ALL_AWS_STORE',
     APP_API_GET_DOWNLOAD_ITEMS: 'APP_API_GET_DOWNLOAD_ITEMS',
     APP_API_GET_UPLOAD_ITEMS: 'APP_API_GET_UPLOAD_ITEMS',
@@ -87,6 +88,9 @@ contextBridge.exposeInMainWorld('loginAPI', {
 
 // for app data
 contextBridge.exposeInMainWorld('appAPI', {
+    getAppVersion: () => {
+        return ipcRenderer.invoke(IPC_CHANNELS.APP_VERSION) as Promise<string>;
+    },
     get_all_items: () => {
         return ipcRenderer.invoke(IPC_CHANNELS.APP_API_GET_ALL_AWS_STORE) as Promise<ServiceReturn<aws_storage[]>>
     },
@@ -245,6 +249,7 @@ declare global {
 
         // for app data
         appAPI: {
+            getAppVersion: () => Promise<string>;
             get_all_items: () => Promise<ServiceReturn<aws_storage[]>>
             get_download_items: () => Promise<ServiceReturn<aws_storage[]>>
             get_upload_items: () => Promise<ServiceReturn<aws_storage[]>>

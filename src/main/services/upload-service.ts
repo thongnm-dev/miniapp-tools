@@ -231,7 +231,6 @@ export class UploadService {
                           t1.upload_ymd
                         , t1.aws_cd
                         , t4.name AS aws_name
-                        , t1.upload_count
                         , t1.is_moved_at_s3
                         , t2.bug_no
                         , string_agg(t3.file_name , ', ') AS att_files
@@ -257,7 +256,6 @@ export class UploadService {
                           t1.upload_ymd
                         , t1.aws_cd
                         , t4."name"
-                        , t1.upload_count
                         , t1.is_moved_at_s3
                         , t2.bug_no
                     ORDER BY 
@@ -271,7 +269,6 @@ export class UploadService {
                 upload_items.push({
                     upload_ymd: row.upload_ymd,
                     aws_name: row.aws_name,
-                    upload_count: row.upload_count,
                     is_moved_at_s3: row.is_moved_at_s3,
                     bug_no: row.bug_no,
                     att_files: row.att_files,

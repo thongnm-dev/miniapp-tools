@@ -350,7 +350,6 @@ export class DownloadService {
                             , t1.download_ymd
                             , t1.aws_cd
                             , t3.name AS aws_name
-                            , t1.download_count
                             , t1.is_moved_at_local
                             , t2.bug_no
                         FROM download_hdr t1
@@ -373,7 +372,6 @@ export class DownloadService {
                             , t1.download_ymd
                             , t1.aws_cd
                             , t3."name"
-                            , t1.download_count
                             , t1.is_moved_at_local
                             , t2.bug_no
                         ORDER BY 
@@ -388,7 +386,6 @@ export class DownloadService {
                     id: row.id,
                     download_ymd: row.download_ymd,
                     aws_name: row.aws_name,
-                    download_count: row.download_count,
                     is_moved_at_local: row.is_moved_at_local,
                     bug_no: row.bug_no,
                 });

@@ -9,6 +9,7 @@ import { RxDividerVertical } from 'react-icons/rx';
 import { BiPurchaseTagAlt } from 'react-icons/bi';
 import { FcAlarmClock, FcElectronics, FcEnteringHeavenAlive, FcInfo } from 'react-icons/fc';
 import { FaComputer } from 'react-icons/fa6';
+import { appController } from '../../controller/app_controller';
 
 interface MainLayoutProps {
     children: React.ReactNode;
@@ -28,6 +29,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [userDropdownOpen, setUserDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const [version, setVersion] = useState("");
+
+    useEffect(() => {
+        const init = async () => {
+            const res = await appController.getAppVersion();
+            setVersion(res);
+        }
+
+        init();
+    }, []);
 
     const [systemInfo, setSystemInfo] = useState<SystemInfo>({
         currentTime: '',
@@ -206,7 +217,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                             </button>
                             <div className="flex flex-row items-center gap-2">
                                 <FcInfo className="w-4 h-4 text-green-600"/>
-                                <span>{APP_CONFIG.version}</span>
+                                <span>Phiên bản hiện tại: {version}</span>
                             </div>
                         </div>
                     </div>

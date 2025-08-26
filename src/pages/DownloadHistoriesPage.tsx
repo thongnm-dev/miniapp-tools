@@ -200,7 +200,6 @@ const DownloadHistoriesPage: React.FC = () => {
                             { key: "download_ymd", label: "Ngày tải" },
                             { key: "aws_name", label: "Nguồn" },
                             { key: "bug_no", label: "Thông tin đã tải" },
-                            { key: "download_count", label: "Tổng số tập tin" },
                             { key: "is_moved_at_local", label: "Di chuyển nội bộ" },
                         ]}
                         showFilter={false}
