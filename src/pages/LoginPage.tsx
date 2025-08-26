@@ -11,10 +11,8 @@ const Login: React.FC = () => {
   const location = useLocation();
   const { login, isLoading, error, clearError, isAuthenticated } = useAuth();
   const [credentials, setCredentials] = useState({
-    username: 'thongnm',
-    password: '123'
-    // username: 'nhudtq',
-    // password: 'nhudtq#123'
+    username: '',
+    password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);

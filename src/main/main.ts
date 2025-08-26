@@ -50,19 +50,25 @@ app.whenReady().then(async () => {
     createWindow();
 
     if (!process.argv.includes('--dev')) {
+
+        const log = require("electron-log")
+        autoUpdater.logger = log;
+        (autoUpdater.logger as any).transports.file.level = "info";
         autoUpdater.checkForUpdatesAndNotify();
 
-          autoUpdater.on("update-available", () => {
-            console.log("Có bản update mới trên server");
+        autoUpdater.on("checking-for-update", () => log.info("🔍 Checking for update..."));
+
+        autoUpdater.on("update-available", () => {
+            log.info("Có bản update mới trên server");
         });
         autoUpdater.on('download-progress', (p) => {
-            console.log(`Downloading`);
+            log.info("Đang tải bản cập nhật mới....");
             // Gửi progress sang renderer nếu cần
-            // win.webContents.send('update-progress', p);
+            mainWindow.webContents.send('update-progress', p);
             mainWindow?.setProgressBar(p.percent / 100);
         });
         autoUpdater.on('update-downloaded', () => {
-            console.log("Update đã tải xong, sẵn sàng restart");
+            log.info("Đã tải xong bản cập nhật, sẵn sàng restart");
             const res = dialog.showMessageBoxSync(mainWindow, {
                 type: 'info',
                 buttons: ['Khởi động lại', 'Để sau'],
