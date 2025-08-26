@@ -7,7 +7,7 @@ import { useAppGobal } from '../../stores/AppContext';
 import { GrUserWorker } from 'react-icons/gr';
 import { RxDividerVertical } from 'react-icons/rx';
 import { BiPurchaseTagAlt } from 'react-icons/bi';
-import { FcAlarmClock, FcEnteringHeavenAlive } from 'react-icons/fc';
+import { FcAlarmClock, FcElectronics, FcEnteringHeavenAlive, FcInfo } from 'react-icons/fc';
 import { FaComputer } from 'react-icons/fa6';
 
 interface MainLayoutProps {
@@ -187,23 +187,27 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
                             {/* IP Address */}
                             <div className="flex items-center space-x-2">
-                                <FcEnteringHeavenAlive className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                <FcEnteringHeavenAlive className="w-4 h-4 text-green-600" />
                                 <span className="font-mono text-xs">{systemInfo.ipAddress}</span>
                             </div>
 
                             {/* Platform Info */}
                             <div className="flex items-center space-x-2">
-                                <FaComputer className="w-4 h-4 text-blue-600 dark:text-blue-400"/>
+                                <FaComputer className="w-4 h-4 text-blue-600 "/>
                                 <span className="text-xs">{formatUserAgent(systemInfo.userAgent)}</span>
                             </div>
                         </div>
 
                         {/* App Version */}
-                        <div className="flex items-center space-x-2 text-sm text-secondary-600">
-                            <svg className="w-4 h-4 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span>v{APP_CONFIG.version}</span>
+                        <div className="flex flex-row items-center text-sm text-secondary-600">
+                            <button className='flex flex-row items-center p-4 gap-2'>
+                                <FcElectronics className="w-4 h-4 text-orange-500" />
+                                <span>Kiểm tra bản cập nhật</span>
+                            </button>
+                            <div className="flex flex-row items-center gap-2">
+                                <FcInfo className="w-4 h-4 text-green-600"/>
+                                <span>{APP_CONFIG.version}</span>
+                            </div>
                         </div>
                     </div>
                 </footer>
