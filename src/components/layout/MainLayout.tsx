@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from './Sidebar';
-import { APP_CONFIG } from '../../config/config';
 import { useAuth } from '../../stores/AuthContext';
 import { ArrowRightStartOnRectangleIcon, ChevronDownIcon, Cog6ToothIcon, UserIcon } from '@heroicons/react/24/outline';
 import { useAppGobal } from '../../stores/AppContext';

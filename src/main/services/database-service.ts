@@ -259,16 +259,6 @@ export class DatabaseService {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
-
-      // await client.query(`
-      //     TRUNCATE TABLE aws_storage;
-      //     INSERT INTO aws_storage (code,"name",subscribe,link_available) VALUES
-      //       ('02','02_原因確認中（アレクシード確認）','to_アレクシード','{03}'),
-      //       ('04','04_対応中（アレクシード確認）','to_アレクシード','{03,05}'),
-      //       ('03','03_対応確認中（エネコム確認）','to_エネコム','{03}'),
-      //       ('05','05_対応済（アレクシード確認）','to_エネコム','{}'),
-      //       ('01','01_起票済（エネコム確認）','to_エネコム','{}');
-      //   `)
       await this.disconnect();
       return { success: true };
     } catch (error) {

@@ -32,11 +32,6 @@ const getEnvVarNumber = (key: string, defaultValue?: number): number => {
   // Database Configuration
   export const getDatabaseConfig = (): DatabaseConfig => {
     return {
-      // host: "192.168.10.132", // getEnvVar('DB_HOST'),
-      // port: 5432, // getEnvVarNumber('DB_PORT'),
-      // database: "miniapp_staging", // getEnvVar('DB_NAME'),
-      // user: "postgres", // getEnvVar('DB_USER'),
-      // password: "123456", // getEnvVar('DB_PASSWORD'),
       host: getEnvVar('DB_HOST'),
       port: getEnvVarNumber('DB_PORT'),
       database: getEnvVar('DB_NAME'),

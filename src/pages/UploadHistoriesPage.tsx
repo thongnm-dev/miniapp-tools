@@ -104,7 +104,7 @@ const UploadHistoriesPage: React.FC = () => {
     const customCellRender = {
         is_moved_at_s3: (row: Record<string, any>) => {
             return <>
-                <span className={`${row.is_moved_at_s3 ? '' : 'text-red-500'} whitespace-nowrap`}>{row.is_moved_at_s3 ? "Đã xoá" : "Chưa xoá"}</span>
+                <span className={`${row.is_moved_at_s3 ? '' : 'text-red-500'} whitespace-nowrap`}>{row.is_moved_at_s3 ? "Đã xoá" : ""}</span>
             </>
         },
     };

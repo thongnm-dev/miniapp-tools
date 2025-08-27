@@ -98,6 +98,7 @@ const DownloadHistoriesPage: React.FC = () => {
                 showNotification('Không thể tìm kiếm lịch sử tải về.', 'error');
             } else {
                 setDownloadIems(result.data || []);
+                console.log(result.data)
             }
 
         } catch (error) {
@@ -112,6 +113,15 @@ const DownloadHistoriesPage: React.FC = () => {
         setFromDateIn(null);
         setToDateIn(null);
     }
+
+    
+    const customCellRender = {
+        is_moved_at_local: (row: Record<string, any>) => {
+            return <>
+                <span className={`${row.is_moved_at_local ? '' : 'text-red-500'} whitespace-nowrap`}>{row.is_moved_at_local ? "Đã di chuyển" : ""}</span>
+            </>
+        },
+    };
     return (
         <>
             <div className="space-y-2 grid grid-cols-1 gap-2">
@@ -203,9 +213,10 @@ const DownloadHistoriesPage: React.FC = () => {
                             { key: "is_moved_at_local", label: "Di chuyển nội bộ" },
                         ]}
                         showFilter={false}
-                        showCheckboxes={true}
+                        showCheckboxes={false}
                         showPagination={true}
                         scrollHeight={400}
+                        customCellRender={customCellRender}
                     />
                 </Fieldset>
             </div>

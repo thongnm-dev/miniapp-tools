@@ -60,11 +60,14 @@ const S3Download: React.FC<S3UploadProps> = ({ aws_storage = {} as aws_storage }
 
     // Save state when it changes
     useEffect(() => {
+        const aws_cd = aws_storage.aws_cd;
         const stateToSave = {
-            "localPathSync": selectDestinationPath
+            [aws_cd]: {
+                "localPathSync": selectDestinationPath
+            }
         };
-        localStorage.setItem('localPathSync', JSON.stringify(stateToSave));
-    }, [selectDestinationPath]);
+        localStorage.setItem('download_state', JSON.stringify(stateToSave));
+    }, [aws_storage, selectDestinationPath]);
 
     useEffect(() => {
         const checkAll = async () => {
@@ -113,10 +116,12 @@ const S3Download: React.FC<S3UploadProps> = ({ aws_storage = {} as aws_storage }
     }
 
     const hanldeDownload = async () => {
-        const savedState = localStorage.getItem('localPathSync');
-        if (savedState) {
-            const state = JSON.parse(savedState);
-            if (state.localPathSync) setSelectDestinationPath(state.localPathSync);
+        const download_state = localStorage.getItem('download_state');
+        if (download_state) {
+            const state = JSON.parse(download_state);
+            if(state[aws_storage.aws_cd]) {
+                setSelectDestinationPath(state[aws_storage.aws_cd].localPathSync);
+            }
         }
         if (StringUtils.isBlank(selectDestinationPath)) {
             const result = await s3Controller.handleGetLocalPathSync();
