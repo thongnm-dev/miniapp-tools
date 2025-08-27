@@ -25,7 +25,7 @@ const getEnvVarNumber = (key: string, defaultValue?: number): number => {
       accessKeyId: getEnvVar('AWS_ACCESS_KEY_ID'),
       secretAccessKey: getEnvVar('AWS_SECRET_ACCESS_KEY'),
       bucketName: getEnvVar('AWS_S3_BUCKET'),
-      folderName: getEnvVar('AWS_S3_FOLDER'),
+      folderName: "80_system/Attach/11_alx/40_バグ管理",//getEnvVar('AWS_S3_FOLDER'),
     };
   };
 

@@ -98,7 +98,6 @@ const DownloadHistoriesPage: React.FC = () => {
                 showNotification('Không thể tìm kiếm lịch sử tải về.', 'error');
             } else {
                 setDownloadIems(result.data || []);
-                console.log(result.data)
             }
 
         } catch (error) {

@@ -99,7 +99,6 @@ export const S3DownloadPage: React.FC = () => {
             const init = async () => {
                 const result = await s3Controller.check_exist_to_download(list_download_items);
                 if (result.success) {
-                    console.log(result.data);
                     setDownloadable(result.data || {});
                 }
                 setIsReload(false);
@@ -124,7 +123,6 @@ export const S3DownloadPage: React.FC = () => {
         if (Object.keys(downloadable).length > 0) {
             let checking = 0;
             for (const aws_storage of list_download_items) {
-                console.log(downloadable[aws_storage.aws_cd]?.download_available)
                 if (downloadable[aws_storage.aws_cd]?.download_available) {
                     checking++;
                 }
