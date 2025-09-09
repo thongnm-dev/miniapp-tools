@@ -8,6 +8,7 @@ import { upload_item } from '../types/upload_item';
 import { aws_storage } from '../types/aws_storage';
 import { S3ObjectInfo } from '../types/s3_object_info';
 import { copy_and_update_download_params, delete_direct_s3object_params, delete_s3object_params, download_params, move_s3object_params, search_download_params, search_upload_params, upload_display_params, upload_params } from '../types/param_interface';
+import { BIObjectInfo } from '../types/bitools_item';
 
 // IPC Channel Constants - Inlined to avoid module resolution issues
 // These match the constants in src/config/ipcChannels.ts
@@ -38,6 +39,10 @@ const IPC_CHANNELS = {
     S3_DELETE_OBJECTS: 'S3_DELETE_OBJECTS',
     S3_DELETE_OBJECTS_DIRECTLY: 'S3_DELETE_OBJECTS_DIRECTLY',
     CHECK_EXIST_TO_DOWNLOAD: 'CHECK_EXIST_TO_DOWNLOAD',
+
+    // FOR BI TOOL
+    S3_GET_ALL_BI_STATES: 'S3_GET_ALL_BI_STATES',
+    S3_DOWNLOAD_BI_FILES: 'S3_DOWNLOAD_BI_FILES',
 
     // File Monitoring Operations
     START_FILE_MONITORING: 'start-file-monitoring',
@@ -201,6 +206,16 @@ contextBridge.exposeInMainWorld('s3API', {
     delete_objects_direct: (params: delete_direct_s3object_params) => {
         return ipcRenderer.invoke(IPC_CHANNELS.S3_DELETE_OBJECTS_DIRECTLY, params) as Promise<ServiceReturn<string[]>>
     },
+
+    // FOR BI TOOLS
+    get_all_biobjects: (aws_storages: aws_storage[]) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.S3_GET_ALL_BI_STATES, aws_storages) as
+            Promise<ServiceReturn<Record<string, { bugs: BIObjectInfo[] }>>>
+    },
+
+    downloadBIFile: (params: download_params) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.S3_DOWNLOAD_BI_FILES, params) as Promise<ServiceReturn<boolean>>
+    },
 });
 
 // for download
@@ -279,10 +294,13 @@ declare global {
             deleteObjectS3: (params: delete_s3object_params) => Promise<ServiceReturn<string[]>>;
 
             // upload file to S3 storage
-            uploadFile: (params: upload_params) => Promise<ServiceReturn<{ upload_id: string, uploaded_items: upload_item[] }>>
-            ;
+            uploadFile: (params: upload_params) => Promise<ServiceReturn<{ upload_id: string, uploaded_items: upload_item[] }>>;
 
-            delete_objects_direct: (params: delete_direct_s3object_params) => Promise<ServiceReturn<string[]>>
+            delete_objects_direct: (params: delete_direct_s3object_params) => Promise<ServiceReturn<string[]>>;
+
+            // FOR BI TOOLS
+            get_all_biobjects: (aws_storages: aws_storage[]) => Promise<ServiceReturn<Record<string, { bugs: BIObjectInfo[] }>>>;
+            downloadBIFile: (params: download_params) => Promise<ServiceReturn<boolean>>
         };
 
         // for file system

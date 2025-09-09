@@ -88,6 +88,9 @@ const DataTable: React.FC<DataTableProps> = ({
 
     const paginatedData = useMemo(() => {
         const start = (page - 1) * pageSize;
+        if (pageSize === defaultPageSize) {
+            return filteredData;
+        }
         return filteredData.slice(start, start + pageSize);
     }, [filteredData, page, pageSize]);
 

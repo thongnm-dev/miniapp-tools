@@ -18,6 +18,7 @@ import CopyFilePage from './pages/CopyFilePage';
 import UploadHistoriesPage from './pages/UploadHistoriesPage';
 import DownloadHistoriesPage from './pages/DownloadHistoriesPage';
 import ShipmentsPage from './pages/ShipmentsPage';
+import BIToolManagePage from './pages/BIToolManagePage';
 
 function App() {
     return (
@@ -106,6 +107,14 @@ function App() {
                             <ProtectedRoute>
                                 <MainLayout>
                                     <WorkDirectoryPage />
+                                </MainLayout>
+                            </ProtectedRoute>
+                        } />
+
+                        <Route path="/bitool-bugs" element={
+                            <ProtectedRoute>
+                                <MainLayout>
+                                    <BIToolManagePage />
                                 </MainLayout>
                             </ProtectedRoute>
                         } />

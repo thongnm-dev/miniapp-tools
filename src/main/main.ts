@@ -41,7 +41,7 @@ function createWindow(): void {
 
     // Handle window closed
     mainWindow.on('closed', () => {
-        // mainWindow = null;
+        mainWindow.destroy();
     });
 }
 

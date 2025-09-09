@@ -16,6 +16,7 @@ import { aws_storage } from "../../types/aws_storage";
 import { appService } from "./app-service";
 import { S3ObjectInfo } from "../../types/s3_object_info";
 import { copy_s3object_params, delete_direct_s3object_params, delete_s3object_params, download_params, move_s3object_params, upload_params } from "../../types/param_interface";
+import { BIObjectInfo } from "../../types/bitools_item";
 
 export interface S3Config {
     region: string;
@@ -39,6 +40,101 @@ export class S3Service {
                 secretAccessKey: config.secretAccessKey,
             },
         });
+    }
+
+    async get_all_biobjects(aws_storages: aws_storage[]): Promise<ServiceReturn<Record<string, { bugs: BIObjectInfo[] }>>> {
+        try {
+
+            const bug_list: { [aws_cd: string]: { bugs: BIObjectInfo[] } } = {};
+
+            for (const aws_storage of aws_storages) {
+                let continuationToken: string | undefined = undefined;
+
+                let _prefix_path = this.config.folderName + '/' + aws_storage.aws_name + '/';
+
+                let bug_no_list_moved: string[] = [];
+                do {
+                    const params = {
+                        Bucket: this.config.bucketName,
+                        Prefix: _prefix_path,
+                        Delimiter: "/",
+                        ContinuationToken: continuationToken,
+                    };
+
+                    const command = new ListObjectsV2Command(params);
+                    const response: ListObjectsV2Output = await this.s3.send(command);
+
+                    if (response.CommonPrefixes) {
+                        response.CommonPrefixes.forEach(commonPrefix => {
+                            if (commonPrefix.Prefix) {
+                                bug_no_list_moved.push(commonPrefix.Prefix);
+                            }
+                        });
+                    }
+
+                    continuationToken = response.NextContinuationToken;
+                } while (continuationToken);
+
+                const bug_no_list = bug_no_list_moved
+                    .map(prefix => {
+                        let trimmed = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix;
+                        let parts = trimmed.split('/');
+                        return {
+                            bug_no: parts[parts.length - 1],
+                            subscribe: false,
+                            message: ""
+                        };
+                    });
+
+                bug_list[aws_storage.aws_cd] = {
+                    bugs: bug_no_list
+                }
+            }
+
+            return { success: true, data: bug_list };
+        } catch (error) {
+            return { success: false, message: (error as Error).message };
+        }
+    }
+
+        // download file from s3
+    async downloadBIFile(params: download_params): Promise<ServiceReturn<boolean>> {
+
+        const paths_downloaded: string[] = [];
+        try {
+            if (StringUtils.isBlank(params.localPath)) {
+                return { success: false, message: "Đường dẫn nơi lưu chưa được thiết lập." };
+            }
+
+            if (!await fsService.isExitDirectory(params.localPath)) {
+                return { success: false, message: "Đường dẫn nơi lưu không tồn tại." };
+            }
+            
+            const S3_OBJECT_TARGET = {aws_cd: "02", aws_name: "02_アレクシード対応中", subscribe: ""} as aws_storage;
+
+            // prefix path of bugs
+            let _prefix_path = this.config.folderName + '/' + S3_OBJECT_TARGET.aws_name + '/';
+
+            // get date time
+            let yyyyMMdd = DateUtils.getNow('yyyyMMdd');
+            let hhmm = DateUtils.getNow('HHmm');
+            const storage_path_local = params.localPath || getWorkdir().S3_LOCAL_SYNC_WORKDIR || path.join(__dirname, "/Temp/S3_DOWNLOAD");
+
+            let bug_attachs: Promise<{ bug_no: string, last_modified?: Date, path: string, s3_path: string }[]>[] = [];
+            const storage_path = storage_path_local + '/' + S3_OBJECT_TARGET.aws_name + '/' + yyyyMMdd + '/' + hhmm;
+            for (const bug of params.bug_list) {
+                const path_download = _prefix_path + bug + "/"
+                bug_attachs.push(this.downloadFiles(path_download, storage_path));
+            }
+            paths_downloaded.push(storage_path);
+            await Promise.all(bug_attachs);
+
+            return { success: true, message: "Đã tải về thành công!" };
+        } catch (error) {
+
+            await fsService.deleteFile(paths_downloaded);
+            return { success: false, message: (error as Error).message };
+        }
     }
 
     // fetch state from s3
@@ -183,10 +279,10 @@ export class S3Service {
         }
     }
 
-    async check_exist_to_download(aws_storages: aws_storage[]) : Promise<ServiceReturn<Record<string, {download_available: boolean}>>> {
+    async check_exist_to_download(aws_storages: aws_storage[]): Promise<ServiceReturn<Record<string, { download_available: boolean }>>> {
         try {
 
-            const result_check: { [aws_cd: string]: { download_available: boolean} } = {};
+            const result_check: { [aws_cd: string]: { download_available: boolean } } = {};
             for (const aws_storage of aws_storages) {
                 const _prefix_path = this.config.folderName + '/' + aws_storage.aws_name + '/' + aws_storage.subscribe + "/";
 

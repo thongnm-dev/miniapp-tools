@@ -217,11 +217,11 @@ const S3Download: React.FC<S3UploadProps> = ({ aws_storage = {} as aws_storage }
             let resultFlg = false;
             setDisplayModal(false);
             if (!moving) {
-                showLoading('Đang thực hiện tải tập tin. Vui lòng không tắt màn hình...');
                 if (!await fsController.isExitDirectory(selectDestinationPath)) {
                     setErrorCheck("Đường dẫn không tồn tại.!");
-
+                    
                 } else {
+                    showLoading('Đang thực hiện tải tập tin. Vui lòng không tắt màn hình...');
                     const params = {
                         user_id: user?.username || "",
                         aws_cd: aws_storage.aws_cd,

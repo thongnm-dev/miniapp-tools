@@ -42,7 +42,7 @@ export const setupS3Handlers = () => {
 
   // handle move object s3
   ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_UPLOAD_OBJECTS, async (_event, params: upload_params) => {
-      return await s3Service.uploadFile(params);
+    return await s3Service.uploadFile(params);
   });
 
   ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_DELETE_OBJECTS, async (_event, params: delete_s3object_params) => {
@@ -55,5 +55,14 @@ export const setupS3Handlers = () => {
 
   ipcMain.handle(IPC_CHANNEL_HANDLERS.CHECK_EXIST_TO_DOWNLOAD, async (_event, aws_storages: aws_storage[]) => {
     return await s3Service.check_exist_to_download(aws_storages);
+  });
+
+  // FOR BI TOOLS
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_GET_ALL_BI_STATES, async (_event, aws_storages: aws_storage[]) => {
+    return await s3Service.get_all_biobjects(aws_storages);
+  });
+
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_DOWNLOAD_BI_FILES, async (_event, params: download_params) => {
+    return await s3Service.downloadBIFile(params);
   });
 }; 

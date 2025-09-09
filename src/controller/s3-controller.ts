@@ -16,10 +16,10 @@ export class S3Controller {
         return await window.s3API.getLocalPathSyncDir();
     }
 
-    async check_exist_to_download (aws_storages: aws_storage[]) {
+    async check_exist_to_download(aws_storages: aws_storage[]) {
         return await window.s3API.check_exist_to_download(aws_storages);
     }
-    
+
     async handleDownloadFile(params: download_params) {
         return await window.s3API.downloadFile(params);
     }
@@ -39,6 +39,15 @@ export class S3Controller {
 
     async handleDeleteObjects(params: delete_s3object_params) {
         return await window.s3API.deleteObjectS3(params);
+    }
+
+    // FOR BI TOOLS
+    async get_all_biobjects(aws_storages: aws_storage[]) {
+        return await window.s3API.get_all_biobjects(aws_storages);
+    }
+
+    async handleDownloadBIFile(params: download_params) {
+        return await window.s3API.downloadBIFile(params);
     }
 }
 
