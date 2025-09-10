@@ -33,7 +33,7 @@ const CheckBoxIcon: React.FC<{ variant: string }> = ({ variant, ...rest }) => {
     }
 };
 
-const S3Upload: React.FC<S3UploadProps> = ({aws_storage = {} as aws_storage, uploaded_id = "", uploadAction, actions, clearAction }) => {
+const S3Upload: React.FC<S3UploadProps> = ({ aws_storage = {} as aws_storage, uploaded_id = "", uploadAction, actions, clearAction }) => {
     const { user } = useAuth();
     const [modalOpen, setModalOpen] = useState<boolean>(true);
     const [selectedItems, setSelectedItems] = useState<Set<file_item>>(new Set());
@@ -52,12 +52,13 @@ const S3Upload: React.FC<S3UploadProps> = ({aws_storage = {} as aws_storage, upl
             setUploadableMap(uploadMap);
         };
 
-        if (aws_storage?.aws_cd) {
+        if (aws_storage?.aws_cd && items.length > 0) {
             checkAll();
         }
     }, [items, uploaded_id]);
 
     useEffect(() => {
+        setExpandedIds([]);
         if (items.length > 0) {
             setExpandedIds(dataTree.map((item) => item.id));
         }
@@ -206,6 +207,7 @@ const S3Upload: React.FC<S3UploadProps> = ({aws_storage = {} as aws_storage, upl
     // clear list
     const clearItems = () => {
         setItems([]);
+        setSelectedItems(new Set())
         if (clearAction) {
             clearAction();
         }
@@ -256,7 +258,7 @@ const S3Upload: React.FC<S3UploadProps> = ({aws_storage = {} as aws_storage, upl
                                 <span>Chọn tập tin</span>
                             </Button>
                             {(items.length > 0 && selectedItems.size > 0) && <Button className="flex items-center space-x-2"
-                                disabled={selectedItems.size === 0 || !uploadableMap[aws_storage?.aws_cd|| ""]}
+                                disabled={selectedItems.size === 0 || !uploadableMap[aws_storage?.aws_cd || ""]}
                                 onClick={handleUpload}>
                                 <FcReuse className="h-5 w-5 font-bold" />
                                 <span>Tải lên</span>

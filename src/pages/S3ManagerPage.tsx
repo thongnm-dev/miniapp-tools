@@ -84,9 +84,13 @@ const S3ManagerPage: React.FC = () => {
                                     }
                                     <div className='px-3'>
                                         {aws_s3objects[aws_store.aws_cd].bugs.map((bug, idx) => (
-                                            <div key={idx} className={`flex flex-row justify-items-center gap-6 p-1.5 ${idx % 2 === 0 ? 'bg-white' : 'bg-primary-50'}`}>
-                                                <span className='w-48 p-1.5 whitespace-nowrap'>{bug.bug_no}</span>
-                                                {bug.message && <span className='text-red-500 animate-pulse bg-red-100 border border-red-100 rounded-xl p-1.5'>{bug.message}</span>}
+                                            <div key={idx} className={`flex flex-col justify-items-start p-1.5 ${idx % 2 === 0 ? 'bg-white' : 'bg-primary-50'}`}>
+                                                <span className='p-1.5 whitespace-nowrap'>{bug.bug_no}</span>
+                                                {bug.message && (
+                                                    <div>
+                                                        <span className='text-red-500 text-xs'>{bug.message}</span>
+                                                    </div>
+                                                )}
                                             </div>)
                                         )}
                                     </div>

@@ -210,10 +210,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
                         {/* App Version */}
                         <div className="flex flex-row items-center text-sm text-secondary-600 gap-2">
-                            <button className='flex flex-row items-center gap-2'>
+                            {false && <button className='flex flex-row items-center gap-2'>
                                 <FcElectronics className="w-4 h-4 text-orange-500" />
                                 <span>Kiểm tra bản cập nhật</span>
                             </button>
+                            }
                             <div className="flex flex-row items-center gap-2">
                                 <FcInfo className="w-4 h-4 text-green-600"/>
                                 <span>Phiên bản hiện tại: {version}</span>
