@@ -9,8 +9,8 @@ export const setupAppHandlers = () => {
         return app.getVersion();
     });
 
-    ipcMain.handle(IPC_CHANNEL_HANDLERS.APP_API_GET_ALL_AWS_STORE, async (_event) => {
-        return await appService.get_all_items();
+    ipcMain.handle(IPC_CHANNEL_HANDLERS.APP_API_GET_ALL_AWS_STORE, async (_event, folder_key: string) => {
+        return await appService.get_all_items(folder_key);
     });
 
     ipcMain.handle(IPC_CHANNEL_HANDLERS.APP_API_GET_DOWNLOAD_ITEMS, async (_event) => {

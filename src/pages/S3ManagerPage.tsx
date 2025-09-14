@@ -12,8 +12,10 @@ import { TfiBrushAlt } from 'react-icons/tfi';
 import Modal from '../components/ui/Modal';
 import { GiExitDoor } from 'react-icons/gi';
 import DataTable from '../components/ui/DataTable';
+import { useAuth } from '../stores/AuthContext';
 
 const S3ManagerPage: React.FC = () => {
+    const { user } = useAuth();
     const { showLoading, hideLoading } = useLoading();
     const [aws_s3objects, setAwsS3Objects] = useState<{ [aws_cd: string]: { bugs: S3ObjectInfo[] } }>({});
     const [aws_storages, setAwsStorages] = useState<aws_storage[]>([]);
@@ -27,7 +29,7 @@ const S3ManagerPage: React.FC = () => {
     useEffect(() => {
         setAwsStorages([]);
         const loadItems = async () => {
-            const result = await appController.get_all_items();
+            const result = await appController.get_all_items('CORRECT_BUG_TEST');
             if (result.success && result.data) {
                 setAwsStorages(result.data);
             }
@@ -35,6 +37,10 @@ const S3ManagerPage: React.FC = () => {
 
         loadItems();
     }, []);
+
+    const isPermission = useMemo(() => {
+        return user?.username === "nhudtq";
+    }, [user])
 
     // Poll S3 fetch state every 30 minutes
     useEffect(() => {
@@ -54,11 +60,14 @@ const S3ManagerPage: React.FC = () => {
             };
 
             initialize(); // Fetch immediately on mount
-            const interval = setInterval(initialize, 5 * 60 * 1000); // 5 minutes
-            return () => {
-                isMounted = false;
-                clearInterval(interval);
-            };
+
+            if (isPermission) {
+                const interval = setInterval(initialize, 5 * 60 * 1000); // 5 minutes
+                return () => {
+                    isMounted = false;
+                    clearInterval(interval);
+                };
+            }
         }
     }, [aws_storages]);
 
@@ -73,7 +82,7 @@ const S3ManagerPage: React.FC = () => {
 
                             {aws_s3objects[aws_store.aws_cd]?.bugs.length > 0 ? (
                                 <>
-                                    {(aws_store.link_available && aws_store.link_available.length > 0) &&
+                                    {isPermission && (aws_store.link_available && aws_store.link_available.length > 0) &&
                                         <div className='flex justify-end py-2 border-b'>
                                             <Button className="flex items-center space-x-2 text-red-500 border-red-500"
                                                 onClick={() => handleOpenMoveModal(aws_store, aws_s3objects[aws_store.aws_cd].bugs || [])}>

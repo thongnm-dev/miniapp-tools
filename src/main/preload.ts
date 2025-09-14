@@ -96,8 +96,8 @@ contextBridge.exposeInMainWorld('appAPI', {
     getAppVersion: () => {
         return ipcRenderer.invoke(IPC_CHANNELS.APP_VERSION) as Promise<string>;
     },
-    get_all_items: () => {
-        return ipcRenderer.invoke(IPC_CHANNELS.APP_API_GET_ALL_AWS_STORE) as Promise<ServiceReturn<aws_storage[]>>
+    get_all_items: (folder_key: string) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.APP_API_GET_ALL_AWS_STORE, folder_key) as Promise<ServiceReturn<aws_storage[]>>
     },
     get_download_items: () => {
         return ipcRenderer.invoke(IPC_CHANNELS.APP_API_GET_DOWNLOAD_ITEMS) as Promise<ServiceReturn<aws_storage[]>>
@@ -265,7 +265,7 @@ declare global {
         // for app data
         appAPI: {
             getAppVersion: () => Promise<string>;
-            get_all_items: () => Promise<ServiceReturn<aws_storage[]>>
+            get_all_items: (folder_key: string) => Promise<ServiceReturn<aws_storage[]>>
             get_download_items: () => Promise<ServiceReturn<aws_storage[]>>
             get_upload_items: () => Promise<ServiceReturn<aws_storage[]>>
             get_delete_items: (aws_cd: string) => Promise<ServiceReturn<aws_storage[]>>

@@ -23,12 +23,12 @@ export interface S3Config {
     accessKeyId: string;
     secretAccessKey: string;
     bucketName: string;
-    folderName: string;
 }
 
 export class S3Service {
     private s3: S3Client;
     private config: S3Config;
+    private work_folders: Record<string, string> = {};
 
     constructor(config: S3Config) {
         this.config = config;
@@ -40,6 +40,13 @@ export class S3Service {
                 secretAccessKey: config.secretAccessKey,
             },
         });
+
+        appService.get_aws_work_folder()
+            .then(res => {
+                if (res.success) {
+                    this.work_folders = res.data || {};
+                }
+            })
     }
 
     async get_all_biobjects(aws_storages: aws_storage[]): Promise<ServiceReturn<Record<string, { bugs: BIObjectInfo[] }>>> {
@@ -50,8 +57,11 @@ export class S3Service {
             for (const aws_storage of aws_storages) {
                 let continuationToken: string | undefined = undefined;
 
-                let _prefix_path = this.config.folderName + '/' + aws_storage.aws_name + '/';
+                let _prefix_path = this.work_folders['CORRECT_BUG_TRANFER'] + '/' + aws_storage.aws_name + '/';
 
+                if (!StringUtils.isBlank(aws_storage.subscribe)) {
+                    _prefix_path = _prefix_path + aws_storage.subscribe + "/"
+                }
                 let bug_no_list_moved: string[] = [];
                 do {
                     const params = {
@@ -66,8 +76,15 @@ export class S3Service {
 
                     if (response.CommonPrefixes) {
                         response.CommonPrefixes.forEach(commonPrefix => {
+
                             if (commonPrefix.Prefix) {
-                                bug_no_list_moved.push(commonPrefix.Prefix);
+                                if (StringUtils.isBlank(aws_storage.subscribe)) {
+                                    if (!commonPrefix.Prefix.includes('to_アレクシード') && !commonPrefix.Prefix.includes('to_エネコム')) {
+                                        bug_no_list_moved.push(commonPrefix.Prefix);
+                                    }
+                                } else {
+                                    bug_no_list_moved.push(commonPrefix.Prefix);
+                                }
                             }
                         });
                     }
@@ -97,7 +114,7 @@ export class S3Service {
         }
     }
 
-        // download file from s3
+    // download file from s3
     async downloadBIFile(params: download_params): Promise<ServiceReturn<boolean>> {
 
         const paths_downloaded: string[] = [];
@@ -109,11 +126,11 @@ export class S3Service {
             if (!await fsService.isExitDirectory(params.localPath)) {
                 return { success: false, message: "Đường dẫn nơi lưu không tồn tại." };
             }
-            
-            const S3_OBJECT_TARGET = {aws_cd: "02", aws_name: "02_アレクシード対応中", subscribe: ""} as aws_storage;
+
+            const S3_OBJECT_TARGET = { aws_cd: "02", aws_name: "02_アレクシード対応中", subscribe: "to_アレクシード" } as aws_storage;
 
             // prefix path of bugs
-            let _prefix_path = this.config.folderName + '/' + S3_OBJECT_TARGET.aws_name + '/';
+            let _prefix_path = this.work_folders['CORRECT_BUG_TRANFER'] + '/' + S3_OBJECT_TARGET.aws_name + '/' + S3_OBJECT_TARGET.subscribe + "/";
 
             // get date time
             let yyyyMMdd = DateUtils.getNow('yyyyMMdd');
@@ -146,7 +163,7 @@ export class S3Service {
             for (const aws_storage of aws_storages) {
                 let continuationToken: string | undefined = undefined;
 
-                let _prefix_path = this.config.folderName + '/' + aws_storage.aws_name + '/';
+                let _prefix_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + aws_storage.aws_name + '/';
 
                 let bug_no_list_moved: string[] = [];
                 do {
@@ -172,7 +189,7 @@ export class S3Service {
                 } while (continuationToken);
 
                 continuationToken = undefined;
-                _prefix_path = this.config.folderName + '/' + aws_storage.aws_name + '/' + aws_storage.subscribe + "/";
+                _prefix_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + aws_storage.aws_name + '/' + aws_storage.subscribe + "/";
                 let bug_no_list_not_moved: string[] = [];
                 do {
                     const params = {
@@ -243,7 +260,7 @@ export class S3Service {
             const S3_OBJECT_TARGET = result_getaws.data || {} as aws_storage;
 
             let continuationToken: string | undefined = undefined;
-            let _prefix_path = this.config.folderName + '/' + S3_OBJECT_TARGET.aws_name + '/' + S3_OBJECT_TARGET.subscribe + '/';
+            let _prefix_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + S3_OBJECT_TARGET.aws_name + '/' + S3_OBJECT_TARGET.subscribe + '/';
 
             let bugs: string[] = [];
             do {
@@ -284,7 +301,7 @@ export class S3Service {
 
             const result_check: { [aws_cd: string]: { download_available: boolean } } = {};
             for (const aws_storage of aws_storages) {
-                const _prefix_path = this.config.folderName + '/' + aws_storage.aws_name + '/' + aws_storage.subscribe + "/";
+                const _prefix_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + aws_storage.aws_name + '/' + aws_storage.subscribe + "/";
 
                 const objectDatas = await this.listObjects(this.config.bucketName, _prefix_path) || [];
                 const _objectTarget = objectDatas.filter((item) => item.Key !== _prefix_path);
@@ -322,7 +339,7 @@ export class S3Service {
             const S3_OBJECT_TARGET = result_getaws.data || {} as aws_storage;
 
             // prefix path of bugs
-            let _prefix_path = this.config.folderName + '/' + S3_OBJECT_TARGET.aws_name + '/' + S3_OBJECT_TARGET.subscribe + '/';
+            let _prefix_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + S3_OBJECT_TARGET.aws_name + '/' + S3_OBJECT_TARGET.subscribe + '/';
 
             // get date time
             let yyyyMMdd = DateUtils.getNow('yyyyMMdd');
@@ -444,7 +461,7 @@ export class S3Service {
 
             const S3_OBJECT_TARGET = result_getaws.data || {} as aws_storage;
 
-            let _destination_path = this.config.folderName + '/' + S3_OBJECT_TARGET.aws_name + '/' + S3_OBJECT_TARGET.subscribe + "/";
+            let _destination_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + S3_OBJECT_TARGET.aws_name + '/' + S3_OBJECT_TARGET.subscribe + "/";
 
             let results = [];
             let uploaded_items: file_item[] = [];
@@ -574,8 +591,8 @@ export class S3Service {
                 return response.Contents || [];
             }
 
-            const _source_path = this.config.folderName + '/' + S3_OBJECT_TARGET.aws_name + '/' + S3_OBJECT_TARGET.subscribe + "/";
-            const _destination_path = this.config.folderName + '/' + S3_OBJECT_TARGET.aws_name + '/';
+            const _source_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + S3_OBJECT_TARGET.aws_name + '/' + S3_OBJECT_TARGET.subscribe + "/";
+            const _destination_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + S3_OBJECT_TARGET.aws_name + '/';
 
             for (const item of params.file_items) {
                 let _source_bug_path = _source_path + item + '/';
@@ -639,7 +656,7 @@ export class S3Service {
             let deleted_items: Set<string> = new Set();
             for (const delete_item of params.delete_items) {
                 const TARGET_DELETE = S3_OBJECT_TARGET.find((item) => item.aws_cd === delete_item.aws_cd) as aws_storage;
-                const _source_path = this.config.folderName + '/' + TARGET_DELETE.aws_name + '/';
+                const _source_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + TARGET_DELETE.aws_name + '/';
                 let _source_bug_path = _source_path + delete_item.target + '/';
                 const objectDatas = await this.listObjects(this.config.bucketName, _source_bug_path) || [];
                 const _objectTarget = objectDatas.filter((item) => item.Key !== _source_path);
@@ -693,7 +710,7 @@ export class S3Service {
             let results = [];
             let deleted_items: Set<string> = new Set();
             for (const delete_item of params.delete_items) {
-                let _source_path = this.config.folderName + '/' + S3_OBJECT_TARGET.aws_name;
+                let _source_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + S3_OBJECT_TARGET.aws_name;
 
                 if (delete_item.subscribe) {
                     _source_path = _source_path + '/' + S3_OBJECT_TARGET.subscribe;

@@ -24,8 +24,7 @@ const getEnvVarNumber = (key: string, defaultValue?: number): number => {
       region: getEnvVar('AWS_REGION'),
       accessKeyId: getEnvVar('AWS_ACCESS_KEY_ID'),
       secretAccessKey: getEnvVar('AWS_SECRET_ACCESS_KEY'),
-      bucketName: getEnvVar('AWS_S3_BUCKET'),
-      folderName: getEnvVar('AWS_S3_FOLDER'),
+      bucketName: getEnvVar('AWS_S3_BUCKET')
     };
   };
 

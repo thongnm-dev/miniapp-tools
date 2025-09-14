@@ -243,7 +243,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ aws_storage = {} as aws_storage, up
                             <button onClick={toggle}>
                                 {modalOpen ? <FaFolderMinus className='h-5 w-5 text-orange-500' /> : <FaFolderPlus className='h-5 w-5 text-orange-500' />}
                             </button>
-                            <span className="text-lg font-bold">{aws_storage?.aws_name}
+                            <span className="text-lg font-bold">{aws_storage?.aws_name_alias}
                                 <span className="text-red-600">({count})</span>
                             </span>
                         </div>

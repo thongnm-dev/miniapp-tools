@@ -98,14 +98,26 @@ export class DatabaseService {
       `);
 
       await client.query(`
+        CREATE TABLE IF NOT EXISTS aws_work_folder (
+          id SERIAL PRIMARY KEY,
+          folder_key VARCHAR(50) NOT NULL,
+          name VARCHAR(100) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      await client.query(`
         CREATE TABLE IF NOT EXISTS aws_storage (
           id SERIAL PRIMARY KEY,
           code VARCHAR(3) NOT NULL,
           name VARCHAR(100) NOT NULL,
+          name_alias VARCHAR(100) NOT NULL,
           subscribe VARCHAR(100) NOT NULL,
           is_upload BOOLEAN DEFAULT FALSE,
           is_download BOOLEAN DEFAULT FALSE,
           link_available TEXT[],
+          folder_key VARCHAR(50) NOT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );

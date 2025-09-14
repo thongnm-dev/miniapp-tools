@@ -5,8 +5,8 @@ export class AppController {
     async getAppVersion() {
         return await window.appAPI.getAppVersion();
     }
-    async get_all_items() {
-        return await window.appAPI.get_all_items();
+    async get_all_items(folder_key: string) {
+        return await window.appAPI.get_all_items(folder_key);
     }
     async get_download_items() {
         return await window.appAPI.get_download_items();
