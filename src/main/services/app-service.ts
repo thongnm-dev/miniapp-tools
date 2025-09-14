@@ -170,7 +170,6 @@ export class AppService {
                     FROM
                         aws_storage
                     WHERE 1 =1
-                        AND folder_key = 'CORRECT_BUG_TEST'
                         AND code = $1
                 `, [aws_cd]);
 

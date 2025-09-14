@@ -18,18 +18,23 @@ import { useAuth } from "../stores/AuthContext";
 import { TfiBrushAlt } from "react-icons/tfi";
 import { file_item } from "../types/file_item";
 import S3Upload from "../components/S3Upload";
+import { FaFileExcel } from "react-icons/fa";
 
 const BIToolManagePage: React.FC = () => {
     const { user } = useAuth();
     const { showLoading, hideLoading } = useLoading();
     const [displayModal, setDisplayModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [isUpdatting, setIsUpdating] = useState(false);
+    const [isUploadable, setUploadable] = useState(false);
+    const [isProcessUpload, setProcessUpload] = useState(false);
+    const [isProcessDelete, setProcessDelete] = useState(false);
     const [modalTitle, setModalTitle] = useState<string>("");
     const [aws_storages, setAwsStorages] = useState<aws_storage[]>([]);
     const [destination, setDestination] = useState<aws_storage>({} as aws_storage);
     const [aws_s3objects, setAwsS3Objects] = useState<Record<string, { bugs: BIObjectInfo[] }>>({});
     const [items, setItems] = useState<string[]>([]);
+    const [uploadFileItems, setUploadFileItems] = useState<file_item[]>([]);
+    const [delete_items, setDeleteItems] = useState<string[]>([]);
     const [selected_items, setSelectedItems] = useState<Set<string>>(new Set());
     const [selectDestinationPath, setSelectDestinationPath] = useState<string>("");
     const [errorCheck, setErrorCheck] = useState<string>("");
@@ -67,6 +72,31 @@ const BIToolManagePage: React.FC = () => {
         }
     }, [aws_storages]);
 
+    const columns = [
+        { key: 'name', label: 'Tên tập tin' },
+        { key: 'size', label: 'Kích thước' }
+    ];
+
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    const customCellRender = {
+        name: (row: Record<string, any>) => (
+            <div className="flex items-center space-x-2">
+                <FaFileExcel className="w-5 h-5 text-green-600" />
+                <span className="font-medium text-gray-900">{row.name}</span>
+            </div>
+        ),
+        size: (row: Record<string, any>) => (
+            <span className="text-gray-600">{formatFileSize(row.size)}</span>
+        )
+    };
+
     const hanldeDownload = async (bugs: BIObjectInfo[]) => {
         const download_state = localStorage.getItem('download_bi_state');
         if (download_state) {
@@ -81,7 +111,7 @@ const BIToolManagePage: React.FC = () => {
         }
         setItems(bugs.map(bug => bug.bug_no));
         setIsDeleting(false);
-        setIsUpdating(false);
+        setUploadable(false);
         setModalTitle(`Thực hiện tải tập tin đã chọn ( Tổng: ${bugs.length} thư mục.)`);
         setDisplayModal(true);
     }
@@ -89,8 +119,10 @@ const BIToolManagePage: React.FC = () => {
     const handleDelete = async (aws_storage: aws_storage, bugs: BIObjectInfo[]) => {
         setDestination(aws_storage);
         setIsDeleting(true);
-        setIsUpdating(false);
-        setItems(bugs.map(bug => bug.bug_no));
+        setUploadable(false);
+        setProcessUpload(false);
+        setProcessDelete(true);
+        setDeleteItems(bugs.map(bug => bug.bug_no)|| []);
         setModalTitle("Bạn có chắc muốn xoá các thông tin bên dưới không?");
         setDisplayModal(true);
     }
@@ -98,7 +130,9 @@ const BIToolManagePage: React.FC = () => {
     const handleUpload = async (aws_storage: aws_storage) => {
         setDestination(aws_storage);
         setIsDeleting(false);
-        setIsUpdating(true);
+        setUploadable(true);
+        setProcessUpload(false);
+        setProcessDelete(false);
         setModalTitle("Thực hiện tải tập tin lên S3 store.");
         setDisplayModal(true);
     }
@@ -130,11 +164,11 @@ const BIToolManagePage: React.FC = () => {
                                                     <span>Tải lên</span>
                                                 </Button>}
 
-                                                <Button className="flex items-center space-x-2 text-red-500 border-red-500"
+                                                {aws_s3objects[aws_store.aws_cd]?.bugs.length > 0 && <Button className="flex items-center space-x-2 text-red-500 border-red-500"
                                                     onClick={() => handleDelete(aws_store, aws_s3objects[aws_store.aws_cd].bugs || [])}>
                                                     <TfiBrushAlt className="h-4 w-4 font-bold" />
                                                     <span>Xóa thư mục</span>
-                                                </Button>
+                                                </Button>}
                                             </div>
 
                                         </div>
@@ -219,7 +253,6 @@ const BIToolManagePage: React.FC = () => {
 
                 setDisplayModal(!result.success);
                 setItems([]);
-                setSelectedItems(new Set());
             }
         } catch (error) {
             showNotification('Tải tập tin thất bại', 'error');
@@ -228,17 +261,98 @@ const BIToolManagePage: React.FC = () => {
         }
     }
 
+    const handleConfirmUpload = async () => {
+        try {
+            if (isProcessUpload) {
+                showLoading('Đang thực hiện tải tập tin lên S3. Vui lòng không tắt màn hình...');
+
+                const filesToUpload = Array.from(uploadFileItems);
+                const totalFiles = filesToUpload.length;
+                const params = {
+                    destination: destination.aws_cd,
+                    file_items: filesToUpload,
+                }
+
+                const result = await s3Controller.handleUploadBIFile(params);
+
+                if (!result.success) {
+                    showNotification('Tập tin tải thất bại', 'error');
+                } else {
+                    const uploadedCount = result.data?.uploaded_items.length || 0;
+                    if (uploadedCount === totalFiles) {
+                        showNotification(`Đã thực hiện tải thành công ${uploadedCount} tập tin lên S3`, 'success');
+                    } else {
+                        showNotification(`Đã tải ${uploadedCount}/${totalFiles} tập tin.`, 'info');
+                    }
+                    setUploadFileItems([]);
+                    setDisplayModal(!result.success);
+                }
+            } else {
+                showLoading('Đang thực hiện xoá tập tin lên S3. Vui lòng không tắt màn hình...');
+                const params = {
+                    aws_cd: destination.aws_cd,
+                    delete_items: Array.from(delete_items)
+                }
+
+                const result = await s3Controller.handleDeleteBIObjects(params);
+
+                if (!result.success) {
+                    showNotification('Xoá tập tin S3 thất bại', 'error')
+                    return;
+                }
+
+                const deletedCnt = result.data?.length;
+                const totalFiles = Array.from(delete_items).length;
+
+                if (deletedCnt === totalFiles) {
+                    showNotification(`Đã thực hiện xoá thành công ${deletedCnt} tập tin.`, 'success');
+                } else {
+                    showNotification(`Đã xoá ${deletedCnt}/${totalFiles} tập tin.`, 'info');
+                }
+                setDisplayModal(false);
+                setModalTitle("");
+                setDeleteItems([]);
+                setSelectedItems(new Set());
+            }
+        } catch (error) {
+            isUploadable === true && showNotification('Tải tập tin lên S3 thất bại', 'error');
+            isUploadable === false && showNotification('Xoá tập tin S3 thất bại', 'error');
+        } finally {
+            hideLoading();
+        }
+    };
+
     const handleCancelModal = async () => {
         setDisplayModal(false);
     }
 
     const uploadAction = async (params: { aws_storage: aws_storage, is_folder_same_name: boolean, selected_items: file_item[] }) => {
-
+        setDestination(params.aws_storage);
+        setModalTitle("Tải lên S3 AWS")
+        setUploadFileItems(params.selected_items);
+        setUploadable(false);
+        setDisplayModal(true);
+        setProcessUpload(true);
     }
 
     const handleClear = async () => {
 
     }
+
+    const handleFileCheckboxChange = (fileName: string, checked: boolean) => {
+        setSelectedItems(prev => {
+            const newSet = new Set(prev);
+            const bugNo = delete_items.find(f => f === fileName);
+            if (bugNo) {
+                if (checked) {
+                    newSet.add(bugNo);
+                } else {
+                    newSet.delete(bugNo);
+                }
+            }
+            return newSet;
+        });
+    };
     return (
         <>
             <div className="shadow rounded grid grid-cols-1 bg-white mb-4">
@@ -261,7 +375,7 @@ const BIToolManagePage: React.FC = () => {
 
             <Modal open={displayModal} onClose={handleCancelModal} title={modalTitle} size="full">
                 <div className="bg-white shadow-lg rounded-lg flex flex-col">
-                    {!isUpdatting && <div className='grid grid-cols-1 gap-1'>
+                    {!isUploadable && !isProcessUpload  && !isProcessDelete && <div className='grid grid-cols-1 gap-1'>
                         <DataTable
                             className='h-full'
                             columns={[
@@ -275,7 +389,45 @@ const BIToolManagePage: React.FC = () => {
                         />
                     </div>}
 
-                    {!isDeleting && !isUpdatting && <div className="border-b border-gray-200 p-4">
+                    {isProcessUpload && <div className='grid grid-cols-1 gap-1'>
+                        <div className="rounded-lg shadow">
+                            <DataTable
+                                className='h-full'
+                                columns={columns}
+                                data={uploadFileItems.map(file => ({
+                                    name: file.name,
+                                    size: file.file_size,
+                                    progress: file.file_path
+                                }))}
+                                showFilter={false}
+                                showCheckboxes={false}
+                                customCellRender={customCellRender}
+                                rowKey="file_path"
+                            />
+                        </div>
+                    </div>}
+
+                    {isProcessDelete && <div className='grid grid-cols-1 gap-1'>
+                        <div className="rounded-lg shadow">
+                            <DataTable
+                                className='h-full'
+                                columns={[
+                                    { key: 'bug_no', label: 'Bug đối tượng' }
+                                ]}
+                                data={Array.from(delete_items).map(bugno => ({
+                                    bug_no: bugno
+                                }))}
+                                showFilter={false}
+                                showCheckboxes={true}
+                                selectedRows={new Set(Array.from(selected_items))}
+                                onRowSelectionChange={handleFileCheckboxChange}
+                                customCellRender={customCellRender}
+                                rowKey="bug_no"
+                            />
+                        </div>
+                    </div>}
+
+                    {!isDeleting && !isUploadable && !isProcessUpload && !isProcessDelete && <div className="border-b border-gray-200 p-4">
                         <div className="flex flex-col gap-1 flex-1">
                             <div className="grid grid-cols-10 space-x-1">
                                 <span className="col-span-9 flex-1 rounded-lg px-4 py-3 text-sm font-mono break-all flex items-center border border-red-300">
@@ -288,9 +440,11 @@ const BIToolManagePage: React.FC = () => {
                             {errorCheck && <span className="text-red-500">{errorCheck}</span>}
                         </div>
                     </div>}
-                    {isUpdatting && (
-                        <S3Upload aws_storage={destination} uploadAction={uploadAction} clearAction={() => handleClear} />
+
+                    {isUploadable && (
+                        !isProcessUpload && !isProcessDelete && <S3Upload aws_storage={destination} uploadAction={uploadAction} clearAction={() => handleClear} />
                     )}
+
                     {/* Action Buttons */}
                     <div className="flex justify-end items-center p-4 gap-3">
                         <Button
@@ -299,13 +453,29 @@ const BIToolManagePage: React.FC = () => {
                             <GiExitDoor className="h-5 w-5" />
                             <span>Đóng</span>
                         </Button>
-                        <Button
+                        {!isDeleting && !isUploadable && !isProcessUpload && (<Button
                             onClick={handleConfirm}
                             disabled={!selectDestinationPath || errorCheck.length !== 0}
                             className="flex items-center space-x-2">
                             <FcOk className="h-5 w-5" />
                             <span>Bắt đầu...</span>
+                        </Button>)}
+
+                        {isProcessUpload && <Button
+                            onClick={handleConfirmUpload}
+                            className="flex items-center space-x-2">
+                            <FcOk className="h-5 w-5" />
+                            <span>Bắt đầu tải...</span>
                         </Button>
+                        }
+                        {isProcessDelete && <Button
+                            onClick={handleConfirmUpload}
+                            disabled={Array.from(selected_items).length ===0 }
+                            className="flex items-center space-x-2">
+                            <FcOk className="h-5 w-5" />
+                            <span>Bắt đầu xoá...</span>
+                        </Button>
+                        }
                     </div>
                 </div>
             </Modal>

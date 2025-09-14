@@ -15,7 +15,7 @@ import { upload_item } from "../../types/upload_item";
 import { aws_storage } from "../../types/aws_storage";
 import { appService } from "./app-service";
 import { S3ObjectInfo } from "../../types/s3_object_info";
-import { copy_s3object_params, delete_direct_s3object_params, delete_s3object_params, download_params, move_s3object_params, upload_params } from "../../types/param_interface";
+import { copy_s3object_params, delete_direct_s3object_params, delete_s3object_bi_params, delete_s3object_params, download_params, move_s3object_params, upload_params } from "../../types/param_interface";
 import { BIObjectInfo } from "../../types/bitools_item";
 
 export interface S3Config {
@@ -150,6 +150,96 @@ export class S3Service {
         } catch (error) {
 
             await fsService.deleteFile(paths_downloaded);
+            return { success: false, message: (error as Error).message };
+        }
+    }
+
+    // upload file to s3
+    async uploadBIFile(params: upload_params): Promise<ServiceReturn<{ upload_id: string, uploaded_items: upload_item[] }>> {
+        try {
+
+            const result_getaws = await appService.get_aws_item(params.destination);
+
+            if (!result_getaws.success || !result_getaws.data) {
+                return { success: false, message: "Thông tin nơi lưu trữ trên S3 không tồn tại." };
+            }
+
+            const S3_OBJECT_TARGET = result_getaws.data || {} as aws_storage;
+
+            let _destination_path = this.work_folders['CORRECT_BUG_TRANFER'] + '/' + S3_OBJECT_TARGET.aws_name + '/' + S3_OBJECT_TARGET.subscribe + "/";
+
+            let results = [];
+            let uploaded_items: file_item[] = [];
+
+            for (const item of params.file_items) {
+                const result = await fsService.readFileToStream(item.full_path);
+                if (!result.success) {
+                    continue
+                }
+
+                let destination_path = _destination_path + item.parent_name + "/" + item.name;
+
+                try {
+                    const params = new PutObjectCommand({
+                        Bucket: this.config.bucketName,
+                        Key: destination_path,
+                        Body: result.data
+                    });
+                    results.push(this.s3.send(params));
+                    uploaded_items.push(item);
+                } catch { }
+            }
+
+            await Promise.all(results);
+            return { success: true, message: "Đã thực hiện tải tập thành công"};
+        } catch (error) {
+            return { success: false, message: (error as Error).message };
+        }
+    }
+
+    // delete object
+    async deleteBIObjectS3(params: delete_s3object_bi_params): Promise<ServiceReturn<string[]>> {
+
+        try {
+
+            const result = await appService.get_aws_item(params.aws_cd);
+
+            if (!result.success || !result.data) {
+                return { success: false, message: "Thông tin nơi lưu trữ trên S3 không tồn tại." };
+            }
+
+            const S3_OBJECT_TARGET = result.data || [];
+
+            const TARGET_DELETE = S3_OBJECT_TARGET as aws_storage;
+
+            let results = [];
+            let deleted_items: Set<string> = new Set();
+            for (const delete_item of params.delete_items) {
+                let _source_path = this.work_folders['CORRECT_BUG_TRANFER'] + '/' + TARGET_DELETE.aws_name + '/';
+
+                if (!StringUtils.isBlank(TARGET_DELETE.subscribe)) {
+                    _source_path = _source_path + TARGET_DELETE.subscribe + "/"
+                }
+                let _source_bug_path = _source_path + delete_item + '/';
+                const objectDatas = await this.listObjects(this.config.bucketName, _source_bug_path) || [];
+                const _objectTarget = objectDatas.filter((item) => item.Key !== _source_path);
+
+                for (const objectData of _objectTarget) {
+                    try {
+                        const oldKey = objectData.Key || "";
+                        // perform delete object
+                        const commandDelete = new DeleteObjectCommand({
+                            Bucket: this.config.bucketName,
+                            Key: oldKey
+                        })
+                        results.push(this.s3.send(commandDelete));
+                    } catch { }
+                }
+                await Promise.all(results);
+                deleted_items.add(delete_item);
+            }
+            return { success: true, message: "Đã xoá thành công.", data: Array.from(deleted_items) }
+        } catch (error) {
             return { success: false, message: (error as Error).message };
         }
     }

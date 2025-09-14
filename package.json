@@ -1,6 +1,6 @@
 {
-  "name": "WS",
-  "version": "1.0.5",
+  "name": "miniapp-tools",
+  "version": "1.0.6",
   "description": "miniapp-tools",
   "main": "dist/main/main.js",
   "scripts": {

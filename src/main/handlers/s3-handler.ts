@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import { getWorkdir } from '../_/main-config';
 import { StringUtils } from '../../core/utils/string-utils';
 import { aws_storage } from '../../types/aws_storage';
-import { delete_direct_s3object_params, delete_s3object_params, download_params, move_s3object_params, upload_params } from '../../types/param_interface';
+import { delete_direct_s3object_params, delete_s3object_bi_params, delete_s3object_params, download_params, move_s3object_params, upload_params } from '../../types/param_interface';
 
 export const setupS3Handlers = () => {
   ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_GET_ALL_STATES, async (_event, aws_storages: aws_storage[]) => {
@@ -64,5 +64,14 @@ export const setupS3Handlers = () => {
 
   ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_DOWNLOAD_BI_FILES, async (_event, params: download_params) => {
     return await s3Service.downloadBIFile(params);
+  });
+
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_UPLOAD_BI_OBJECTS, async (_event, params: upload_params) => {
+    return await s3Service.uploadBIFile(params);
+  });
+
+
+  ipcMain.handle(IPC_CHANNEL_HANDLERS.S3_DELETE_BI_OBJECTS, async (_event, params: delete_s3object_bi_params) => {
+    return await s3Service.deleteBIObjectS3(params);
   });
 }; 

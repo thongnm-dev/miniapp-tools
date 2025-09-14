@@ -18,6 +18,12 @@ export interface upload_params {
     file_items: file_item []
 }
 
+
+export interface upload_biparams {
+    destination: string,
+    file_items: file_item []
+}
+
 export interface upload_display_params {
     user_id: string, 
     state: string, 
@@ -93,4 +99,9 @@ export interface upd_after_copied_params {
 export interface download_dtl_items_params {
     download_id: string, 
     download_dtl_ids: string[]
+}
+
+export interface delete_s3object_bi_params {
+    aws_cd: string,
+    delete_items: string[] 
 }

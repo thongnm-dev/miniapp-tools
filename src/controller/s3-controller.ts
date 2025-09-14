@@ -1,5 +1,5 @@
 import { aws_storage } from "../types/aws_storage";
-import { delete_direct_s3object_params, delete_s3object_params, download_params, move_s3object_params, upload_params } from "../types/param_interface";
+import { delete_direct_s3object_params, delete_s3object_bi_params, delete_s3object_params, download_params, move_s3object_params, upload_biparams, upload_params } from "../types/param_interface";
 
 export class S3Controller {
 
@@ -48,6 +48,14 @@ export class S3Controller {
 
     async handleDownloadBIFile(params: download_params) {
         return await window.s3API.downloadBIFile(params);
+    }
+
+    async handleUploadBIFile(params: upload_biparams) {
+        return await window.s3API.uploadBIFile(params);
+    }
+
+    async handleDeleteBIObjects(params: delete_s3object_bi_params) {
+        return await window.s3API.deleteBIObjectS3(params);
     }
 }
 
