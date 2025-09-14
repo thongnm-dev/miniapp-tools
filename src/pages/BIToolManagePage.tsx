@@ -105,14 +105,14 @@ const BIToolManagePage: React.FC = () => {
 
     const tabs = useMemo(() => {
         return aws_storages
-            .filter(aws_store => aws_s3objects[aws_store.aws_cd]?.bugs.length > 0)
+            .filter(aws_store => aws_store.is_upload || aws_s3objects[aws_store.aws_cd]?.bugs.length > 0)
             .map((aws_store) => {
                 return {
                     label: (<div>{aws_store.aws_name_alias} <span className="text-red-600">({aws_s3objects[aws_store.aws_cd]?.bugs.length})</span></div>),
                     content: (
                         <div className="text-left text-sm max-h-[calc(100vh-250px)] overflow-y-auto">
 
-                            {aws_s3objects[aws_store.aws_cd]?.bugs.length > 0 ? (
+                            {(aws_s3objects[aws_store.aws_cd]?.bugs.length > 0 || aws_store.is_upload) && (
                                 <>
                                     <div className="shadow rounded grid grid-cols-1 bg-white mb-4">
                                         <div className="border-b border-gray-200">
@@ -145,7 +145,7 @@ const BIToolManagePage: React.FC = () => {
                                             columns={[
                                                 { key: 'bug_no', label: 'Bugs' }
                                             ]}
-                                            data={aws_s3objects[aws_store.aws_cd].bugs.map(bugNo => ({
+                                            data={(aws_s3objects[aws_store.aws_cd]?.bugs || []).map(bugNo => ({
                                                 bug_no: bugNo.bug_no
                                             }))}
                                             showFilter={false}
@@ -154,8 +154,6 @@ const BIToolManagePage: React.FC = () => {
                                         />
                                     </div>
                                 </>
-                            ) : (
-                                <div>Không tồn có bugs</div>
                             )}
                         </div>)
                 }
