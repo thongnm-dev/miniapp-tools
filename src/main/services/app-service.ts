@@ -100,6 +100,7 @@ export class AppService {
                     SELECT
                          code AS aws_cd
                         ,"name" AS aws_name
+                        ,"name_alias" AS aws_name_alias
                         ,subscribe
                     FROM
                         aws_storage
@@ -115,6 +116,7 @@ export class AppService {
             for (const row of result?.rows || []) {
                 aws_storages.push({
                     aws_cd: row.aws_cd,
+                    aws_name_alias: row.aws_name_alias,
                     aws_name: row.aws_name,
                     subscribe: row.subscribe
                 });
@@ -133,6 +135,7 @@ export class AppService {
                     SELECT
                          code AS aws_cd
                         ,"name" AS aws_name
+                        ,"name_alias" AS aws_name_alias
                         ,subscribe
                     FROM
                         aws_storage
@@ -149,6 +152,7 @@ export class AppService {
                 aws_storages.push({
                     aws_cd: row.aws_cd,
                     aws_name: row.aws_name,
+                    aws_name_alias: row.aws_name_alias,
                     subscribe: row.subscribe
                 });
             }
@@ -166,6 +170,7 @@ export class AppService {
                     SELECT
                          code AS aws_cd
                         ,"name" AS aws_name
+                        ,"name_alias" AS aws_name_alias
                         ,subscribe
                     FROM
                         aws_storage
@@ -176,6 +181,7 @@ export class AppService {
             const aws_storages: aws_storage = {
                 aws_cd: result?.rows[0].aws_cd,
                 aws_name: result?.rows[0].aws_name,
+                aws_name_alias: result?.rows[0].aws_name_alias,
                 subscribe: result?.rows[0].subscribe
             };
             return { success: true, data: aws_storages };

@@ -36,6 +36,7 @@ const S3UploadPage: React.FC = () => {
             const result = await appController.get_upload_items();
 
             if (result.success && result.data) {
+                console.log(result.data)
                 setList_upload_items(result.data);
             }
         }

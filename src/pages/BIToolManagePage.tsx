@@ -49,6 +49,7 @@ const BIToolManagePage: React.FC = () => {
         }
 
         loadItems();
+        cleanupData();
     }, []);
 
     // Poll S3 fetch state every 30 minutes
@@ -184,7 +185,7 @@ const BIToolManagePage: React.FC = () => {
                                             }))}
                                             showFilter={false}
                                             rowKey="bug_no"
-                                            scrollHeight={650}
+                                            scrollHeight={600}
                                         />
                                     </div>
                                 </>
@@ -223,6 +224,8 @@ const BIToolManagePage: React.FC = () => {
             if (result.success && result.data) {
                 setAwsS3Objects(result.data);
             }
+
+            cleanupData();
         } catch (error) {
             showNotification("Không thể lấy dữ liệu từ S3 AWS.")
         } finally {
@@ -251,8 +254,10 @@ const BIToolManagePage: React.FC = () => {
                 !result.success && showNotification(result.message || 'Tải về thất bại.', 'error');
                 result.success && showNotification('Tải về thành công.', 'success');
 
+                // clean up data
+                cleanupData();
                 setDisplayModal(!result.success);
-                setItems([]);
+                
             }
         } catch (error) {
             showNotification('Tải tập tin thất bại', 'error');
@@ -284,7 +289,9 @@ const BIToolManagePage: React.FC = () => {
                     } else {
                         showNotification(`Đã tải ${uploadedCount}/${totalFiles} tập tin.`, 'info');
                     }
-                    setUploadFileItems([]);
+
+                    // clean up data
+                    cleanupData();
                     setDisplayModal(!result.success);
                 }
             } else {
@@ -309,10 +316,10 @@ const BIToolManagePage: React.FC = () => {
                 } else {
                     showNotification(`Đã xoá ${deletedCnt}/${totalFiles} tập tin.`, 'info');
                 }
-                setDisplayModal(false);
-                setModalTitle("");
-                setDeleteItems([]);
-                setSelectedItems(new Set());
+
+                // clean up data
+                cleanupData();
+                setDisplayModal(!result.success);
             }
         } catch (error) {
             isUploadable === true && showNotification('Tải tập tin lên S3 thất bại', 'error');
@@ -323,7 +330,7 @@ const BIToolManagePage: React.FC = () => {
     };
 
     const handleCancelModal = async () => {
-        setDisplayModal(false);
+        cleanupData();
     }
 
     const uploadAction = async (params: { aws_storage: aws_storage, is_folder_same_name: boolean, selected_items: file_item[] }) => {
@@ -335,8 +342,15 @@ const BIToolManagePage: React.FC = () => {
         setProcessUpload(true);
     }
 
-    const handleClear = async () => {
-
+    const cleanupData = () => {
+        setIsDeleting(false);
+        setUploadable(false);
+        setProcessUpload(false);
+        setProcessDelete(false);
+        setDisplayModal(false);
+        setModalTitle("");
+        setUploadFileItems([]);
+        setItems([]);
     }
 
     const handleFileCheckboxChange = (fileName: string, checked: boolean) => {
@@ -369,7 +383,7 @@ const BIToolManagePage: React.FC = () => {
 
             <Fieldset title="Danh sách bugs">
                 <div className="grid grid-cols-1">
-                    {tabs.length > 0 && <TabView tabs={tabs} className='h-[calc(100vh-195px)]' />}
+                    {tabs.length > 0 && <TabView tabs={tabs} className='h-[calc(100vh-300px)]' />}
                 </div>
             </Fieldset>
 
@@ -442,7 +456,7 @@ const BIToolManagePage: React.FC = () => {
                     </div>}
 
                     {isUploadable && (
-                        !isProcessUpload && !isProcessDelete && <S3Upload aws_storage={destination} uploadAction={uploadAction} clearAction={() => handleClear} />
+                        !isProcessUpload && !isProcessDelete && <S3Upload aws_storage={destination} uploadAction={uploadAction} />
                     )}
 
                     {/* Action Buttons */}
