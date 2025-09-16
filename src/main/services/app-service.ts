@@ -23,6 +23,7 @@ export class AppService {
                         ,is_upload
                         ,is_download
                         ,link_available
+                        ,exclude_subscribe
                     FROM
                         aws_storage
                     WHERE 1 = 1
@@ -35,6 +36,7 @@ export class AppService {
                         ,is_upload
                         ,is_download
                         ,link_available
+                        ,exclude_subscribe
                     ORDER BY 
                          subscribe
                         ,"code";
@@ -51,6 +53,7 @@ export class AppService {
                     is_upload: row.is_upload,
                     is_download: row.is_download,
                     link_available: row.link_available,
+                    exclude_subscribe: row.exclude_subscribe
                 });
             }
             return { success: true, data: aws_storages }

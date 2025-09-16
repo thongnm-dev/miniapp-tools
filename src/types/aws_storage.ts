@@ -6,4 +6,5 @@ export interface aws_storage {
     is_upload?: boolean,
     is_download?: boolean,
     link_available?: string[]
+    exclude_subscribe?: string[]
 }

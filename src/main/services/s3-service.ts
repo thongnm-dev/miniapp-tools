@@ -269,7 +269,11 @@ export class S3Service {
 
                     if (response.CommonPrefixes) {
                         response.CommonPrefixes.forEach(commonPrefix => {
-                            if (commonPrefix.Prefix && !commonPrefix.Prefix.includes(aws_storage.subscribe)) {
+                            let prefix = commonPrefix.Prefix || "";
+                            let trimmed = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix;
+                            let parts = trimmed.split('/');
+                            let subscribe= parts[parts.length - 1];
+                            if (commonPrefix.Prefix && !aws_storage.exclude_subscribe?.includes(subscribe)) {
                                 bug_no_list_moved.push(commonPrefix.Prefix);
                             }
                         });

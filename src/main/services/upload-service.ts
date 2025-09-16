@@ -144,6 +144,7 @@ export class UploadService {
                     INNER JOIN upload_dtl t2
                         ON t1.id = t2.upload_id
                     WHERE 1 = 1
+                        AND t3.folder_key = 'CORRECT_BUG_TEST'
                         AND t1.id = $1
                         AND t1.aws_cd = $2
                         AND t1.created_by = $3
@@ -244,6 +245,7 @@ export class UploadService {
                     INNER JOIN aws_storage t4
                         ON t1.aws_cd = t4.code 
                     WHERE 1 = 1
+                        AND t4.folder_key = 'CORRECT_BUG_TEST'
                         AND (
                             (TRIM($1) = '' AND TRIM($2) <> '' AND t1.upload_ymd <= $2::TEXT)
                             OR (TRIM($1) <> '' AND TRIM($2) = '' AND t1.upload_ymd >= $1::TEXT)

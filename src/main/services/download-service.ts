@@ -79,6 +79,7 @@ export class DownloadService {
                             INNER JOIN aws_storage t3
                                 ON t1.aws_cd = t3.code 
                             WHERE 1 = 1
+                                AND t3.folder_key = 'CORRECT_BUG_TEST'
                                 AND t1.download_count > 0 
                                 AND t1.is_moved_at_local = false
                                 AND t1.created_by = $1
@@ -132,6 +133,7 @@ export class DownloadService {
                         INNER JOIN aws_storage t3
                             ON t1.aws_cd = t3.code 
                         WHERE 1 = 1
+                            AND t3.folder_key = 'CORRECT_BUG_TEST'
                             AND t1.id = $1
                         GROUP BY
                             t3."name",
@@ -358,6 +360,7 @@ export class DownloadService {
                         INNER JOIN aws_storage t3
                             ON t1.aws_cd = t3.code 
                         WHERE 1 = 1
+                            AND t3.folder_key = 'CORRECT_BUG_TEST'
                             AND (
                                 (TRIM($1) = '' AND TRIM($2) <> '' AND t1.download_ymd <= $2::TEXT)
                                 OR (TRIM($1) <> '' AND TRIM($2) = '' AND t1.download_ymd >= $1::TEXT)

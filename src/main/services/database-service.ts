@@ -117,6 +117,7 @@ export class DatabaseService {
           is_upload BOOLEAN DEFAULT FALSE,
           is_download BOOLEAN DEFAULT FALSE,
           link_available TEXT[],
+          exclude_subscribe TEXT[],
           folder_key VARCHAR(50) NOT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
