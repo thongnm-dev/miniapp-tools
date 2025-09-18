@@ -198,7 +198,7 @@ const S3Upload: React.FC<S3UploadProps> = ({ aws_storage = {} as aws_storage, up
 
         const params = {
             aws_storage: aws_storage,
-            is_folder_same_name: aws_storage?.aws_cd === "01",
+            is_folder_same_name: aws_storage?.aws_cd === "011",
             selected_items: Array.from(selectedItems)
         }
         await uploadAction(params);

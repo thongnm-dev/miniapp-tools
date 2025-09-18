@@ -200,7 +200,7 @@ const S3UploadPage: React.FC = () => {
                     <span className='text-red-600 font-bold'>{delete_options[0].aws_name}</span>
 
                 </div>}
-                {destination.aws_cd === "01" && <div className='flex flex-row bg-white p-2 gap-2'>
+                {destination.aws_cd === "011" && <div className='flex flex-row bg-white p-2 gap-2'>
                     <div className="flex items-center text-red-600">
                         <input id="chkCreatFolderSameName" type="checkbox" disabled={true}
                             checked={creatFolderSameName} onChange={(event) => setCreatFolderSameName(event.target.checked)}

@@ -141,7 +141,7 @@ export class S3Service {
             const storage_path = storage_path_local + '/' + S3_OBJECT_TARGET.aws_name + '/' + yyyyMMdd + '/' + hhmm;
             for (const bug of params.bug_list) {
                 const path_download = _prefix_path + bug + "/"
-                bug_attachs.push(this.downloadFiles(path_download, storage_path));
+                bug_attachs.push(this.downloadFiles(path_download, storage_path, bug));
             }
             paths_downloaded.push(storage_path);
             await Promise.all(bug_attachs);
@@ -354,31 +354,45 @@ export class S3Service {
             const S3_OBJECT_TARGET = result_getaws.data || {} as aws_storage;
 
             let continuationToken: string | undefined = undefined;
-            let _prefix_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + S3_OBJECT_TARGET.aws_name + '/' + S3_OBJECT_TARGET.subscribe + '/';
+            
 
             let bugs: string[] = [];
-            do {
-                const params = {
-                    Bucket: this.config.bucketName,
-                    Prefix: _prefix_path,
-                    Delimiter: "/",
-                    ContinuationToken: continuationToken,
-                };
+            if (S3_OBJECT_TARGET.using_subscrible_as_folder) {
+                let _prefix_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + S3_OBJECT_TARGET.aws_name + '/' + S3_OBJECT_TARGET.subscribe + '/'
 
-                const command = new ListObjectsV2Command(params);
-                const response: ListObjectsV2Output = await this.s3.send(command);
+                const objectDatas = await this.listObjects(this.config.bucketName, _prefix_path) || [];
 
-                if (response.CommonPrefixes) {
-                    response.CommonPrefixes.forEach(commonPrefix => {
-                        if (commonPrefix.Prefix) {
-                            bugs.push(commonPrefix.Prefix);
-                        }
-                    });
+                const _objectTarget = objectDatas.filter((item) => item.Key !== _prefix_path);
+
+                if (_objectTarget.length > 0) {
+                    let yyyyMMdd = DateUtils.getNow('yyyyMMddHHmmss');
+                    bugs.push(yyyyMMdd + "（翻訳前）");
                 }
+            } else {
 
-                continuationToken = response.NextContinuationToken;
-            } while (continuationToken);
+                let _prefix_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + S3_OBJECT_TARGET.aws_name + '/' + S3_OBJECT_TARGET.subscribe + '/';
+                do {
+                    const params = {
+                        Bucket: this.config.bucketName,
+                        Prefix: _prefix_path,
+                        Delimiter: "/",
+                        ContinuationToken: continuationToken,
+                    };
 
+                    const command = new ListObjectsV2Command(params);
+                    const response: ListObjectsV2Output = await this.s3.send(command);
+
+                    if (response.CommonPrefixes) {
+                        response.CommonPrefixes.forEach(commonPrefix => {
+                            if (commonPrefix.Prefix) {
+                                bugs.push(commonPrefix.Prefix);
+                            }
+                        });
+                    }
+
+                    continuationToken = response.NextContinuationToken;
+                } while (continuationToken);
+            }
             const result = bugs.map(prefix => {
                 let trimmed = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix;
                 let parts = trimmed.split('/');
@@ -443,8 +457,12 @@ export class S3Service {
             let bug_attachs: Promise<{ bug_no: string, last_modified?: Date, path: string, s3_path: string }[]>[] = [];
             const storage_path = storage_path_local + '/' + S3_OBJECT_TARGET.aws_name + '/' + yyyyMMdd + '/' + hhmm;
             for (const bug of params.bug_list) {
-                const path_download = _prefix_path + bug + "/"
-                bug_attachs.push(this.downloadFiles(path_download, storage_path));
+                if (S3_OBJECT_TARGET.using_subscrible_as_folder) {
+                    bug_attachs.push(this.downloadFiles(_prefix_path, storage_path, bug));
+                } else {
+                    const path_download = _prefix_path + bug + "/"
+                    bug_attachs.push(this.downloadFiles(path_download, storage_path, bug));
+                }
             }
             paths_downloaded.push(storage_path);
             const bug_attachs_results = await Promise.all(bug_attachs);
@@ -472,7 +490,7 @@ export class S3Service {
     }
 
     // download directory from s3
-    private async downloadFiles(prefix: string, localPath: string):
+    private async downloadFiles(prefix: string, localPath: string, p_bug_no: string):
         Promise<{ bug_no: string, last_modified?: Date, path: string, s3_path: string }[]> {
 
         let continuationToken: string | undefined = undefined;
@@ -525,7 +543,7 @@ export class S3Service {
 
                                     // storage download info
                                     result.push({
-                                        bug_no: bug_no,
+                                        bug_no: p_bug_no,
                                         last_modified: LastModified || undefined,
                                         path: localFilePath,
                                         s3_path: key
@@ -568,7 +586,7 @@ export class S3Service {
 
                 let destination_path = _destination_path + item.parent_name + "/" + item.name;
 
-                if (S3_OBJECT_TARGET.aws_cd === "01" && params.is_folder_same_name) {
+                if (S3_OBJECT_TARGET.aws_cd === "011" && params.is_folder_same_name) {
                     let parent_name = path.basename(item.full_path, path.extname(item.full_path));;
                     destination_path = _destination_path + parent_name + "/" + item.name;
                     item.parent_name = parent_name;

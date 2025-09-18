@@ -70,6 +70,7 @@ export class AppService {
                     SELECT
                          code AS aws_cd
                         ,"name" AS aws_name
+                        ,"name_alias" AS aws_name_alias
                         ,subscribe
                     FROM
                         aws_storage
@@ -86,6 +87,7 @@ export class AppService {
                 aws_storages.push({
                     aws_cd: row.aws_cd,
                     aws_name: row.aws_name,
+                    aws_name_alias: row.aws_name_alias,
                     subscribe: row.subscribe
                 });
             }
@@ -174,6 +176,7 @@ export class AppService {
                          code AS aws_cd
                         ,"name" AS aws_name
                         ,"name_alias" AS aws_name_alias
+                        , using_subscrible_as_folder
                         ,subscribe
                     FROM
                         aws_storage
@@ -185,7 +188,8 @@ export class AppService {
                 aws_cd: result?.rows[0].aws_cd,
                 aws_name: result?.rows[0].aws_name,
                 aws_name_alias: result?.rows[0].aws_name_alias,
-                subscribe: result?.rows[0].subscribe
+                subscribe: result?.rows[0].subscribe,
+                using_subscrible_as_folder: result?.rows[0].using_subscrible_as_folder
             };
             return { success: true, data: aws_storages };
         } catch (err) {

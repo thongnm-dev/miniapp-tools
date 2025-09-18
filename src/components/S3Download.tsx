@@ -276,7 +276,7 @@ const S3Download: React.FC<S3UploadProps> = ({ aws_storage = {} as aws_storage }
                             <span>
                                 {modalOpen ? <FaFolderMinus className='h-6 w-6 text-orange-500' /> : <FaFolderPlus className='h-6 w-6 text-orange-500' />}
                             </span>
-                            <span className="text-lg font-bold">{aws_storage.aws_name}
+                            <span className="text-lg font-bold">{aws_storage.aws_name_alias}
                                 <span className="text-red-600">({items.length})</span>
                             </span>
                         </button>
