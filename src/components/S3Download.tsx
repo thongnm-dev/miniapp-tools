@@ -14,6 +14,7 @@ import { StringUtils } from '../core/utils/string-utils';
 import { useAuth } from '../stores/AuthContext';
 import Modal from './ui/Modal';
 import { GiExitDoor } from 'react-icons/gi';
+import { S3ObjectInfo } from '../types/s3_object_info';
 
 export interface S3UploadProps {
     aws_storage?: aws_storage
@@ -48,14 +49,6 @@ const S3Download: React.FC<S3UploadProps> = ({ aws_storage = {} as aws_storage }
         }
 
         init();
-
-        let isMounted = true;
-        // immediately fetch every 15 minutes
-        const interval = setInterval(init, 5 * 60 * 1000); // 5 minutes
-        return () => {
-            isMounted = false;
-            clearInterval(interval);
-        };
     }, []);
 
     // Save state when it changes
@@ -139,7 +132,7 @@ const S3Download: React.FC<S3UploadProps> = ({ aws_storage = {} as aws_storage }
 
     const hanldeMove = async () => {
         setSelectedBugs(new Set(Array.from(items)));
-        setModalTitle("Di chuyển file S3");
+        setModalTitle(!aws_storage.file_only ? "Di chuyển file S3" : "Xoá tập tin ở S3");
         setMoving(true);
         setDisplayModal(true);
     }
@@ -239,17 +232,47 @@ const S3Download: React.FC<S3UploadProps> = ({ aws_storage = {} as aws_storage }
                     window.dispatchEvent(event);
                 }
             } else {
-                showLoading('Đang thực hiện di chuyển tập tin. Vui lòng không tắt màn hình...');
-                const params = {
-                    aws_cd: aws_storage.aws_cd,
-                    file_items: Array.from(selectedBugs)
+                !aws_storage.file_only && showLoading('Đang thực hiện di chuyển tập tin. Vui lòng không tắt màn hình...');
+                aws_storage.file_only && showLoading('Đang thực hiện xoá tập tin. Vui lòng không tắt màn hình...');
+
+                if (!aws_storage.file_only) {
+                    const params = {
+                        aws_cd: aws_storage.aws_cd,
+                        file_items: Array.from(selectedBugs)
+                    }
+                    const result = await s3Controller.handleMoveObjectS3(params);
+                    if (result.success) {
+                        showNotification(result.message || 'Di chuyển file S3 thất bại!', 'error');
+                    }
+                    result.success && showNotification('Đã di chuyển file S3 thành công.', 'success');
+                    resultFlg = result.success;
+                } else {
+                    const params = {
+                        aws_cd: aws_storage.aws_cd,
+                        delete_items: Array.from(selectedBugs).map((item) => {
+                            return {
+                                bug_no: item,
+                                subscribe: true
+                            } as S3ObjectInfo
+                        })
+                    }
+                    const result = await s3Controller.handleOnlyDeleteObjects(params);
+        
+                    if (!result.success) {
+                        showNotification('Xoá tập tin S3 thất bại', 'error')
+                        return;
+                    }
+        
+                    const deletedCnt = result.data?.length;
+                    const totalFiles = Array.from(selectedBugs).length;
+        
+                    if (deletedCnt === totalFiles) {
+                        showNotification(`Đã thực hiện xoá thành công ${deletedCnt} tập tin.`, 'success');
+                    } else {
+                        showNotification(`Đã xoá ${deletedCnt}/${totalFiles} tập tin.`, 'info');
+                    }
                 }
-                const result = await s3Controller.handleMoveObjectS3(params);
-                if (result.success) {
-                    showNotification(result.message || 'Di chuyển file S3 thất bại!', 'error');
-                }
-                result.success && showNotification('Đã di chuyển file S3 thành công.', 'success');
-                resultFlg = result.success;
+
                 reaload();
                 const event = new CustomEvent("refreshDownload");
                 window.dispatchEvent(event);
@@ -287,11 +310,15 @@ const S3Download: React.FC<S3UploadProps> = ({ aws_storage = {} as aws_storage }
                                 <span>Tải lại</span>
                             </Button>
 
-                            {items.length > 0 && moveableMap[aws_storage.aws_cd] && <Button className="flex items-center space-x-2 text-red-500 border-red-500"
-                                onClick={hanldeMove}>
-                                <TfiBrushAlt className="h-4 w-4 font-bold" />
-                                <span>Di chuyển trên S3</span>
-                            </Button>}
+                            {items.length > 0 
+                                && moveableMap[aws_storage.aws_cd] 
+                                && <Button className="flex items-center space-x-2 text-red-500 border-red-500"
+                                    onClick={hanldeMove}>
+                                    <TfiBrushAlt className="h-4 w-4 font-bold" />
+                                    {aws_storage.file_only && <span>Xoá trên S3</span>}
+                                    {!aws_storage.file_only && <span>Di chuyển trên S3</span>}
+                                </Button>
+                            }
 
                             {items.length > 0 && downloadableMap[aws_storage.aws_cd] && <Button className="flex items-center space-x-2 focus:ring-orange-400 hover:border-orange-400"
                                 onClick={hanldeDownload}

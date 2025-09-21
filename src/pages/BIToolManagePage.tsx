@@ -185,7 +185,7 @@ const BIToolManagePage: React.FC = () => {
                                             }))}
                                             showFilter={false}
                                             rowKey="bug_no"
-                                            scrollHeight={600}
+                                            scrollHeight={380}
                                         />
                                     </div>
                                 </>

@@ -31,7 +31,9 @@ const TabView: React.FC<TabViewProps> = ({ tabs, initialIndex = 0, className}) =
           </button>
         ))}
       </div>
-      <div>{tabs[active].content}</div>
+      <div className="h-full">
+        {tabs[active].content}
+      </div>
     </div>
   );
 };

@@ -44,7 +44,7 @@ const Modal: React.FC<ModalProps> = ({ className, contentClassName, open, onClos
         </div>
         
         {/* Content */}
-        <div className={`overflow-y-auto bg-gray-100 h-auto ${contentClassName}`}>
+        <div className={`bg-gray-100 ${contentClassName}`}>
           {children}
         </div>
       </div>

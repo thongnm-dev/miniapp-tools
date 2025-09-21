@@ -5,7 +5,7 @@ export interface aws_storage {
     subscribe: string,
     is_upload?: boolean,
     is_download?: boolean,
-    using_subscrible_as_folder?: boolean,
+    file_only?: boolean,
     link_available?: string[]
     exclude_subscribe?: string[]
 }

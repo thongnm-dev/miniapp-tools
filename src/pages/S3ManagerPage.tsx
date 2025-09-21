@@ -3,7 +3,7 @@ import { s3Controller } from '../controller/s3-controller';
 import Button from '../components/ui/Button';
 import { useLoading } from '../stores/LoadingContext';
 import TabView from '../components/ui/TabView';
-import { FcOk, FcProcess } from 'react-icons/fc';
+import { FcFeedIn, FcOk, FcProcess } from 'react-icons/fc';
 import { aws_storage } from '../types/aws_storage';
 import { appController } from '../controller/app_controller';
 import { showNotification } from '../components/notification';
@@ -13,6 +13,9 @@ import Modal from '../components/ui/Modal';
 import { GiExitDoor } from 'react-icons/gi';
 import DataTable from '../components/ui/DataTable';
 import { useAuth } from '../stores/AuthContext';
+import { FaCloudUploadAlt } from 'react-icons/fa';
+import S3UploadPage from './S3UploadPage';
+import S3DownloadPage from './S3DownloadPage';
 
 const S3ManagerPage: React.FC = () => {
     const { user } = useAuth();
@@ -22,9 +25,12 @@ const S3ManagerPage: React.FC = () => {
     const [destination, setDestination] = useState<aws_storage>({} as aws_storage);
     const [displayModal, setDisplayModal] = useState<boolean>(false);
     const [deleted, setDeleted] = useState<boolean>(false);
+    const [performPush, setPerformPush] = useState<boolean>(false);
+    const [performPull, setPerformPull] = useState<boolean>(false);
     const [aws_delete_items, setAwsDeleteItems] = useState<S3ObjectInfo[]>([]);
     const [selected_items, setSelectedItems] = useState<Set<S3ObjectInfo>>(new Set());
     const [modalTitle, setModalTitle] = useState<string>("");
+
 
     useEffect(() => {
         setAwsStorages([]);
@@ -39,7 +45,7 @@ const S3ManagerPage: React.FC = () => {
     }, []);
 
     const isPermission = useMemo(() => {
-        return user?.username === "nhudtq";
+        return user?.username === "nhudtq" || user?.username === "thongnm";
     }, [user])
 
     // Poll S3 fetch state every 30 minutes
@@ -76,19 +82,27 @@ const S3ManagerPage: React.FC = () => {
             .filter(aws_store => aws_s3objects[aws_store.aws_cd]?.bugs.length > 0)
             .map((aws_store) => {
                 return {
-                    label: (<div>{aws_store.aws_name} <span className="text-red-600">({aws_s3objects[aws_store.aws_cd]?.bugs.length})</span></div>),
+                    label: (<div>{aws_store.aws_name_alias} <span className="text-red-600">({aws_s3objects[aws_store.aws_cd]?.bugs.length})</span></div>),
                     content: (
-                        <div className="text-left text-sm max-h-[calc(100vh-250px)] overflow-y-auto">
+                        <div className="text-left text-sm h-[555px] overflow-y-auto">
 
                             {aws_s3objects[aws_store.aws_cd]?.bugs.length > 0 ? (
                                 <>
-                                    {isPermission && (aws_store.link_available && aws_store.link_available.length > 0) &&
+                                    {isPermission &&
                                         <div className='flex justify-end py-2 border-b'>
-                                            <Button className="flex items-center space-x-2 text-red-500 border-red-500"
-                                                onClick={() => handleOpenMoveModal(aws_store, aws_s3objects[aws_store.aws_cd].bugs || [])}>
-                                                <TfiBrushAlt className="h-4 w-4 font-bold" />
-                                                <span>Xóa thư mục</span>
-                                            </Button>
+                                            {(aws_store.link_available && aws_store.link_available.length > 0) && 
+                                                <Button className="flex items-center space-x-2 text-red-500 border-red-500"
+                                                    onClick={() => handleOpenMoveModal(aws_store, aws_s3objects[aws_store.aws_cd].bugs || [])}>
+                                                    <TfiBrushAlt className="h-4 w-4 font-bold" />
+                                                    <span>Xóa thư mục</span>
+                                                </Button>}
+                                            { aws_store.file_only &&
+                                                <Button className="flex items-center space-x-2 text-red-500 border-red-500"
+                                                    onClick={() => handleOpenMoveModal(aws_store, aws_s3objects[aws_store.aws_cd].bugs || [])}>
+                                                    <TfiBrushAlt className="h-4 w-4 font-bold" />
+                                                    <span>Xóa tập tin</span>
+                                                </Button>
+                                            }
                                         </div>
                                     }
                                     <div className='px-3'>
@@ -133,7 +147,6 @@ const S3ManagerPage: React.FC = () => {
         setModalTitle("Bạn có chắc muốn xoá các thông tin bên dưới không?");
         setDisplayModal(true);
     }
-
 
     // Handle file checkbox change
     const handleFileCheckboxChange = (fileName: string, checked: boolean) => {
@@ -199,8 +212,22 @@ const S3ManagerPage: React.FC = () => {
 
     return (
         <>
+            {isPermission && <div className="shadow rounded grid grid-cols-1 bg-white mb-4">
+                <div className="border-b px-4 border-gray-200">
+                    <div className="flex items-end justify-end space-x-2 py-2 gap-3">
+                        <Button className="flex items-center space-x-2" onClick={() => setPerformPush(true)}>
+                            <FaCloudUploadAlt className="h-5 w-5 font-bold" />
+                            <span>Upload</span>
+                        </Button>
+                        <Button className="flex items-center space-x-2" onClick={() => setPerformPull(true)}>
+                            <FcFeedIn className="h-4 w-4 font-bold" />
+                            <span>Download</span>
+                        </Button>
+                    </div>
+                </div>
+            </div>}
             <div className="space-y-4">
-                <fieldset className="border border-gray-300 rounded-lg p-2 bg-white shadow-lg min-h-[calc(100vh-195px)]">
+                <fieldset className="border border-gray-300 rounded-lg p-2 bg-white shadow-lg min-h-[calc(100vh-280px)]">
                     <legend className="rounded-lg">
                         <Button
                             onClick={handleRefresh}
@@ -210,10 +237,20 @@ const S3ManagerPage: React.FC = () => {
                         </Button>
                     </legend>
                     <div className="grid grid-cols-1">
-                        {tabs.length > 0 && <TabView tabs={tabs} className='h-[calc(100vh-195px)]' />}
+                        {tabs.length > 0 && <TabView tabs={tabs} className='h-full' />}
                     </div>
                 </fieldset>
             </div>
+
+            <Modal open={performPush} onClose={() => {setPerformPush(false)}} title="Upload file to S3" size="full"
+                contentClassName='p-6 h-[650px] overflow-y-auto'>
+                    <S3UploadPage />
+            </Modal>
+
+            <Modal open={performPull} onClose={() => {setPerformPull(false)}} title="Download file from S3" size="full"
+                contentClassName='p-6 h-[650px] overflow-y-auto'>
+                <S3DownloadPage />
+            </Modal>
 
             <Modal open={displayModal} onClose={handleCancelModal} title={modalTitle} size="xl">
                 <div className="bg-white shadow-lg rounded-lg flex flex-col">

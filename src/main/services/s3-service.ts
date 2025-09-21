@@ -191,7 +191,7 @@ export class S3Service {
             }
 
             await Promise.all(results);
-            return { success: true, message: "Đã thực hiện tải tập thành công"};
+            return { success: true, message: "Đã thực hiện tải tập thành công" };
         } catch (error) {
             return { success: false, message: (error as Error).message };
         }
@@ -251,87 +251,106 @@ export class S3Service {
             const bug_list: { [aws_cd: string]: { bugs: S3ObjectInfo[] } } = {};
 
             for (const aws_storage of aws_storages) {
-                let continuationToken: string | undefined = undefined;
 
-                let _prefix_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + aws_storage.aws_name + '/';
+                if (!aws_storage.file_only) {
+                    let continuationToken: string | undefined = undefined;
 
-                let bug_no_list_moved: string[] = [];
-                do {
-                    const params = {
-                        Bucket: this.config.bucketName,
-                        Prefix: _prefix_path,
-                        Delimiter: "/",
-                        ContinuationToken: continuationToken,
-                    };
+                    let _prefix_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + aws_storage.aws_name + '/';
 
-                    const command = new ListObjectsV2Command(params);
-                    const response: ListObjectsV2Output = await this.s3.send(command);
+                    let bug_no_list_moved: string[] = [];
+                    do {
+                        const params = {
+                            Bucket: this.config.bucketName,
+                            Prefix: _prefix_path,
+                            Delimiter: "/",
+                            ContinuationToken: continuationToken,
+                        };
 
-                    if (response.CommonPrefixes) {
-                        response.CommonPrefixes.forEach(commonPrefix => {
-                            let prefix = commonPrefix.Prefix || "";
+                        const command = new ListObjectsV2Command(params);
+                        const response: ListObjectsV2Output = await this.s3.send(command);
+
+                        if (response.CommonPrefixes) {
+                            response.CommonPrefixes.forEach(commonPrefix => {
+                                let prefix = commonPrefix.Prefix || "";
+                                let trimmed = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix;
+                                let parts = trimmed.split('/');
+                                let subscribe = parts[parts.length - 1];
+                                if (commonPrefix.Prefix && !aws_storage.exclude_subscribe?.includes(subscribe)) {
+                                    bug_no_list_moved.push(commonPrefix.Prefix);
+                                }
+                            });
+                        }
+
+                        continuationToken = response.NextContinuationToken;
+                    } while (continuationToken);
+
+                    continuationToken = undefined;
+                    _prefix_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + aws_storage.aws_name + '/' + aws_storage.subscribe + "/";
+                    let bug_no_list_not_moved: string[] = [];
+                    do {
+                        const params = {
+                            Bucket: this.config.bucketName,
+                            Prefix: _prefix_path,
+                            Delimiter: "/",
+                            ContinuationToken: continuationToken,
+                        };
+
+                        const command = new ListObjectsV2Command(params);
+                        const response: ListObjectsV2Output = await this.s3.send(command);
+
+                        if (response.CommonPrefixes) {
+                            response.CommonPrefixes.forEach(commonPrefix => {
+                                if (commonPrefix.Prefix) {
+                                    bug_no_list_not_moved.push(commonPrefix.Prefix);
+                                }
+                            });
+                        }
+
+                        continuationToken = response.NextContinuationToken;
+                    } while (continuationToken);
+
+                    const bug_no_list_moved_map = bug_no_list_moved
+                        .map(prefix => {
                             let trimmed = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix;
                             let parts = trimmed.split('/');
-                            let subscribe= parts[parts.length - 1];
-                            if (commonPrefix.Prefix && !aws_storage.exclude_subscribe?.includes(subscribe)) {
-                                bug_no_list_moved.push(commonPrefix.Prefix);
-                            }
+                            return {
+                                bug_no: parts[parts.length - 1],
+                                subscribe: false,
+                                message: ""
+                            };
                         });
-                    }
 
-                    continuationToken = response.NextContinuationToken;
-                } while (continuationToken);
-
-                continuationToken = undefined;
-                _prefix_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + aws_storage.aws_name + '/' + aws_storage.subscribe + "/";
-                let bug_no_list_not_moved: string[] = [];
-                do {
-                    const params = {
-                        Bucket: this.config.bucketName,
-                        Prefix: _prefix_path,
-                        Delimiter: "/",
-                        ContinuationToken: continuationToken,
-                    };
-
-                    const command = new ListObjectsV2Command(params);
-                    const response: ListObjectsV2Output = await this.s3.send(command);
-
-                    if (response.CommonPrefixes) {
-                        response.CommonPrefixes.forEach(commonPrefix => {
-                            if (commonPrefix.Prefix) {
-                                bug_no_list_not_moved.push(commonPrefix.Prefix);
-                            }
+                    const bug_no_list_not_moved_map = bug_no_list_not_moved
+                        .map(prefix => {
+                            let trimmed = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix;
+                            let parts = trimmed.split('/');
+                            return {
+                                bug_no: parts[parts.length - 1],
+                                subscribe: true,
+                                message: "Chưa di chuyển ra ngoài..!"
+                            };
                         });
+
+                    const bug_no_list = [...bug_no_list_moved_map, ...bug_no_list_not_moved_map];
+                    bug_list[aws_storage.aws_cd] = {
+                        bugs: bug_no_list
                     }
+                } else {
+                    let _prefix_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + aws_storage.aws_name + '/' + aws_storage.subscribe + "/";
+                    const objectDatas = await this.listObjects(this.config.bucketName, _prefix_path) || [];
+                    const _objectTarget = objectDatas.filter((item) => item.Key !== _prefix_path);
 
-                    continuationToken = response.NextContinuationToken;
-                } while (continuationToken);
-
-                const bug_no_list_moved_map = bug_no_list_moved
-                    .map(prefix => {
-                        let trimmed = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix;
-                        let parts = trimmed.split('/');
-                        return {
-                            bug_no: parts[parts.length - 1],
-                            subscribe: false,
-                            message: ""
-                        };
-                    });
-
-                const bug_no_list_not_moved_map = bug_no_list_not_moved
-                    .map(prefix => {
-                        let trimmed = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix;
-                        let parts = trimmed.split('/');
-                        return {
-                            bug_no: parts[parts.length - 1],
-                            subscribe: true,
-                            message: "Chưa di chuyển ra ngoài..!"
-                        };
-                    });
-
-                const bug_no_list = [...bug_no_list_moved_map, ...bug_no_list_not_moved_map];
-                bug_list[aws_storage.aws_cd] = {
-                    bugs: bug_no_list
+                    bug_list[aws_storage.aws_cd] = {
+                        bugs: _objectTarget.map((item) => {
+                            let trimmed = item.Key?.endsWith('/') ? item.Key?.slice(0, -1) : item.Key || "";
+                            let parts = trimmed.split('/');
+                            return {
+                                bug_no: parts[parts.length - 1],
+                                subscribe: true,
+                                message: "Chưa tải về"
+                            };
+                        })
+                    }
                 }
             }
 
@@ -354,10 +373,10 @@ export class S3Service {
             const S3_OBJECT_TARGET = result_getaws.data || {} as aws_storage;
 
             let continuationToken: string | undefined = undefined;
-            
+
 
             let bugs: string[] = [];
-            if (S3_OBJECT_TARGET.using_subscrible_as_folder) {
+            if (S3_OBJECT_TARGET.file_only) {
                 let _prefix_path = this.work_folders['CORRECT_BUG_TEST'] + '/' + S3_OBJECT_TARGET.aws_name + '/' + S3_OBJECT_TARGET.subscribe + '/'
 
                 const objectDatas = await this.listObjects(this.config.bucketName, _prefix_path) || [];
@@ -365,8 +384,11 @@ export class S3Service {
                 const _objectTarget = objectDatas.filter((item) => item.Key !== _prefix_path);
 
                 if (_objectTarget.length > 0) {
-                    let yyyyMMdd = DateUtils.getNow('yyyyMMddHHmmss');
-                    bugs.push(yyyyMMdd + "（翻訳前）");
+                    bugs = _objectTarget.map((item) => {
+                        let trimmed = item.Key?.endsWith('/') ? item.Key?.slice(0, -1) : item.Key || "";
+                        let parts = trimmed.split('/');
+                        return parts[parts.length - 1]
+                    })
                 }
             } else {
 
@@ -456,23 +478,54 @@ export class S3Service {
 
             let bug_attachs: Promise<{ bug_no: string, last_modified?: Date, path: string, s3_path: string }[]>[] = [];
             const storage_path = storage_path_local + '/' + S3_OBJECT_TARGET.aws_name + '/' + yyyyMMdd + '/' + hhmm;
+
+            if (S3_OBJECT_TARGET.file_only) {
+                if (!existsSync(storage_path)) {
+                    mkdirSync(storage_path, { recursive: true });
+                    paths_downloaded.push(storage_path);
+                }
+            }
+
+            let results: { bug_no: string, last_modified?: Date, path: string, s3_path: string }[] = []
             for (const bug of params.bug_list) {
-                if (S3_OBJECT_TARGET.using_subscrible_as_folder) {
-                    bug_attachs.push(this.downloadFiles(_prefix_path, storage_path, bug));
+                if (S3_OBJECT_TARGET.file_only) {
+                    let _source_path = _prefix_path + bug;
+                    const getObjectParams = {
+                        Bucket: this.config.bucketName,
+                        Key: _source_path,
+                    };
+                    const getObjectCommand = new GetObjectCommand(getObjectParams);
+                    const data = await this.s3.send(getObjectCommand);
+                    if (data.Body) {
+                        const stream = data.Body as Readable;
+                        const fileStream = createWriteStream(storage_path + "/" + bug);
+                        await pipeline(stream, fileStream);
+
+                        // storage download info
+                        results.push({
+                            bug_no: path.basename(bug),
+                            last_modified: data.LastModified || undefined,
+                            path: _source_path,
+                            s3_path: _prefix_path
+                        });
+                    }
                 } else {
                     const path_download = _prefix_path + bug + "/"
                     bug_attachs.push(this.downloadFiles(path_download, storage_path, bug));
                 }
             }
             paths_downloaded.push(storage_path);
-            const bug_attachs_results = await Promise.all(bug_attachs);
+            if (!S3_OBJECT_TARGET.file_only) {
+                const bug_attachs_results = await Promise.all(bug_attachs);
+                results = bug_attachs_results.flat();
+            }
             const param_ins =
             {
                 aws_cd: S3_OBJECT_TARGET.aws_cd,
                 date: yyyyMMdd,
                 user_id: params.user_id,
                 sync_path: storage_path,
-                bug_attachs: bug_attachs_results.flat()
+                bug_attachs: results
             }
 
             // insert fetch tran
@@ -517,13 +570,8 @@ export class S3Service {
                             const LastModified = object.LastModified;
                             const fileName = key.split('/').pop();
                             if (fileName) {
-                                // Remove trailing slash if present
-                                const trimmed = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix;
-                                // Split by slash and return the last part
-                                const parts = trimmed.split('/');
-                                const bug_no = parts[parts.length - 1];
-                                let subPath = localPath + '/' + bug_no;
 
+                                let subPath = localPath + '/' + p_bug_no;
                                 if (!existsSync(subPath)) {
                                     mkdirSync(subPath, { recursive: true });
                                 }
@@ -828,20 +876,29 @@ export class S3Service {
                     _source_path = _source_path + '/' + S3_OBJECT_TARGET.subscribe;
                 }
 
-                _source_path = _source_path + '/' + delete_item.bug_no + "/";
-
-                const objectDatas = await this.listObjects(this.config.bucketName, _source_path) || [];
-                const _objectTarget = objectDatas.filter((item) => item.Key !== _source_path);
-
-                for (const objectData of _objectTarget) {
-                    const oldKey = objectData.Key || "";
+                if (S3_OBJECT_TARGET.file_only) {
+                    _source_path = _source_path + '/' + delete_item.bug_no
                     const commandDelete = new DeleteObjectCommand({
                         Bucket: this.config.bucketName,
-                        Key: oldKey
+                        Key: _source_path
                     })
                     results.push(this.s3.send(commandDelete));
+                    deleted_items.add(delete_item.bug_no);
+                } else {
+                    _source_path = _source_path + '/' + delete_item.bug_no + "/";
+                    const objectDatas = await this.listObjects(this.config.bucketName, _source_path) || [];
+                    const _objectTarget = objectDatas.filter((item) => item.Key !== _source_path);
+
+                    for (const objectData of _objectTarget) {
+                        const oldKey = objectData.Key || "";
+                        const commandDelete = new DeleteObjectCommand({
+                            Bucket: this.config.bucketName,
+                            Key: oldKey
+                        })
+                        results.push(this.s3.send(commandDelete));
+                    }
+                    deleted_items.add(delete_item.bug_no);
                 }
-                deleted_items.add(delete_item.bug_no);
             }
             await Promise.all(results);
             return { success: true, message: "Đã xoá thành công.", data: Array.from(deleted_items) }

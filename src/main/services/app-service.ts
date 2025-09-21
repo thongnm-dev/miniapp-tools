@@ -24,6 +24,7 @@ export class AppService {
                         ,is_download
                         ,link_available
                         ,exclude_subscribe
+                        ,file_only
                     FROM
                         aws_storage
                     WHERE 1 = 1
@@ -37,6 +38,7 @@ export class AppService {
                         ,is_download
                         ,link_available
                         ,exclude_subscribe
+                        ,file_only
                     ORDER BY 
                          subscribe
                         ,"code";
@@ -53,7 +55,8 @@ export class AppService {
                     is_upload: row.is_upload,
                     is_download: row.is_download,
                     link_available: row.link_available,
-                    exclude_subscribe: row.exclude_subscribe
+                    exclude_subscribe: row.exclude_subscribe,
+                    file_only: row.file_only
                 });
             }
             return { success: true, data: aws_storages }
@@ -72,6 +75,7 @@ export class AppService {
                         ,"name" AS aws_name
                         ,"name_alias" AS aws_name_alias
                         ,subscribe
+                        ,file_only
                     FROM
                         aws_storage
                     WHERE 1 =1
@@ -88,7 +92,8 @@ export class AppService {
                     aws_cd: row.aws_cd,
                     aws_name: row.aws_name,
                     aws_name_alias: row.aws_name_alias,
-                    subscribe: row.subscribe
+                    subscribe: row.subscribe,
+                    file_only: row.file_only
                 });
             }
             return { success: true, data: aws_storages };
@@ -176,8 +181,8 @@ export class AppService {
                          code AS aws_cd
                         ,"name" AS aws_name
                         ,"name_alias" AS aws_name_alias
-                        , using_subscrible_as_folder
                         ,subscribe
+                        ,file_only
                     FROM
                         aws_storage
                     WHERE 1 =1
@@ -189,7 +194,7 @@ export class AppService {
                 aws_name: result?.rows[0].aws_name,
                 aws_name_alias: result?.rows[0].aws_name_alias,
                 subscribe: result?.rows[0].subscribe,
-                using_subscrible_as_folder: result?.rows[0].using_subscrible_as_folder
+                file_only: result?.rows[0].file_only
             };
             return { success: true, data: aws_storages };
         } catch (err) {
