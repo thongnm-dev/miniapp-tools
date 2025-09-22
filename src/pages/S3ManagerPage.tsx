@@ -84,7 +84,7 @@ const S3ManagerPage: React.FC = () => {
                 return {
                     label: (<div>{aws_store.aws_name_alias} <span className="text-red-600">({aws_s3objects[aws_store.aws_cd]?.bugs.length})</span></div>),
                     content: (
-                        <div className="text-left text-sm h-[555px] overflow-y-auto">
+                        <div className="text-left text-sm h-[650px] overflow-y-auto">
 
                             {aws_s3objects[aws_store.aws_cd]?.bugs.length > 0 ? (
                                 <>
@@ -227,7 +227,7 @@ const S3ManagerPage: React.FC = () => {
                 </div>
             </div>}
             <div className="space-y-4">
-                <fieldset className="border border-gray-300 rounded-lg p-2 bg-white shadow-lg min-h-[calc(100vh-280px)]">
+                <fieldset className="border border-gray-300 rounded-lg p-2 bg-white shadow-lg min-h-[calc(100vh-230px)]">
                     <legend className="rounded-lg">
                         <Button
                             onClick={handleRefresh}

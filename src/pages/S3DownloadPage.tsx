@@ -171,7 +171,7 @@ export const S3DownloadPage: React.FC = () => {
     }
 
     return (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 h-full">
                 {notempty_download ? (<div className={`rounded-lg shadow flex flex-col space-y-2`}>
                     {list_download_items
                         .filter((item) => candownload(item.aws_cd))
