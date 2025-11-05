@@ -1,6 +1,6 @@
 {
   "name": "miniapp-tools",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "miniapp-tools",
   "main": "dist/main/main.js",
   "scripts": {

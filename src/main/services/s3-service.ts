@@ -554,7 +554,7 @@ export class S3Service {
             const params = {
                 Bucket: this.config.bucketName,
                 Prefix: prefix,
-                Delimiter: '/',
+                // Delimiter: '/',
                 ContinuationToken: continuationToken,
             };
 
