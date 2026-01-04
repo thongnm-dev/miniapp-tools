@@ -241,7 +241,7 @@ const S3Download: React.FC<S3UploadProps> = ({ aws_storage = {} as aws_storage }
                         file_items: Array.from(selectedBugs)
                     }
                     const result = await s3Controller.handleMoveObjectS3(params);
-                    if (result.success) {
+                    if (!result.success) {
                         showNotification(result.message || 'Di chuyển file S3 thất bại!', 'error');
                     }
                     result.success && showNotification('Đã di chuyển file S3 thành công.', 'success');

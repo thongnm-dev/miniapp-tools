@@ -7,8 +7,9 @@ import { download_item } from '../types/download_item';
 import { upload_item } from '../types/upload_item';
 import { aws_storage } from '../types/aws_storage';
 import { S3ObjectInfo } from '../types/s3_object_info';
-import { copy_and_update_download_params, delete_direct_s3object_params, delete_s3object_bi_params, delete_s3object_params, download_params, move_s3object_params, search_download_params, search_upload_params, upload_biparams, upload_display_params, upload_params } from '../types/param_interface';
+import { copy_and_update_download_params, delete_direct_s3object_params, delete_s3object_bi_params, delete_s3object_params, download_params, move_s3object_params, qa_delete_params, qa_download_params, qa_upload_params, search_download_params, search_upload_params, upload_biparams, upload_display_params, upload_params } from '../types/param_interface';
 import { BIObjectInfo } from '../types/bitools_item';
+import { qa_item } from '../types/qa_item';
 
 // IPC Channel Constants - Inlined to avoid module resolution issues
 // These match the constants in src/config/ipcChannels.ts
@@ -82,9 +83,9 @@ const IPC_CHANNELS = {
 
     // QA
     QA_API_GETS: 'QA_API_GETS',
-    QA_API_INS: 'QA_API_INS',
-    QA_API_UPD_BY_ID: 'QA_API_UPD_BY_ID',
-    QA_API_UPD_COMPLEX: 'QA_API_UPD_COMPLEX',
+    QA_API_UPLOAD: 'QA_API_UPLOAD',
+    QA_API_DOWNLOAD: 'QA_API_DOWNLOAD',
+    QA_API_DEL: 'QA_API_DEL',
 } as const;
 
 // Expose protected methods that allow the renderer process to use
@@ -268,7 +269,18 @@ contextBridge.exposeInMainWorld('uploadAPI', {
 
 // For QA
 contextBridge.exposeInMainWorld('QaAPI', {
-
+    load: (isTo: boolean) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.QA_API_GETS, isTo)
+    },
+    upload: (params: qa_upload_params) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.QA_API_UPLOAD, params)
+    },
+    download: (params: qa_download_params) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.QA_API_DOWNLOAD, params)
+    },
+    delete: (params: qa_delete_params) => {
+        return ipcRenderer.invoke(IPC_CHANNELS.QA_API_DEL, params)
+    },
 });
 // Type declaration for the exposed API
 declare global {
@@ -365,7 +377,13 @@ declare global {
         }
 
         QaAPI: {
-            
+            load: (isTo: boolean) => Promise<ServiceReturn<qa_item[]>>;
+
+            upload: (params: qa_upload_params) => Promise<ServiceReturn<boolean>>;
+
+            download: (params: qa_download_params) => Promise<ServiceReturn<boolean>>;
+
+            delete: (params: qa_delete_params) => Promise<ServiceReturn<boolean>>;
         }
     }
 } 

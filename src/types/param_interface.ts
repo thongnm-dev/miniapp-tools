@@ -105,3 +105,24 @@ export interface delete_s3object_bi_params {
     aws_cd: string,
     delete_items: string[] 
 }
+
+
+//*****************************
+// QA upload and download parameter
+//*****************************
+export interface qa_upload_params {
+    user_id: string, 
+    qa_date: string, 
+    file_items: file_item []
+}
+
+export interface qa_download_params {
+    qa_target: string,
+    qa_items: string [],
+    localPath: string
+}
+
+export interface qa_delete_params {
+    qa_target: string,
+    qa_items: string []
+}

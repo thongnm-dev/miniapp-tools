@@ -31,11 +31,11 @@ const getEnvVarNumber = (key: string, defaultValue?: number): number => {
   // Database Configuration
   export const getDatabaseConfig = (): DatabaseConfig => {
     return {
-      host: 'localhost', //getEnvVar('DB_HOST'),
+      host:getEnvVar('DB_HOST'),
       port: getEnvVarNumber('DB_PORT'),
-      database: 'miniapp', //, getEnvVar('DB_NAME'),
+      database:getEnvVar('DB_NAME'),
       user:  getEnvVar('DB_USER'),
-      password:  'gitea@123456' //getEnvVar('DB_PASSWORD'),
+      password: getEnvVar('DB_PASSWORD'),
     };
   };
 
