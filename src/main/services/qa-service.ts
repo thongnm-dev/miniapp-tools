@@ -1,6 +1,6 @@
-import { GetObjectCommand, ListObjectsV2Command, ListObjectsV2Output, paginateListObjectsV2, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, ListObjectsV2Command, ListObjectsV2Output, paginateListObjectsV2, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { S3Config } from "./s3-service";
-import { getS3Config, getWorkdir } from "../_/main-config";
+import { getDatabaseConfig, getS3Config, getWorkdir } from "../_/main-config";
 import { ServiceReturn } from "../@types/service-return";
 import { qa_item } from "../../types/qa_item";
 import { qa_delete_params, qa_download_params, qa_upload_params } from "../../types/param_interface";
@@ -12,19 +12,23 @@ import path from "path";
 import { createWriteStream, existsSync, mkdirSync } from "fs";
 import { Readable } from "stream";
 import { pipeline } from 'stream/promises';
+import { DatabaseService } from "./database-service";
+import { file_item } from "../../types/file_item";
 
 export class QAService {
     private s3: S3Client;
     private config: S3Config;
     private work_folders: Record<string, string> = {};
+    private db: DatabaseService;
 
     private qa_targets: Record<string, string> = {
         'TO': 'alx ＝＞ ec',
         "FROM": 'ec ＝＞ alx'
     };
 
-    constructor(config: S3Config) {
+    constructor(config: S3Config, db: DatabaseService) {
         this.config = config;
+        this.db = db;
 
         this.s3 = new S3Client({
             region: config.region,
@@ -81,7 +85,81 @@ export class QAService {
 
     async upload(params: qa_upload_params): Promise<ServiceReturn<boolean>> {
 
-        return { success: true, data: true }
+        try {
+            let yyyyMMdd = DateUtils.getNow('yyyyMMdd');
+            //let _destination_path = this.work_folders['QA_SPECIFICATIONS'] + '/' + this.qa_targets[params.qa_target] + "/";
+            let _destination_path = "80_system/Attach/11_alx/20_ＱＡ管理/alx ＝＞ ec/";
+
+            if (!this.db) {
+                return { success: false };
+            }
+
+            const client = await this.db.getClient();
+            await client.query(`BEGIN`);
+            const result = await client.query(`
+                    SELECT
+                        LPAD(COUNT(1) + 1 || '', 2, '0') AS qa_inc
+                    FROM
+                        qa
+                    WHERE 1 = 1
+                        AND upload_flg = true
+                        AND qa_ymd = $1
+                `, [yyyyMMdd]);
+
+            let qa_inc: string = result.rows[0].qa_inc;
+
+            const grouped = params.qa_items.reduce((acc: { [key: string]: file_item[] }, item) => {
+                if (!acc[item.parent_name]) {
+                    acc[item.parent_name] = [];
+                }
+                // Push the current item into its category array
+                acc[item.parent_name].push(item);
+
+                return acc;
+            }, {});
+
+            for (const [folder, children] of Object.entries(grouped)) {
+
+            }
+            for (const item of params.qa_items) {
+                const result = await fsService.readFileToStream(item.full_path);
+                if (!result.success) {
+                    continue
+                }
+
+                const regex = /^\d{8}_\d{2}$/;
+                const isValid = regex.test(item.parent_name);
+                let qa_ymd = isValid ? item.parent_name.split("_")[0] : yyyyMMdd;
+                qa_inc = isValid ? item.parent_name.split("_")[1] : qa_inc;
+                let sub_folder = isValid ? item.parent_name : yyyyMMdd + "_" + qa_inc;
+                let destination_path = _destination_path + sub_folder + "/" + item.name;
+
+                if (item.sub_folder) {
+                    destination_path = _destination_path + sub_folder + "/" + item.sub_folder.replace("\\", "/");
+                }
+                const _params = new PutObjectCommand({
+                    Bucket: this.config.bucketName,
+                    Key: destination_path,
+                    Body: result.data
+                });
+                await this.s3.send(_params);
+
+                await client.query(`
+                    INSERT INTO qa 
+                        (qa_ymd, qa_inc, upload_flg, uploaded, uploaded_count, created_by) 
+                    VALUES
+                        ($1, $2, true, true, 0, $3)
+                    RETURNING id`,
+                [qa_ymd, qa_inc, params.user_id]);
+            }
+
+            await client.query(`COMMIT`);
+            return { success: true, data: true }
+
+        } catch (error) {
+            (await this.db.getClient()).query("ROLLBACK")
+            return { success: false, message: (error as Error).message };
+        }
     }
 
     async download(params: qa_download_params): Promise<ServiceReturn<boolean>> {
@@ -170,4 +248,4 @@ export class QAService {
         } while (continuationToken);
     }
 }
-export const qAService = new QAService(getS3Config());
+export const qAService = new QAService(getS3Config(), new DatabaseService(getDatabaseConfig()));

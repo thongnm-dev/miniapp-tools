@@ -81,6 +81,12 @@ export class FSService {
                 results.push(...item?.data as []);
             }
 
+            for (const item of results) {
+                let split = item.full_path.lastIndexOf(item.parent_name);
+
+                item.sub_folder = item.full_path.substring(split + item.parent_name.length + 1, item.full_path.length);
+            }
+
             return { success: true, data: results };
         } catch (error) {
             return { success: false, message: (error as Error).message };

@@ -111,9 +111,9 @@ export interface delete_s3object_bi_params {
 // QA upload and download parameter
 //*****************************
 export interface qa_upload_params {
-    user_id: string, 
-    qa_date: string, 
-    file_items: file_item []
+    qa_target: string,
+    user_id: string,
+    qa_items: file_item []
 }
 
 export interface qa_download_params {

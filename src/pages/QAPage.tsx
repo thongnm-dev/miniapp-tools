@@ -11,12 +11,13 @@ import { TfiBrushAlt } from "react-icons/tfi";
 import { GiExitDoor } from "react-icons/gi";
 import Modal from "../components/ui/Modal";
 import { fsController } from "../controller/fs-controller";
-import { qa_download_params } from "../types/param_interface";
+import { qa_download_params, qa_upload_params } from "../types/param_interface";
 import { showNotification } from "../components/notification";
 import { file_item } from "../types/file_item";
 import { IoIosAttach } from "react-icons/io";
 import TreeView, { flattenTree, INode, ITreeViewOnNodeSelectProps, NodeId } from "react-accessible-treeview";
 import { IFlatMetadata } from "react-accessible-treeview/dist/TreeView/utils";
+import { useAuth } from "../stores/AuthContext";
 
 const CheckBoxIcon: React.FC<{ variant: string }> = ({ variant, ...rest }) => {
     switch (variant) {
@@ -32,6 +33,7 @@ const CheckBoxIcon: React.FC<{ variant: string }> = ({ variant, ...rest }) => {
 };
 const QAPage: React.FC = () => {
 
+    const { user } = useAuth();
     const { showLoading, hideLoading } = useLoading();
     const [qaToItems, setQaToItems] = useState<qa_item[]>([]);
     const [qaFromItems, setQaFromItems] = useState<qa_item[]>([]);
@@ -248,16 +250,36 @@ const QAPage: React.FC = () => {
     }
 
     const upload = () => {
+        clearItems();
         setDisplayModalUpload(true);
-        // setTargetDate(DateTime.now());
     }
 
     const handleCancelModalUpload = () => {
         setDisplayModalUpload(false);
     }
+
     const handleConfirmUpload = async () => {
         try {
+            let resultFlg = false;
             showLoading('Đang thực hiện đăng ký QA. Vui lòng không tắt màn hình...');
+
+            const filesToUpload = Array.from(uploadFileItems);
+            const params = {
+                user_id: user?.username || "",
+                qa_target: "TO",
+                qa_items: filesToUpload,
+            } as qa_upload_params
+
+            const result = await qaController.upload(params);
+
+            if (!result.success) {
+                showNotification(result.message || 'Đăng ký QA thất bại.', 'error');
+            }
+
+            resultFlg = result.success;
+            resultFlg && showNotification('Đăng ký QA thành công.', 'success');
+
+            setDisplayModalUpload(!resultFlg);
         } finally {
             hideLoading();
         }
@@ -279,7 +301,7 @@ const QAPage: React.FC = () => {
         }
     }
 
-        // clear list
+    // clear list
     const clearItems = () => {
         setUploadFileItems([]);
         setSelectedItems(new Set())
