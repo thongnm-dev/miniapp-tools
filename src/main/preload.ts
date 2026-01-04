@@ -80,6 +80,11 @@ const IPC_CHANNELS = {
     APP_API_GET_UPLOAD_ITEMS: 'APP_API_GET_UPLOAD_ITEMS',
     APP_API_GET_DELETE_ITEMS: 'APP_API_GET_DELETE_ITEMS',
 
+    // QA
+    QA_API_GETS: 'QA_API_GETS',
+    QA_API_INS: 'QA_API_INS',
+    QA_API_UPD_BY_ID: 'QA_API_UPD_BY_ID',
+    QA_API_UPD_COMPLEX: 'QA_API_UPD_COMPLEX',
 } as const;
 
 // Expose protected methods that allow the renderer process to use
@@ -261,6 +266,10 @@ contextBridge.exposeInMainWorld('uploadAPI', {
     }
 });
 
+// For QA
+contextBridge.exposeInMainWorld('QaAPI', {
+
+});
 // Type declaration for the exposed API
 declare global {
     interface Window {
@@ -353,6 +362,10 @@ declare global {
         uploadAPI: {
             display_upload_button: (params: upload_display_params) => Promise<ServiceReturn<boolean>>;
             search_upload_histories: (params: search_upload_params) => Promise<ServiceReturn<upload_item[]>>;
+        }
+
+        QaAPI: {
+            
         }
     }
 } 

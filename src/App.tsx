@@ -14,11 +14,11 @@ import S3DownloadPage from './pages/S3DownloadPage';
 import WelcomePage from './pages/WelcomePage';
 import BugManagePage from './pages/BugManagePage';
 import BugDetailPage from './pages/BugDetailPage';
-import CopyFilePage from './pages/CopyFilePage';
 import UploadHistoriesPage from './pages/UploadHistoriesPage';
 import DownloadHistoriesPage from './pages/DownloadHistoriesPage';
 import ShipmentsPage from './pages/ShipmentsPage';
 import BIToolManagePage from './pages/BIToolManagePage';
+import QAPage from './pages/QAPage';
 
 function App() {
     return (
@@ -115,6 +115,14 @@ function App() {
                             <ProtectedRoute>
                                 <MainLayout>
                                     <BIToolManagePage />
+                                </MainLayout>
+                            </ProtectedRoute>
+                        } />
+
+                        <Route path="/qa" element={
+                            <ProtectedRoute>
+                                <MainLayout>
+                                    <QAPage />
                                 </MainLayout>
                             </ProtectedRoute>
                         } />

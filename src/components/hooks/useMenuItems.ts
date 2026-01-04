@@ -5,6 +5,7 @@ import { FcFeedIn, FcHome, FcInTransit, FcOpenedFolder, FcRules } from 'react-ic
 import { AiTwotoneBug } from 'react-icons/ai';
 import { MdOutlineHistoryEdu } from 'react-icons/md';
 import { IoLogoBitbucket } from 'react-icons/io';
+import { SiQase } from 'react-icons/si';
 
 // Move iconMap outside the function so it's not redefined on every call
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -18,7 +19,8 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   history: FaHistory,
   downloadHistory: MdOutlineHistoryEdu,
   delivery: FcInTransit,
-  bitool: IoLogoBitbucket
+  bitool: IoLogoBitbucket,
+  qa: SiQase
 };
 
 export const useMenuItems = () => {

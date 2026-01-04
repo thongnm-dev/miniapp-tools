@@ -908,4 +908,4 @@ export class S3Service {
     }
 }
 
-export const s3Service = new S3Service(getS3Config()); 
+export const s3Service = new S3Service(getS3Config());
