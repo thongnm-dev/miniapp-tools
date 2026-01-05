@@ -102,6 +102,7 @@ const QAPage: React.FC = () => {
             children: []
         }
 
+        setExpandedIds([]);
         setSelectedIds([]);
         setSelectedItems(new Set());
         if (uploadFileItems && uploadFileItems.length > 0) {
@@ -300,8 +301,8 @@ const QAPage: React.FC = () => {
 
     // clear list
     const clearItems = () => {
+        setSelectedItems(new Set());
         setUploadFileItems([]);
-        setSelectedItems(new Set())
     }
 
     const findItem = (item: INode<IFlatMetadata>, datas: INode<IFlatMetadata>[]): file_item[] => {
@@ -528,7 +529,7 @@ const QAPage: React.FC = () => {
                     </div>
 
                     <div className='grid grid-cols-1 gap-1'>
-                        <TreeView
+                        {uploadFileItems.length > 0 && <TreeView
                             className='px-4'
                             data={dataTree}
                             aria-label="directory tree"
@@ -565,11 +566,11 @@ const QAPage: React.FC = () => {
                                     <span className={`${isBranch ? '' : 'text-green-700'}`}>{element.name}</span>
                                 </div>
                             )}
-                        />
+                        />}
                     </div>
                     <div className="flex justify-end items-center p-4 gap-3">
                         <Button
-                            onClick={handleCancelModalDownload}
+                            onClick={handleCancelModalUpload}
                             className="flex items-center space-x-2">
                             <GiExitDoor className="h-5 w-5" />
                             <span>Đóng</span>

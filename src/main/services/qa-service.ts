@@ -58,9 +58,8 @@ export class QAService {
                 , {
                     Bucket: this.config.bucketName,
                     Delimiter: "/",
-                    MaxKeys: 20,
                     Prefix: _prefix_path,
-                    ContinuationToken: continuationToken
+                    ContinuationToken: continuationToken,
                 });
 
             for await (const page of paginators) {
@@ -72,14 +71,13 @@ export class QAService {
         } while (continuationToken);
 
         const qa_items: qa_item[] = allObjects
-            .slice(0, 20)
             .map((obj): qa_item => {
                 const parts = obj.Prefix?.split('/') || [];
 
                 const folderName = parts[parts.length - 2];
 
                 return { name: folderName };
-            });
+            }).sort((a, b) => b.name.localeCompare(a.name)).slice(0, 15);
         return { success: true, data: qa_items }
     }
 
@@ -90,23 +88,12 @@ export class QAService {
             let _destination_path = this.work_folders['QA_SPECIFICATIONS'] + '/' + this.qa_targets[params.qa_target] + "/";
             // let _destination_path = "80_system/Attach/11_alx/20_ＱＡ管理/alx ＝＞ ec/";
 
-            // if (!this.db) {
-            //     return { success: false };
-            // }
+            if (!this.db) {
+                return { success: false };
+            }
 
-            // const client = await this.db.getClient();
-            // await client.query(`BEGIN`);
-            // const result = await client.query(`
-            //         SELECT
-            //             LPAD(COUNT(1) + 1 || '', 2, '0') AS qa_inc
-            //         FROM
-            //             qa
-            //         WHERE 1 = 1
-            //             AND upload_flg = true
-            //             AND qa_ymd = $1
-            //     `, [yyyyMMdd]);
-
-            // let qa_inc: string = result.rows[0].qa_inc;
+            const client = await this.db.getClient();
+            await client.query(`BEGIN`);
 
             const grouped = params.qa_items.reduce((acc: { [key: string]: file_item[] }, item) => {
                 if (!acc[item.parent_name]) {
@@ -122,14 +109,28 @@ export class QAService {
                 const regex = /^\d{8}_\d{2}$/;
                 const isValid = regex.test(folder);
                 let qa_ymd = isValid ? folder.split("_")[0] : yyyyMMdd;
-                // qa_inc = isValid ? item.parent_name.split("_")[1] : qa_inc;
-                // let sub_folder = isValid ? item.parent_name : yyyyMMdd + "_" + qa_inc;
+                let qa_inc = isValid ? folder.split("_")[1] : "";
+                
+                if (!isValid) {
+                    const result = await client.query(`
+                            SELECT
+                                LPAD(COUNT(1) + 1 || '', 2, '0') AS qa_inc
+                            FROM
+                                qa
+                            WHERE 1 = 1
+                                AND upload_flg = true
+                                AND qa_ymd = $1
+                        `, [yyyyMMdd]);
+
+                    qa_inc = result.rows[0].qa_inc;
+                }
+                
+                let sub_folder = qa_ymd + "_" + qa_inc;
                 for (const item of children) {
                     const result = await fsService.readFileToStream(item.full_path);
                     if (!result.success) {
                         continue
                     }
-                    let sub_folder = item.parent_name;
                     let destination_path = _destination_path + sub_folder + "/" + item.name;
 
                     if (item.sub_folder) {
@@ -143,19 +144,20 @@ export class QAService {
                     await this.s3.send(_params);
                 }
 
-                // await client.query(`
-                //     INSERT INTO qa 
-                //         (qa_ymd, qa_inc, upload_flg, uploaded, uploaded_count, created_by) 
-                //     VALUES
-                //         ($1, $2, true, true, 0, $3)
-                //     RETURNING id`,
-                // [qa_ymd, qa_inc, params.user_id]);
+                await client.query(`
+                    INSERT INTO qa 
+                        (qa_ymd, qa_inc, upload_flg, uploaded, uploaded_count, created_by) 
+                    VALUES
+                        ($1, $2, true, true, 0, $3)
+                    RETURNING id`,
+                [qa_ymd, qa_inc, params.user_id]);
             }
-            // await client.query(`COMMIT`);
+
+            await client.query(`COMMIT`);
             return { success: true, data: true }
 
         } catch (error) {
-            // (await this.db.getClient()).query("ROLLBACK");
+            (await this.db.getClient()).query("ROLLBACK");
             return { success: false, message: (error as Error).message };
         }
     }
