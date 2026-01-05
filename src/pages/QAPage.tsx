@@ -11,7 +11,7 @@ import { TfiBrushAlt } from "react-icons/tfi";
 import { GiExitDoor } from "react-icons/gi";
 import Modal from "../components/ui/Modal";
 import { fsController } from "../controller/fs-controller";
-import { qa_download_params, qa_upload_params } from "../types/param_interface";
+import { qa_delete_params, qa_download_params, qa_upload_params } from "../types/param_interface";
 import { showNotification } from "../components/notification";
 import { file_item } from "../types/file_item";
 import { IoIosAttach } from "react-icons/io";
@@ -41,12 +41,12 @@ const QAPage: React.FC = () => {
     const [qaFromSelectedItems, setQaFromSelectedItems] = useState<Set<qa_item>>(new Set());
     const [displayModalUpload, setDisplayModalUpload] = useState(false);
     const [displayModalDownload, setDisplayModalDownload] = useState(false);
+    const [displayModalDelete, setDisplayModalDelete] = useState(false);
     const [selectDestinationPath, setSelectDestinationPath] = useState<string>("");
     const [errorCheck, setErrorCheck] = useState<string>("");
     const [uploadFileItems, setUploadFileItems] = useState<file_item[]>([]);
     const [selectedIds, setSelectedIds] = useState<NodeId[]>([]);
     const [expandedIds, setExpandedIds] = useState<NodeId[]>([]);
-    const [count, setCount] = useState<number>(0);
     const [selectedItems, setSelectedItems] = useState<Set<file_item>>(new Set());
 
     useEffect(() => {
@@ -102,7 +102,6 @@ const QAPage: React.FC = () => {
             children: []
         }
 
-        setCount(0);
         setSelectedIds([]);
         setSelectedItems(new Set());
         if (uploadFileItems && uploadFileItems.length > 0) {
@@ -121,7 +120,6 @@ const QAPage: React.FC = () => {
                 return acc;
             }, {});
 
-            let _count = 1;
             let bugs: string[] = [];
 
             for (const [folder, children] of Object.entries(grouped)) {
@@ -130,7 +128,6 @@ const QAPage: React.FC = () => {
                         return { ...item, name: item.name }
                     })
                 }
-                setCount(_count++);
                 bugs.push(folder);
                 (treeview.children[0] as any).children.push(child as never)
             }
@@ -212,11 +209,11 @@ const QAPage: React.FC = () => {
         }
     }
 
-    const handleDetete = async () => {
-
+    const handleDetete = () => {
+        setDisplayModalDelete(true);
     }
 
-    const handleCancelModal = () => {
+    const handleCancelModalDownload = () => {
         setDisplayModalDownload(false);
     }
 
@@ -263,7 +260,7 @@ const QAPage: React.FC = () => {
             let resultFlg = false;
             showLoading('Đang thực hiện đăng ký QA. Vui lòng không tắt màn hình...');
 
-            const filesToUpload = Array.from(uploadFileItems);
+            const filesToUpload = Array.from(selectedItems);
             const params = {
                 user_id: user?.username || "",
                 qa_target: "TO",
@@ -355,6 +352,37 @@ const QAPage: React.FC = () => {
             });
         }
     }
+
+    const handleCancelModalDelete = () => {
+        setDisplayModalDelete(false);
+    }
+
+    const handleConfirmDelete = async () => {
+        try {
+            let resultFlg = false;
+            showLoading('Đang thực hiện xoá QA. Vui lòng không tắt màn hình...');
+
+            const qaDeleteList = Array.from(qaToSelectedItems);
+            const params = {
+                qa_target: "TO",
+                qa_items: qaDeleteList.map(item => item.name),
+            } as qa_delete_params
+
+            const result = await qaController.delete(params);
+
+            if (!result.success) {
+                showNotification(result.message || 'Xóa QA thất bại.', 'error');
+            }
+
+            resultFlg = result.success;
+            resultFlg && showNotification('Xóa QA thành công.', 'success');
+
+            setDisplayModalDelete(!resultFlg);
+        } finally {
+            hideLoading();
+        }
+    }
+
     return (
         <>
             <div className="space-y-2 grid grid-cols-1 gap-2">
@@ -364,7 +392,7 @@ const QAPage: React.FC = () => {
                             <div className="flex flex-row gap-2" >
                                 <Button className="flex items-center space-x-2 text-red-500 border-red-500"
                                     disabled={disable_upload}
-                                    onClick={() => handleDetete}>
+                                    onClick={handleDetete}>
                                     <TfiBrushAlt className="h-4 w-4 font-bold" />
                                     <span>Xóa QA</span>
                                 </Button>
@@ -433,7 +461,7 @@ const QAPage: React.FC = () => {
                 </Fieldset>
             </div>
 
-            <Modal open={displayModalDownload} onClose={handleCancelModal} title="Tải QA" size="lg">
+            <Modal open={displayModalDownload} onClose={handleCancelModalDownload} title="Tải QA" size="lg">
                 <div className="bg-white shadow-lg rounded-lg flex flex-col">
                     <div className="border-b border-gray-200 p-4">
                         <div className="flex flex-col gap-1 flex-1">
@@ -465,7 +493,7 @@ const QAPage: React.FC = () => {
 
                     <div className="flex justify-end items-center p-4 gap-3">
                         <Button
-                            onClick={handleCancelModal}
+                            onClick={handleCancelModalDownload}
                             className="flex items-center space-x-2">
                             <GiExitDoor className="h-5 w-5" />
                             <span>Đóng</span>
@@ -541,7 +569,7 @@ const QAPage: React.FC = () => {
                     </div>
                     <div className="flex justify-end items-center p-4 gap-3">
                         <Button
-                            onClick={handleCancelModalUpload}
+                            onClick={handleCancelModalDownload}
                             className="flex items-center space-x-2">
                             <GiExitDoor className="h-5 w-5" />
                             <span>Đóng</span>
@@ -556,6 +584,44 @@ const QAPage: React.FC = () => {
                     </div>
                 </div>
             </Modal >
+
+            <Modal open={displayModalDelete} onClose={handleCancelModalDelete} title="Bạn có chắc muốn xoá các thông tin bên dưới không?" size="lg">
+                <div className="bg-white shadow-lg rounded-lg flex flex-col">
+                    <div className='grid grid-cols-1 gap-1'>
+                        <div className="rounded-lg shadow">
+                            <DataTable
+                                className='h-full'
+                                columns={[
+                                    { key: 'name', label: 'QA đối tượng' }
+                                ]}
+                                data={Array.from(qaToSelectedItems).map(item => ({
+                                    name: item.name
+                                }))}
+                                showFilter={false}
+                                showCheckboxes={false}
+                                rowKey="name"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex justify-end items-center p-4 gap-3">
+                        <Button
+                            onClick={handleCancelModalDelete}
+                            className="flex items-center space-x-2">
+                            <GiExitDoor className="h-5 w-5" />
+                            <span>Đóng</span>
+                        </Button>
+                        <Button
+                            onClick={handleConfirmDelete}
+                            disabled={Array.from(qaToSelectedItems).length ===0 }
+                            className="flex items-center space-x-2">
+                            <FcOk className="h-5 w-5" />
+                            <span>Bắt đầu xoá...</span>
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </>
     )
 }
