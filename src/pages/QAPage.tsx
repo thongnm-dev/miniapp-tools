@@ -528,7 +528,7 @@ const QAPage: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className='grid grid-cols-1 gap-1'>
+                    <div className='grid grid-cols-1 gap-1 h-[300px] overflow-x-auto'>
                         {uploadFileItems.length > 0 && <TreeView
                             className='px-4'
                             data={dataTree}

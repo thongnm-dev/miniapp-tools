@@ -94,25 +94,7 @@ export class QAService {
 
             const client = await this.db.getClient();
             await client.query(`BEGIN`);
-
-            const grouped = params.qa_items.reduce((acc: { [key: string]: file_item[] }, item) => {
-                if (!acc[item.parent_name]) {
-                    acc[item.parent_name] = [];
-                }
-                // Push the current item into its category array
-                acc[item.parent_name].push(item);
-
-                return acc;
-            }, {});
-
-            for (const [folder, children] of Object.entries(grouped)) {
-                const regex = /^\d{8}_\d{2}$/;
-                const isValid = regex.test(folder);
-                let qa_ymd = isValid ? folder.split("_")[0] : yyyyMMdd;
-                let qa_inc = isValid ? folder.split("_")[1] : "";
-                
-                if (!isValid) {
-                    const result = await client.query(`
+            const result = await client.query(`
                             SELECT
                                 LPAD(COUNT(1) + 1 || '', 2, '0') AS qa_inc
                             FROM
@@ -122,36 +104,93 @@ export class QAService {
                                 AND qa_ymd = $1
                         `, [yyyyMMdd]);
 
-                    qa_inc = result.rows[0].qa_inc;
-                }
-                
-                let sub_folder = qa_ymd + "_" + qa_inc;
-                for (const item of children) {
-                    const result = await fsService.readFileToStream(item.full_path);
-                    if (!result.success) {
-                        continue
-                    }
-                    let destination_path = _destination_path + sub_folder + "/" + item.name;
-
-                    if (item.sub_folder) {
-                        destination_path = _destination_path + sub_folder + "/" + item.sub_folder.replace("\\", "/");
-                    }
-                    const _params = new PutObjectCommand({
-                        Bucket: this.config.bucketName,
-                        Key: destination_path,
-                        Body: result.data
-                    });
-                    await this.s3.send(_params);
+            let qa_inc = result.rows[0].qa_inc;
+            const sub_folder = yyyyMMdd + "_" + qa_inc;
+            for (const item of params.qa_items) {
+                const result = await fsService.readFileToStream(item.full_path);
+                if (!result.success) {
+                    continue
                 }
 
-                await client.query(`
-                    INSERT INTO qa 
-                        (qa_ymd, qa_inc, upload_flg, uploaded, uploaded_count, created_by) 
-                    VALUES
-                        ($1, $2, true, true, 0, $3)
-                    RETURNING id`,
-                [qa_ymd, qa_inc, params.user_id]);
+                let split = item.full_path.indexOf(item.parent_name);
+
+                let child_folder = item.full_path.substring(split + item.parent_name.length + 1, item.full_path.length);
+
+                let destination_path = _destination_path + sub_folder + "/" + item.parent_name + "/" + child_folder.replace("\\", "/");
+
+                const _params = new PutObjectCommand({
+                    Bucket: this.config.bucketName,
+                    Key: destination_path,
+                    Body: result.data
+                });
+                await this.s3.send(_params);
             }
+
+            await client.query(`
+                INSERT INTO qa 
+                    (qa_ymd, qa_inc, upload_flg, uploaded, uploaded_count, created_by) 
+                VALUES
+                    ($1, $2, true, true, 0, $3)
+                RETURNING id`,
+            [yyyyMMdd, qa_inc, params.user_id]);
+
+            // const grouped = params.qa_items.reduce((acc: { [key: string]: file_item[] }, item) => {
+            //     if (!acc[item.parent_name]) {
+            //         acc[item.parent_name] = [];
+            //     }
+            //     // Push the current item into its category array
+            //     acc[item.parent_name].push(item);
+
+            //     return acc;
+            // }, {});
+
+            // for (const [folder, children] of Object.entries(grouped)) {
+            //     const regex = /^\d{8}_\d{2}$/;
+            //     const isValid = regex.test(folder);
+            //     let qa_ymd = isValid ? folder.split("_")[0] : yyyyMMdd;
+            //     let qa_inc = isValid ? folder.split("_")[1] : "";
+                
+            //     if (!isValid) {
+            //         const result = await client.query(`
+            //                 SELECT
+            //                     LPAD(COUNT(1) + 1 || '', 2, '0') AS qa_inc
+            //                 FROM
+            //                     qa
+            //                 WHERE 1 = 1
+            //                     AND upload_flg = true
+            //                     AND qa_ymd = $1
+            //             `, [yyyyMMdd]);
+
+            //         qa_inc = result.rows[0].qa_inc;
+            //     }
+                
+            //     let sub_folder = qa_ymd + "_" + qa_inc;
+            //     for (const item of children) {
+            //         const result = await fsService.readFileToStream(item.full_path);
+            //         if (!result.success) {
+            //             continue
+            //         }
+            //         let destination_path = _destination_path + sub_folder + "/" + item.name;
+
+            //         if (item.sub_folder) {
+            //             destination_path = _destination_path + sub_folder + "/" + item.sub_folder.replace("\\", "/");
+            //         }
+            //         const _params = new PutObjectCommand({
+            //             Bucket: this.config.bucketName,
+            //             Key: destination_path,
+            //             Body: result.data
+            //         });
+            //         await this.s3.send(_params);
+            //     }
+
+            //     await client.query(`
+            //         INSERT INTO qa 
+            //             (qa_ymd, qa_inc, upload_flg, uploaded, uploaded_count, created_by) 
+            //         VALUES
+            //             ($1, $2, true, true, 0, $3)
+            //         RETURNING id`,
+            //     [qa_ymd, qa_inc, params.user_id]);
+            // }
 
             await client.query(`COMMIT`);
             return { success: true, data: true }

@@ -2,6 +2,7 @@ CREATE TABLE public.qa (
 	id serial4 NOT NULL,
 	qa_ymd varchar(8) NOT NULL,
 	qa_inc varchar(2) NOT NULL,
+	upload_flg bool DEFAULT false NULL,
 	uploaded bool DEFAULT false NULL,
 	uploaded_count int4 DEFAULT 0 NOT NULL,
 	downloaded bool DEFAULT false NULL,
