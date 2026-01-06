@@ -273,7 +273,6 @@ export class QAService {
                 Bucket: this.config.bucketName,
                 Prefix: prefix,
                 ContinuationToken: continuationToken,
-                Delimiter: "/",
             };
 
             const command = new ListObjectsV2Command(params);
