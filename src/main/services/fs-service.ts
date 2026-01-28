@@ -173,7 +173,7 @@ export class FSService {
                 return { success: false, message: 'Đường dẫn không tồn tại.' };
             }
 
-            const matched = file_eno.match(/(\d{4})$/);
+            const matched = file_eno.match(/(\d{4})(?=[^\d]*$)/);
 
             if (!matched) {
                 return { success: true, data: destinationPath };
